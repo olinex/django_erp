@@ -38,8 +38,7 @@ class UserViewSet(mixin.PermMethodViewSet):
         if form.is_valid():
             user=form.user_cache
             login(request,user)
-            serializer=serializers.UserSerializer(instance=user)
-            return Response(serializer.data)
+            return Response(serializers.UserSerializer(instance=user).data)
         return Response({'detail':'认证未通过'},status=status.HTTP_401_UNAUTHORIZED)
 
     @list_route(
