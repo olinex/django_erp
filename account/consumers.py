@@ -4,13 +4,14 @@
 import json
 from .forms import TalkForm
 from common import Redis
+from common.notice import Notice,Talk,Response
 from common.consumer import http_login_required
 from channels import Group, Channel
 from channels.generic.websockets import WebsocketConsumer
 
 online_group = 'online_users'
 
-class LoginServer(WebsocketConsumer):
+class Server(WebsocketConsumer):
     '''
     Basic login server
     '''
@@ -23,58 +24,91 @@ class LoginServer(WebsocketConsumer):
         redis=Redis()
         redis.hset(online_group,str(user.id),message.reply_channel.name)
         if user.profile.online_notice:
+            notice=Notice(
+                user=user,
+                detail='已经上线',
+                content='',
+                status='info')
             group=Group(online_group)
-            group.send({'text':json.dumps({
-                'type':'loginNotice',
-                'id':user.id,
-                'username':user.get_full_name() or user.get_username()
-            })})
+            group.send({'text':notice.to_json()})
             group.add(channel)
-        channel.send({'accept':True,'text':'success'})
+        response=Response(detail='成功连接')
+        channel.send({'accept':True,'text':response.to_json()})
 
     @http_login_required
     def disconnect(self, message, **kwargs):
-        print('logout connect')
         channel=message.reply_channel
         user=message.user
         redis=Redis()
         group=Group(online_group)
         group.discard(channel)
+        notice=Notice(
+            user=user,
+            detail='已经离线',
+            content='',
+            status='info')
         if user.profile.online_notice:
-            group.send({'text':json.dumps({
-                'type':'logoutNotice',
-                'id':user.id,
-                'username':user.get_full_name() or user.get_username()
-            })})
+            group.send({'text':notice.to_json()})
         redis.hdel(online_group,str(user.id))
-        channel.send({'accept':True,'close':True,'text':'success'})
+        response=Response(detail='成功断开连接')
+        channel.send({'accept':True,'close':True,'text':response.to_json()})
 
-class PrivateTalkServer(WebsocketConsumer):
-    '''
-    ASGI WebSocket received
-    '''
-    http_user = True
 
     @http_login_required
-    def receive(self,text=None,bytes=None,**kwargs):
-        listener=kwargs['user']
-        if listener == self.message.user.id:
-            redis=Redis()
-            channel_name=redis.hget(online_group,str(listener))
-            if channel_name:
-                form=TalkForm(data={
-                    'listener':listener,
-                    'talker':self.message.user.id,
-                    'content':text
-                })
-                if form.is_valid():
-                    print(self.message.reply_channel.name,channel_name)
-                    Channel(channel_name).send({
-                        'accept':True,
-                        'text':form.cleaned_data['content']})
-                else:
-                    self.message.reply_channel.send({'accept':False,'text':'不合法的输入'})
-            else:
-                self.message.reply_channel.send({'accept':False,'text':'对方尚未上线'})
-        else:
-            self.message.reply_channel.send({'accept':False,'text':'不可对自身发起私聊'})
+    def receive(self, text=None, bytes=None, **kwargs):
+        data=json.loads(text)
+        request_type=data.get('type',None)
+        listener=data.get('to_user',None)
+        message=self.message
+        if not listener or not request_type:
+            message.reply_channel.send({
+                'accept':False,
+                'text':Response(
+                    detail='请求必须包含type和to_user',
+                    status='error'
+                ).to_json()
+            })
+            return None
+        if listener == message.user.id:
+            message.reply_channel.send({
+                'accept':False,
+                'text':Response(
+                    detail='请求to_user不能为自身',
+                    status='error'
+                ).to_json()
+            })
+            return None
+        redis=Redis()
+        channel_name=redis.hget(online_group,str(listener))
+        if not channel_name:
+            message.reply_channel.send({
+                'accept':False,
+                'text':Response(
+                    detail='对方尚未上线',
+                    status='warning'
+                ).to_json()
+            })
+            return None
+        form=TalkForm(data={
+            'listener':listener,
+            'talker':message.user.id,
+            'content':data['content']
+        })
+        if not form.is_valid():
+            message.reply_channel.send({
+                'accept':False,
+                'text':Response(
+                    detail='无效的输入内容',
+                    status='warning'
+                ).to_json()
+            })
+            return None
+        talk=Talk(
+            user=message.user,
+            detail='新私聊',
+            content=form.cleaned_data['content'],
+            status='success'
+        )
+        Channel(channel_name).send({
+            'accept':True,
+            'text':talk.to_json()})

@@ -2,8 +2,7 @@
 #-*- coding:utf-8 -*-
 
 from channels.routing import route_class
-from account import  consumers
+from account.consumers import  Server
 channel_routing = [
-    route_class(consumers.LoginServer,path=r'^/$'),
-    route_class(consumers.PrivateTalkServer,path=r'^/private/(?P<user>\d+)_id/$'),
+    route_class(Server,path=r'^/$'),
 ]
