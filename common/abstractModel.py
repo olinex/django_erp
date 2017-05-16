@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #-*- coding:utf-8 -*-
 
-from django.db import models
+from djangoperm.db import models
 
 class ActiveModel(models.Model):
     is_active = models.BooleanField(

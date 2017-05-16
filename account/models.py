@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #-*- coding:utf-8 -*-
 
-from django.db import models
+from djangoperm.db import models
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from common.abstractModel import ActiveModel, LogModel
@@ -118,7 +118,14 @@ class Address(ActiveModel):
         help_text="特定地址的名称"
     )
 
-class Profile(ActiveModel):
+    class Meta:
+        verbose_name = '地址'
+        verbose_name_plural = '地址'
+
+    def get_absolute_url(self):
+        return reverse('account:address_detail',kwargs={'id': self.id })
+
+class Profile(models.Model):
     '''用户的其他信息'''
     SEX_CHOICES = (
         ('unknown', '未知'),
@@ -161,6 +168,7 @@ class Profile(ActiveModel):
         '语言',
         null=True,
         blank=False,
+        default='zh-han',
         max_length=20,
         help_text="用户设置的默认语言"
     )
@@ -181,7 +189,7 @@ class Profile(ActiveModel):
     def get_absolute_url(self):
         return reverse('account:profile_detail', kwargs={'id': self.user.id})
 
-class Partner(ActiveModel,LogModel):
+class Partner(ActiveModel, LogModel):
     '''合作伙伴'''
     name = models.CharField(
         '名称',

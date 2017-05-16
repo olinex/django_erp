@@ -32,35 +32,28 @@ class PermMethodViewSet(
         viewsets.GenericViewSet):
     '''http请求方法级别权限'''
     allow_actions = ('create','list','retrieve','update','destory')
-    def method_permission(self,request,*args,**kwargs):
-        return True
-    
+
     def create(self,request,*args,**kwargs):
-        if (('create' in self.allow_actions) and
-        getattr(self,'create_permission',self.method_permission)(request,*args,**kwargs)):
+        if 'create' in self.allow_actions:
             return super(PermMethodViewSet,self).create(request,*args,**kwargs)
         raise exceptions.PermissionDenied
     
     def list(self,request,*args,**kwargs):
-        if (('list' in self.allow_actions) and
-        getattr(self,'list_permission',self.method_permission)(request,*args,**kwargs)):
+        if 'list' in self.allow_actions:
             return super(PermMethodViewSet,self).list(request,*args,**kwargs)
         raise exceptions.PermissionDenied
     
     def retrieve(self,request,*args,**kwargs):
-        if (('retrieve' in self.allow_actions) and
-        getattr(self,'retrieve_permission',self.method_permission)(request,*args,**kwargs)):
+        if 'retrieve' in self.allow_actions:
             return super(PermMethodViewSet,self).retrieve(request,*args,**kwargs)
         raise exceptions.PermissionDenied
     
     def update(self,request,*args,**kwargs):
-        if (('update' in self.allow_actions) and
-        getattr(self,'update_permission',self.method_permission)(request,*args,**kwargs)):
+        if 'update' in self.allow_actions:
             return super(PermMethodViewSet,self).update(request,*args,**kwargs)
         raise exceptions.PermissionDenied
         
     def destroy(self,request,*args,**kwargs):
-        if (('destroy' in self.allow_actions) and
-        getattr(self,'destroy_permission',self.method_permission)(request,*args,**kwargs)):
+        if 'destroy' in self.allow_actions:
             return super(PermMethodViewSet,self).destroy(request,*args,**kwargs)
         raise exceptions.PermissionDenied
