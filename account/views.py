@@ -66,7 +66,6 @@ class UserViewSet(mixin.IsActiveModelMixin,mixin.PermMethodViewSet):
         ['post'],
         serializer_class=serializers.ResetPasswordSerializer
     )
-    @view_perm_required
     def password(self,request,pk=None):
         instance=self.get_object()
         serializer=self.get_serializer(

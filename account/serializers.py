@@ -129,3 +129,9 @@ class LoginSerializer(serializers.ModelSerializer):
     class Meta:
         model=User
         fields=('username','password')
+
+class CaptchaSerializer(serializers.Serializer):
+    code=serializers.CharField
+
+    def validate_code(self,val):
+        from django.contrib.auth import tokens

@@ -35,7 +35,7 @@ class Province(ActiveModel):
         unique_together=('country','name')
 
     def __str__(self):
-        return self.name
+        return self.get_country_display() + '/' + self.name
 
     def get_absolute_url(self):
         return reverse('account:province_detail', kwargs={'id': self.id})
@@ -65,7 +65,7 @@ class City(ActiveModel):
         unique_together=('province','name')
 
     def __str__(self):
-        return self.name
+        return str(self.province) + '/' + self.name
 
     def get_absolute_url(self):
         return reverse('account:city_detail', kwargs={'id': self.id})
@@ -95,7 +95,7 @@ class Region(ActiveModel):
         unique_together=('city','name')
 
     def __str__(self):
-        return self.name
+        return str(self.city) + '/' + self.name
 
     def get_absolute_url(self):
         return reverse('account:region_detail', kwargs={'id': self.id})
@@ -121,6 +121,9 @@ class Address(ActiveModel):
     class Meta:
         verbose_name = '地址'
         verbose_name_plural = '地址'
+
+    def __str__(self):
+        return str(self.region)+'/'+self.name
 
     def get_absolute_url(self):
         return reverse('account:address_detail',kwargs={'id': self.id })
