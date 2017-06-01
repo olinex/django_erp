@@ -3,7 +3,7 @@
 
 from . import models
 from . import serializers
-from common.rest import mixin
+from common.rest.viewsets import BaseViewSet,ActiveBaseViewSet
 from django.shortcuts import render
 from djangoperm.utils import view_perm_required
 from rest_framework import viewsets,status,permissions
@@ -13,8 +13,7 @@ from rest_framework.decorators import list_route,detail_route,api_view,permissio
 def first_request(request):
     return render(request,'index.html')
 
-class UserViewSet(mixin.IsActiveModelMixin,mixin.PermMethodViewSet):
-    allow_actions = ('update','list','retrieve','create','destroy')
+class UserViewSet(ActiveBaseViewSet):
     serializer_class = serializers.UserSerializer
 
     def get_queryset(self):
@@ -83,3 +82,26 @@ class UserViewSet(mixin.IsActiveModelMixin,mixin.PermMethodViewSet):
             status=status.HTTP_403_FORBIDDEN
         )
 
+class ProvinceViewSet(BaseViewSet):
+    model=models.Province
+    serializer_class = serializers.ProvinceSerializer
+
+class CityViewSet(BaseViewSet):
+    model=models.City
+    serializer_class = serializers.CitySerializer
+
+class RegionViewSet(BaseViewSet):
+    model=models.Region
+    serializer_class = serializers.RegionSerializer
+
+class AddressViewSet(BaseViewSet):
+    model=models.Address
+    serializer_class = serializers.AddressSerializer
+
+class PartnerViewSet(BaseViewSet):
+    model=models.Partner
+    serializer_class = serializers.PartnerSerializer
+
+class CompanyViewSet(BaseViewSet):
+    model=models.Company
+    serializer_class = serializers.CompanySerializer

@@ -5,6 +5,43 @@ from . import models
 from django.db import transaction
 from django.contrib.auth.models import User
 from rest_framework import serializers,exceptions
+from common.rest.serializers import ActiveModelSerializer
+
+
+class ProvinceSerializer(ActiveModelSerializer):
+    class Meta:
+        model=models.Province
+        fields=('id','country','name','is_active')
+
+class CitySerializer(ActiveModelSerializer):
+    class Meta:
+        model=models.City
+        fields=('id','province','name','is_active')
+
+class RegionSerializer(ActiveModelSerializer):
+    class Meta:
+        model=models.Region
+        fields=('id','city','name','is_active')
+
+class AddressSerializer(ActiveModelSerializer):
+    province_detail=ProvinceSerializer(
+        source='region.city.province',
+        read_only=True
+    )
+    city_detail=CitySerializer(
+        source='region.city',
+        read_only=True
+    )
+    region_detail=RegionSerializer(
+        source='region',
+        read_only=True
+    )
+    class Meta:
+        model=models.Address
+        fields=(
+            'id','region','name','is_active',
+            'province_detail','city_detail','region_detail'
+        )
 
 class ProfileSerializer(serializers.ModelSerializer):
     phone=serializers.ReadOnlyField(required=False)
@@ -77,7 +114,8 @@ class UserSerializer(serializers.ModelSerializer):
         fields=(
             'id','username','first_name','last_name',
             'is_active','email','profile',
-            'permissions','new_password')
+            'permissions','new_password'
+        )
 
     def create(self, validated_data):
         with transaction.atomic():
@@ -135,3 +173,40 @@ class CaptchaSerializer(serializers.Serializer):
 
     def validate_code(self,val):
         from django.contrib.auth import tokens
+
+class PartnerSerializer(ActiveModelSerializer):
+    usual_send_addresses_detail=AddressSerializer(
+        source='usual_send_addresses',
+        read_only=True,
+        many=True
+    )
+    class Meta:
+        model=models.Partner
+        fields=(
+            'id','name','tel','is_active','address',
+            'default_send_address','usual_send_addresses',
+            'can_sale','can_purchase',
+            'usual_send_addresses_detail'
+        )
+
+class CompanySerializer(ActiveModelSerializer):
+    usual_send_addresses_detail=AddressSerializer(
+        source='usual_send_addresses',
+        read_only=True,
+        many=True
+    )
+    belong_customers_detail=PartnerSerializer(
+        source='belong_customers',
+        read_only=True,
+        many=True
+    )
+    class Meta:
+        model=models.Company
+        fields=(
+            'id','name','tel','is_active','address',
+            'default_send_address','usual_send_addresses',
+            'usual_send_addresses_detail',
+            'can_sale','can_purchase',
+            'belong_customers',
+            'belong_customers_detail'
+        )

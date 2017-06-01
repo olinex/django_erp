@@ -3,23 +3,21 @@
 
 from djangoperm.db import models
 
-class ActiveModel(models.Model):
+class BaseModel(models.Model):
     is_active = models.BooleanField(
         '可用状态',
         blank=False,
+        default=True,
         help_text="记录的可用状态,False为不可用,True为可用"
     )
 
     is_delete = models.BooleanField(
         '删除状态',
         blank=False,
+        default=False,
         help_text="记录的删除状态,True删除不可视,False为尚未删除"
     )
 
-    class Meta:
-        abstract=True
-
-class LogModel(models.Model):
     create_time = models.DateTimeField(
         '创建时间',
         null=False,
@@ -35,6 +33,28 @@ class LogModel(models.Model):
         auto_now=True,
         help_text="记录的最后修改时间,UTC时间"
     )
+
+    statements = {}
+
+    def get_states(self):
+        '''获得所有的状态'''
+        self.statements.update({
+            'usable':{
+                'is_delete':False,
+            },
+            'deleted':{
+                'is_delete':True,
+            },
+            'active':{
+                'is_delete':False,
+                'is_active':True,
+            },
+            'deactive':{
+                'is_delete':False,
+                'is_active':False,
+            },
+        })
+        return self.statements
 
     class Meta:
         abstract=True

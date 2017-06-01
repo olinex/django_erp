@@ -4,13 +4,13 @@
 from djangoperm.db import models
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from common.abstractModel import ActiveModel, LogModel
+from common.abstractModel import BaseModel
 
 COUNTRYS = (
     ('China','中国'),
 )
 
-class Province(ActiveModel):
+class Province(BaseModel):
     '''省份'''
     country = models.CharField(
         '国家',
@@ -37,10 +37,7 @@ class Province(ActiveModel):
     def __str__(self):
         return self.get_country_display() + '/' + self.name
 
-    def get_absolute_url(self):
-        return reverse('account:province_detail', kwargs={'id': self.id})
-
-class City(ActiveModel):
+class City(BaseModel):
     '''城市'''
     province = models.ForeignKey(
         Province,
@@ -67,10 +64,7 @@ class City(ActiveModel):
     def __str__(self):
         return str(self.province) + '/' + self.name
 
-    def get_absolute_url(self):
-        return reverse('account:city_detail', kwargs={'id': self.id})
-
-class Region(ActiveModel):
+class Region(BaseModel):
     '''地区'''
     city = models.ForeignKey(
         City,
@@ -97,10 +91,7 @@ class Region(ActiveModel):
     def __str__(self):
         return str(self.city) + '/' + self.name
 
-    def get_absolute_url(self):
-        return reverse('account:region_detail', kwargs={'id': self.id})
-
-class Address(ActiveModel):
+class Address(BaseModel):
     '''顾客或公司的地址'''
     region = models.ForeignKey(
         Region,
@@ -124,9 +115,6 @@ class Address(ActiveModel):
 
     def __str__(self):
         return str(self.region)+'/'+self.name
-
-    def get_absolute_url(self):
-        return reverse('account:address_detail',kwargs={'id': self.id })
 
 class Profile(models.Model):
     '''用户的其他信息'''
@@ -173,6 +161,7 @@ class Profile(models.Model):
         blank=False,
         default='zh-han',
         max_length=20,
+        choices=settings.LANGUAGES,
         help_text="用户设置的默认语言"
     )
 
@@ -189,10 +178,7 @@ class Profile(models.Model):
     def __str__(self):
         return '{}-{}'.format(self.user.id, self.user.get_full_name() or self.user.get_username())
 
-    def get_absolute_url(self):
-        return reverse('account:profile_detail', kwargs={'id': self.user.id})
-
-class Partner(ActiveModel, LogModel):
+class Partner(BaseModel):
     '''合作伙伴'''
     name = models.CharField(
         '名称',
@@ -200,23 +186,39 @@ class Partner(ActiveModel, LogModel):
         blank=False,
         unique=True,
         max_length=90,
-        help_text="顾客的名称",
+        help_text="合作伙伴的名称",
+    )
+
+    tel = models.CharField(
+        '电话',
+        null=False,
+        blank=False,
+        default='',
+        max_length=32,
+        help_text='合作伙伴电话'
+    )
+
+    address = models.OneToOneField(
+        Address,
+        null=True,
+        blank=True,
+        help_text='合作伙伴的所在地址'
     )
 
     default_send_address = models.ForeignKey(
         Address,
         null=True,
         blank=True,
-        related_name='default_customers',
+        related_name='default_partners',
         verbose_name='默认地址',
-        help_text="顾客设置的默认送货地址"
+        help_text="合作伙伴设置的默认送货地址"
     )
 
     usual_send_addresses = models.ManyToManyField(
         Address,
-        related_name='usual_customers',
+        related_name='usual_partners',
         verbose_name='常用地址',
-        help_text="顾客的常用送货地址"
+        help_text="合作伙伴的常用送货地址"
     )
 
     can_sale = models.BooleanField(
@@ -234,16 +236,13 @@ class Partner(ActiveModel, LogModel):
     class Meta:
         verbose_name = '合作伙伴'
         verbose_name_plural = '合作伙伴'
+        unique_together=('name','address')
+
 
     def __str__(self):
         return self.name
 
-    def get_absolute_url(self):
-        return reverse('account:partner_detail', kwargs={'id': self.user.id})
-
-
-
-class Company(ActiveModel,LogModel):
+class Company(BaseModel):
     '''公司'''
     name = models.CharField(
         '名称',
@@ -261,13 +260,27 @@ class Company(ActiveModel,LogModel):
         max_length=32,
         help_text='公司电话')
 
-    customer = models.OneToOneField(
-        Partner,
-        null=False,
+    address = models.OneToOneField(
+        Address,
+        verbose_name='公司地址',
+        null=True,
         blank=True,
-        related_name='company',
-        verbose_name='绑定顾客',
-        help_text="代表该公司本身的顾客"
+        help_text='公司的所在地址,必须为公司对应合作伙伴的常用送货地址')
+
+    default_send_address = models.ForeignKey(
+        Address,
+        null=True,
+        blank=True,
+        related_name='default_companies',
+        verbose_name='默认送货地址',
+        help_text="公司设置的默认送货地址"
+    )
+
+    usual_send_addresses = models.ManyToManyField(
+        Address,
+        related_name='usual_companies',
+        verbose_name='常用送货地址',
+        help_text="公司的常用送货地址"
     )
 
     belong_customers = models.ManyToManyField(
@@ -276,19 +289,23 @@ class Company(ActiveModel,LogModel):
         related_name='belong_companies',
         help_text='管理公司的人员')
 
-    address = models.OneToOneField(
-        Address,
-        null=False,
-        blank=False,
-        help_text='公司的所在地址,必须为公司对应合作伙伴的常用送货地址')
+    can_sale = models.BooleanField(
+        '可销售状态',
+        default=True,
+        help_text="公司是否可被销售货物"
+    )
+
+    can_purchase = models.BooleanField(
+        '可采购状态',
+        default=False,
+        help_text="是否可向公司采购"
+    )
 
     class Meta:
         verbose_name = '公司'
         verbose_name_plural = '公司'
+        unique_together=('name','address')
 
     def __str__(self):
         return self.name
-
-    def get_absolute_url(self):
-        return reverse('account:company_detail', kwargs={'id': self.user.id})
 

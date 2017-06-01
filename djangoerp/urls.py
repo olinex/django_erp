@@ -24,6 +24,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^auth/',include('rest_framework.urls',namespace='rest_framework',app_name='rest_framework')),
     url(r'^account/',include('account.urls',namespace='account',app_name='account')),
+    url(r'^product/',include('product.urls',namespace='product',app_name='product')),
     url(r'^test/',include('djangoperm.urls',namespace='djangoperm',app_name='djangoperm')),
     url(r'^$', first_request, name='first_request'),
 ]

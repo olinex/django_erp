@@ -7,6 +7,8 @@ Created on 2016年9月4日
 @author: olin
 '''
 import json
+from common.rest.serializers import ActiveSerializer
+from rest_framework.decorators import detail_route
 from rest_framework import mixins,exceptions,viewsets
 
 class IsDeleteModelMixin(mixins.DestroyModelMixin):
@@ -16,44 +18,12 @@ class IsDeleteModelMixin(mixins.DestroyModelMixin):
         instance.is_delete=True
         instance.save(update_fields=('is_delete',))
         
-class IsActiveModelMixin(mixins.DestroyModelMixin):
-    '''将删除改为修改isActive状态'''
-    def perform_destroy(self, instance):
-        '''删除对象'''
-        instance.is_active=False
-        instance.save(update_fields=('is_active',))
-
-class PermMethodViewSet(
-        mixins.CreateModelMixin,
-        mixins.ListModelMixin,
-        mixins.RetrieveModelMixin,
-        mixins.UpdateModelMixin,
-        mixins.DestroyModelMixin,
-        viewsets.GenericViewSet):
-    '''http请求方法级别权限'''
-    allow_actions = ('create','list','retrieve','update','destory')
-
-    def create(self,request,*args,**kwargs):
-        if 'create' in self.allow_actions:
-            return super(PermMethodViewSet,self).create(request,*args,**kwargs)
-        raise exceptions.PermissionDenied
-    
-    def list(self,request,*args,**kwargs):
-        if 'list' in self.allow_actions:
-            return super(PermMethodViewSet,self).list(request,*args,**kwargs)
-        raise exceptions.PermissionDenied
-    
-    def retrieve(self,request,*args,**kwargs):
-        if 'retrieve' in self.allow_actions:
-            return super(PermMethodViewSet,self).retrieve(request,*args,**kwargs)
-        raise exceptions.PermissionDenied
-    
-    def update(self,request,*args,**kwargs):
-        if 'update' in self.allow_actions:
-            return super(PermMethodViewSet,self).update(request,*args,**kwargs)
-        raise exceptions.PermissionDenied
-        
-    def destroy(self,request,*args,**kwargs):
-        if 'destroy' in self.allow_actions:
-            return super(PermMethodViewSet,self).destroy(request,*args,**kwargs)
-        raise exceptions.PermissionDenied
+class IsActiveModelMixin(object):
+    '''添加实例激活或锁定的方法'''
+    @detail_route(['patch'],serializer_class=ActiveSerializer)
+    def active(self,request,pk=None):
+        instance=self.get_object()
+        serializer=self.get_serializer(data=request.data)
+        if serializer.is_vaild(raise_exception=True):
+            instance.is_active=serializer.validated_data['is_active']
+            instance.save()
