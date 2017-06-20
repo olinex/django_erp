@@ -2,19 +2,18 @@
 # -*- coding:utf-8 -*-
 
 from decimal import Decimal as D
-from djangoperm.db import models
+
+from common import state
 from common.abstractModel import BaseModel
-from common.fields import QuantityField
-from common.statemachine import state
-from django.core.urlresolvers import reverse
-from django.db.models import F,Q
+from common.fields import ActiveLimitForeignKey,ActiveLimitManyToManyField
+from djangoperm.db import models
 
 
-class ProductCategory(BaseModel,state.StateMachine):
+class ProductCategory(BaseModel, state.StateMachine):
     '''产品分类'''
     name = models.CharField(
         '种类名称',
-        primary_key=True,
+        unique=True,
         max_length=90,
         help_text="产品的种类"
     )
@@ -28,22 +27,15 @@ class ProductCategory(BaseModel,state.StateMachine):
     )
 
     class Meta:
-        verbose_name = '产品分类',
+        verbose_name = '产品分类'
         verbose_name_plural = '产品分类'
 
     def __str__(self):
         return self.name
 
-    class States:
-        delete = state.Statement(is_delete=True)
-        undelete = state.Statement(is_delete=False)
-        active = state.Statement(*undelete.query,is_active=True)
-        deactive = state.Statement(*undelete.query,is_active=False)
-
-
 class Product(BaseModel):
     '''产品'''
-    template = models.ForeignKey(
+    template = ActiveLimitForeignKey(
         'product.ProductTemplate',
         null=False,
         blank=False,
@@ -152,13 +144,13 @@ class ProductTemplate(BaseModel):
         help_text="产品模板的名称"
     )
 
-    attributes = models.ManyToManyField(
+    attributes = ActiveLimitManyToManyField(
         'product.Attribute',
         verbose_name='默认属性',
         help_text="产品模板的默认属性"
     )
 
-    uom = models.ForeignKey(
+    uom = ActiveLimitForeignKey(
         'product.UOM',
         null=False,
         blank=False,
@@ -274,7 +266,7 @@ class UOM(BaseModel):
         null=False,
         blank=False,
         max_length=20,
-        primary_key=True,
+        unique=True,
         help_text='单位名称'
     )
 
@@ -357,3 +349,30 @@ class UOM(BaseModel):
                 decimal.Decimal('0.' + ('0' * self.decimal_places)),
                 rounding=getattr(decimal, self.round_method),
             )
+
+
+class Lot(BaseModel):
+    '''批次'''
+    name = models.CharField(
+        '名称',
+        null=False,
+        blank=False,
+        unique=True,
+        max_length=90,
+        help_text="批次的名称"
+    )
+
+    product = ActiveLimitForeignKey(
+        'product.Product',
+        null=False,
+        blank=False,
+        verbose_name='产品',
+        help_text="批次相关的产品"
+    )
+
+    class Meta:
+        verbose_name = '批次'
+        verbose_name_plural = '批次'
+
+    def __str__(self):
+        return self.name

@@ -5,6 +5,7 @@ from djangoperm.db import models
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from common.abstractModel import BaseModel
+from common.fields import ActiveLimitForeignKey,ActiveLimitOneToOneField,ActiveLimitManyToManyField
 
 COUNTRYS = (
     ('China','中国'),
@@ -39,8 +40,8 @@ class Province(BaseModel):
 
 class City(BaseModel):
     '''城市'''
-    province = models.ForeignKey(
-        Province,
+    province = ActiveLimitForeignKey(
+        'account.Province',
         null=False,
         blank=False,
         related_name='cities',
@@ -66,8 +67,8 @@ class City(BaseModel):
 
 class Region(BaseModel):
     '''地区'''
-    city = models.ForeignKey(
-        City,
+    city = ActiveLimitForeignKey(
+        'account.City',
         null=False,
         blank=False,
         related_name='regions',
@@ -93,8 +94,8 @@ class Region(BaseModel):
 
 class Address(BaseModel):
     '''顾客或公司的地址'''
-    region = models.ForeignKey(
-        Region,
+    region = ActiveLimitForeignKey(
+        'account.Region',
         null=False,
         blank=False,
         related_name='addresses',
@@ -102,16 +103,18 @@ class Address(BaseModel):
         help_text="地址的所属地区"
     )
 
-    name = models.TextField(
+    name = models.CharField(
         '地址名称',
         null=False,
         blank=False,
+        max_length=190,
         help_text="特定地址的名称"
     )
 
     class Meta:
         verbose_name = '地址'
         verbose_name_plural = '地址'
+        unique_together = ('region','name')
 
     def __str__(self):
         return str(self.region)+'/'+self.name
@@ -149,12 +152,6 @@ class Profile(models.Model):
         help_text="用户唯一的移动电话"
     )
 
-    mail_notice = models.BooleanField(
-        '邮件提醒',
-        default=True,
-        help_text="站内邮件提醒状态,为True时,实时提醒用户有未读的新邮件"
-    )
-
     language = models.CharField(
         '语言',
         null=True,
@@ -165,10 +162,58 @@ class Profile(models.Model):
         help_text="用户设置的默认语言"
     )
 
+    address = ActiveLimitOneToOneField(
+        'account.Address',
+        null=True,
+        blank=True,
+        help_text='合作伙伴的所在地址'
+    )
+
+    default_send_address = ActiveLimitForeignKey(
+        'account.Address',
+        null=True,
+        blank=True,
+        related_name='default_profiles',
+        verbose_name='默认地址',
+        help_text="合作伙伴设置的默认送货地址"
+    )
+
+    usual_send_addresses = ActiveLimitManyToManyField(
+        'account.Address',
+        blank=True,
+        related_name='usual_profiles',
+        verbose_name='常用地址',
+        help_text="合作伙伴的常用送货地址"
+    )
+
+    mail_notice = models.BooleanField(
+        '邮件提醒',
+        default=True,
+        help_text="站内邮件提醒状态,为True时,实时提醒用户有未读的新邮件"
+    )
+
     online_notice = models.BooleanField(
         '在线提醒',
         default=False,
         help_text="在线提醒状态,为True时,其他用户可以接收该用户的在线状态,并告知其下线"
+    )
+
+    salable = models.BooleanField(
+        '可销售状态',
+        default=True,
+        help_text="合作伙伴是否可被销售货物"
+    )
+
+    purchasable = models.BooleanField(
+        '可采购状态',
+        default=False,
+        help_text="是否可向合作伙伴采购"
+    )
+
+    is_partner = models.BooleanField(
+        '是否为合作伙伴',
+        default=False,
+        help_text="表示用户是否为合作伙伴"
     )
 
     class Meta:
@@ -177,70 +222,6 @@ class Profile(models.Model):
 
     def __str__(self):
         return '{}-{}'.format(self.user.id, self.user.get_full_name() or self.user.get_username())
-
-class Partner(BaseModel):
-    '''合作伙伴'''
-    name = models.CharField(
-        '名称',
-        null=False,
-        blank=False,
-        unique=True,
-        max_length=90,
-        help_text="合作伙伴的名称",
-    )
-
-    tel = models.CharField(
-        '电话',
-        null=False,
-        blank=False,
-        default='',
-        max_length=32,
-        help_text='合作伙伴电话'
-    )
-
-    address = models.OneToOneField(
-        Address,
-        null=True,
-        blank=True,
-        help_text='合作伙伴的所在地址'
-    )
-
-    default_send_address = models.ForeignKey(
-        Address,
-        null=True,
-        blank=True,
-        related_name='default_partners',
-        verbose_name='默认地址',
-        help_text="合作伙伴设置的默认送货地址"
-    )
-
-    usual_send_addresses = models.ManyToManyField(
-        Address,
-        related_name='usual_partners',
-        verbose_name='常用地址',
-        help_text="合作伙伴的常用送货地址"
-    )
-
-    can_sale = models.BooleanField(
-        '可销售状态',
-        default=True,
-        help_text="合作伙伴是否可被销售货物"
-    )
-
-    can_purchase = models.BooleanField(
-        '可采购状态',
-        default=False,
-        help_text="是否可向合作伙伴采购"
-    )
-
-    class Meta:
-        verbose_name = '合作伙伴'
-        verbose_name_plural = '合作伙伴'
-        unique_together=('name','address')
-
-
-    def __str__(self):
-        return self.name
 
 class Company(BaseModel):
     '''公司'''
@@ -260,15 +241,15 @@ class Company(BaseModel):
         max_length=32,
         help_text='公司电话')
 
-    address = models.OneToOneField(
-        Address,
+    address = ActiveLimitOneToOneField(
+        'account.Address',
         verbose_name='公司地址',
         null=True,
         blank=True,
         help_text='公司的所在地址,必须为公司对应合作伙伴的常用送货地址')
 
-    default_send_address = models.ForeignKey(
-        Address,
+    default_send_address = ActiveLimitForeignKey(
+        'account.Address',
         null=True,
         blank=True,
         related_name='default_companies',
@@ -276,26 +257,27 @@ class Company(BaseModel):
         help_text="公司设置的默认送货地址"
     )
 
-    usual_send_addresses = models.ManyToManyField(
-        Address,
+    usual_send_addresses = ActiveLimitManyToManyField(
+        'account.Address',
         related_name='usual_companies',
         verbose_name='常用送货地址',
         help_text="公司的常用送货地址"
     )
 
-    belong_customers = models.ManyToManyField(
-        Partner,
+    belong_users = ActiveLimitManyToManyField(
+        settings.AUTH_USER_MODEL,
         verbose_name='公司管理员',
         related_name='belong_companies',
+        limit_choices_to={'is_active':True,'is_superuser':False,'is_staff':False},
         help_text='管理公司的人员')
 
-    can_sale = models.BooleanField(
+    salable = models.BooleanField(
         '可销售状态',
         default=True,
         help_text="公司是否可被销售货物"
     )
 
-    can_purchase = models.BooleanField(
+    purchasable = models.BooleanField(
         '可采购状态',
         default=False,
         help_text="是否可向公司采购"

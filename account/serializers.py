@@ -3,9 +3,11 @@
 
 from . import models
 from django.db import transaction
-from django.contrib.auth.models import User
 from rest_framework import serializers,exceptions
 from common.rest.serializers import ActiveModelSerializer
+from django.contrib.auth import get_user_model
+
+User=get_user_model()
 
 
 class ProvinceSerializer(ActiveModelSerializer):
@@ -44,20 +46,26 @@ class AddressSerializer(ActiveModelSerializer):
         )
 
 class ProfileSerializer(serializers.ModelSerializer):
-    phone=serializers.ReadOnlyField(required=False)
+    user=serializers.ReadOnlyField()
+    phone=serializers.ReadOnlyField(read_only=True)
+    usual_send_addresses_detail=AddressSerializer(
+        source='usual_send_addresses',
+        read_only=True,
+        many=True
+    )
+
     class Meta:
         model=models.Profile
-        fields=('sex','phone','online_notice','language','mail_notice')
-
-    def create(self, validated_data):
-        if not validated_data.get('user_id',None):
-            raise serializers.ValidationError("profile must have user")
-        return models.Profile.objects.create(**validated_data)
+        fields=(
+            'user','sex','phone','language','mail_notice','online_notice',
+            'address','default_send_address','usual_send_addresses',
+            'salable','purchasable','is_partner',
+            'usual_send_addresses_detail'
+        )
 
     def update(self, instance, validated_data):
-        validated_data.pop('phone',None)
-        models.Profile.objects.update(user=instance.user,**validated_data)
-        return instance
+        validated_data.pop('user',None)
+        return super(ProfileSerializer,self).update(instance, validated_data)
 
 class PasswordSerializer(serializers.ModelSerializer):
     password1=serializers.CharField(required=True)
@@ -68,8 +76,8 @@ class PasswordSerializer(serializers.ModelSerializer):
 
     def validate(self,data):
         from django.contrib.auth import password_validation
-        password1=data['password1']
-        password2=data['password2']
+        password1=data.get('password1')
+        password2=data.get('password2')
         if password1 and password2 and password1 != password2:
             raise serializers.ValidationError('密码以及确认密码不一致')
         password_validation.validate_password(password2)
@@ -104,54 +112,23 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    username=serializers.CharField(required=False)
-    email=serializers.ReadOnlyField
-    profile=ProfileSerializer()
-    permissions=serializers.SerializerMethodField()
-    new_password=PasswordSerializer(required=False)
+    email = serializers.CharField(read_only=True)
+    profile=ProfileSerializer(partial=True)
+    permissions=serializers.SerializerMethodField(read_only=True)
     class Meta:
         model=User
         fields=(
             'id','username','first_name','last_name',
             'is_active','email','profile',
-            'permissions','new_password'
+            'permissions'
         )
 
     def create(self, validated_data):
-        with transaction.atomic():
-            profile_data=validated_data.pop('profile')
-            user=User()
-            user.username=validated_data['username']
-            user.first_name=validated_data['first_name']
-            user.last_name=validated_data['last_name']
-            user.is_active=validated_data['is_active']
-            password_data=validated_data.pop('new_password')
-            password_serializer=PasswordSerializer(
-                instance=user,
-                data=password_data
-            )
-            if password_serializer.is_valid(raise_exception=True):
-                password_serializer.save()
-            user.save()
-            profile_data['user_id']=user.id
-            serializer=ProfileSerializer(data=profile_data)
-            if serializer.is_valid(raise_exception=True):
-                serializer.create(profile_data)
-                return user
-
-    def update(self, instance, validated_data):
-        '''
-        更新user以及profile,并屏蔽username/email/phone的修改
-        '''
-        with transaction.atomic():
-            validated_data.pop('username')
-            validated_data.pop('email')
-            validated_data.pop('new_password')
-            validated_data.pop('is_active')
-            profile_data=validated_data.pop('profile',{})
-            User.objects.update(id=instance.id,**validated_data)
-            ProfileSerializer(instance.profile,data=profile_data).save()
-            return instance
+        profile_data=validated_data.pop('profile',{})
+        user=super(UserSerializer,self).create(validated_data)
+        profile_data['user']=user.id
+        ProfileSerializer().create(profile_data)
+        return user
 
     def get_permissions(self,obj):
         '''
@@ -174,28 +151,13 @@ class CaptchaSerializer(serializers.Serializer):
     def validate_code(self,val):
         from django.contrib.auth import tokens
 
-class PartnerSerializer(ActiveModelSerializer):
-    usual_send_addresses_detail=AddressSerializer(
-        source='usual_send_addresses',
-        read_only=True,
-        many=True
-    )
-    class Meta:
-        model=models.Partner
-        fields=(
-            'id','name','tel','is_active','address',
-            'default_send_address','usual_send_addresses',
-            'can_sale','can_purchase',
-            'usual_send_addresses_detail'
-        )
-
 class CompanySerializer(ActiveModelSerializer):
     usual_send_addresses_detail=AddressSerializer(
         source='usual_send_addresses',
         read_only=True,
         many=True
     )
-    belong_customers_detail=PartnerSerializer(
+    belong_users_detail=UserSerializer(
         source='belong_customers',
         read_only=True,
         many=True
@@ -206,7 +168,7 @@ class CompanySerializer(ActiveModelSerializer):
             'id','name','tel','is_active','address',
             'default_send_address','usual_send_addresses',
             'usual_send_addresses_detail',
-            'can_sale','can_purchase',
-            'belong_customers',
-            'belong_customers_detail'
+            'salable','purchasable',
+            'belong_users',
+            'belong_users_detail'
         )

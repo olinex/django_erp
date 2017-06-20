@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-#-*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 
+from . import state
 from djangoperm.db import models
 
-class BaseModel(models.Model):
+
+class BaseModel(models.Model, state.StateMachine):
     is_active = models.BooleanField(
         '可用状态',
         blank=False,
@@ -34,30 +36,15 @@ class BaseModel(models.Model):
         help_text="记录的最后修改时间,UTC时间"
     )
 
-    statements = {}
-
-    def get_states(self):
-        '''获得所有的状态'''
-        self.statements.update({
-            'usable':{
-                'is_delete':False,
-            },
-            'deleted':{
-                'is_delete':True,
-            },
-            'active':{
-                'is_delete':False,
-                'is_active':True,
-            },
-            'deactive':{
-                'is_delete':False,
-                'is_active':False,
-            },
-        })
-        return self.statements
-
     class Meta:
-        abstract=True
+        abstract = True
+
+    class States:
+        delete = state.Statement(delete=True)
+        no_delete = state.Statement(delete=False)
+        active = state.Statement(inherits=no_delete, active=True)
+        no_active = state.Statement(inherits=no_delete, active=False)
+
 
 class CoordinateModel(models.Model):
     lng = models.DecimalField(

@@ -9,6 +9,9 @@ from djangoperm.utils import view_perm_required
 from rest_framework import viewsets,status,permissions
 from rest_framework.response import Response
 from rest_framework.decorators import list_route,detail_route,api_view,permission_classes
+from django.contrib.auth import get_user_model
+
+User=get_user_model()
 
 def first_request(request):
     return render(request,'index.html')
@@ -17,7 +20,7 @@ class UserViewSet(ActiveBaseViewSet):
     serializer_class = serializers.UserSerializer
 
     def get_queryset(self):
-        from django.contrib.auth.models import User
+        from django.conf import settings
         if self.request.user.is_superuser:
             return User.objects.all()
         return User.objects.filter(pk=self.request.user.id)
@@ -97,10 +100,6 @@ class RegionViewSet(BaseViewSet):
 class AddressViewSet(BaseViewSet):
     model=models.Address
     serializer_class = serializers.AddressSerializer
-
-class PartnerViewSet(BaseViewSet):
-    model=models.Partner
-    serializer_class = serializers.PartnerSerializer
 
 class CompanyViewSet(BaseViewSet):
     model=models.Company
