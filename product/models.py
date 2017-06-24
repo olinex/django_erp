@@ -5,7 +5,10 @@ from decimal import Decimal as D
 
 from common import state
 from common.abstractModel import BaseModel
-from common.fields import ActiveLimitForeignKey,ActiveLimitManyToManyField
+from common.fields import (
+    ActiveLimitForeignKey,ActiveLimitManyToManyField,MD5CharField,
+    ActiveLimitOneToOneField
+)
 from djangoperm.db import models
 
 
@@ -51,6 +54,14 @@ class Product(BaseModel):
         default={},
         json_type='dict',
         help_text="根据产品模板的属性列表设置的产品属性值字典"
+    )
+
+    attributes_md5 = models.CharField(
+        '产品属性字典的md5值',
+        null=False,
+        blank=False,
+        max_length=40,
+        help_text='产品属性字典json值的md5值'
     )
 
     in_code = models.CharField(
@@ -116,6 +127,7 @@ class Product(BaseModel):
     class Meta:
         verbose_name = '产品'
         verbose_name_plural = '产品'
+        unique_together = ('template','attributes_md5')
 
     @property
     def attributes_str(self):
@@ -215,6 +227,7 @@ class Attribute(BaseModel):
         '名称',
         null=False,
         blank=False,
+        unique=True,
         max_length=190,
         help_text="产品属性的名称"
     )
@@ -376,3 +389,52 @@ class Lot(BaseModel):
 
     def __str__(self):
         return self.name
+
+class Barcode(BaseModel):
+    '''条形码类'''
+    BARCODE_MODE = (
+        ('Standard39','标准39'),
+    )
+
+    product = ActiveLimitOneToOneField(
+        'product.Product',
+        null=False,
+        blank=False,
+        verbose_name='产品',
+        help_text="条形码对应的产品"
+    )
+
+    mode = models.CharField(
+        '条形码模式',
+        null=False,
+        blank=False,
+        max_length=20,
+        choices=BARCODE_MODE,
+        help_text="条形码模式"
+    )
+
+    code = models.JSONField(
+        '条形码编码值',
+        null=False,
+        blank=False,
+        json_type='dict',
+        help_text="条形码的编码值字典"
+    )
+
+    have_quiet = models.BooleanField(
+        '是否含有静区',
+        default=False,
+        help_text="条形码是否还有空白区"
+    )
+
+    is_iso_scale = models.BooleanField(
+        '是否被iso收录',
+        default=False,
+        help_text="条形码是否已被iso标准收录"
+    )
+
+    check_sum = models.BooleanField(
+        '是否检查合计',
+        default=False,
+        help_text="条形码是否检查合计"
+    )

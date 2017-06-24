@@ -40,10 +40,10 @@ class BaseModel(models.Model, state.StateMachine):
         abstract = True
 
     class States:
-        delete = state.Statement(delete=True)
-        no_delete = state.Statement(delete=False)
-        active = state.Statement(inherits=no_delete, active=True)
-        no_active = state.Statement(inherits=no_delete, active=False)
+        delete = state.Statement(is_delete=True)
+        no_delete = state.Statement(is_delete=False)
+        active = state.Statement(inherits=no_delete, is_active=True)
+        no_active = state.Statement(inherits=no_delete, is_active=False)
 
 
 class CoordinateModel(models.Model):

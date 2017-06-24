@@ -3,11 +3,13 @@
 
 from common.state import Statement
 from common.fields import (
-    QuantityField,ActiveLimitForeignKey,PartnerForeignKey,
-    ActiveLimitManyToManyField,ActiveLimitOneToOneField,
-    LocationForeignKey
+    ActiveLimitForeignKey,
+    ActiveLimitManyToManyField,ActiveLimitOneToOneField
 )
 from common.abstractModel import BaseModel
+from product.utils import QuantityField
+from account.utils import PartnerForeignKey
+from stock.utils import LocationForeignKey
 from djangoperm.db import models
 from django.db.models import Q,F,Value,Func
 from django.db import transaction
@@ -49,6 +51,19 @@ class StockOrder(BaseModel):
         blank=False,
         verbose_name='相关需求',
         help_text="订单相关的需求"
+    )
+
+    class Meta:
+        abstract = True
+
+class StockOrderDetail(BaseModel):
+    '''单据相关的明细虚拟类'''
+    procurement_detail = ActiveLimitForeignKey(
+        'stock.ProcurementDetail',
+        null=False,
+        blank=False,
+        verbose_name='相关需求明细',
+        help_text="订单相关的需求明细"
     )
 
     class Meta:
@@ -713,30 +728,6 @@ class PackageNode(models.Model):
             self.parent_node=node
             self.save()
 
-class Package(BaseModel):
-    '''包裹'''
-    root_node = models.OneToOneField(
-        'stock.PackageNode',
-        null=False,
-        blank=False,
-        limit_choices_to={'parent_node':None,'index':'','level':0},
-        verbose_name='根节点',
-        help_text="包裹树的根节点"
-    )
-
-    context = models.TextField(
-        '说明',
-        null=False,
-        blank=False,
-        help_text="包裹的附加说明"
-    )
-
-    def __str__(self):
-        return self.root_node.name
-
-    class Meta:
-        verbose_name = '包裹',
-        verbose_name_plural = '包裹'
 
 class Procurement(BaseModel):
     '''需求'''
@@ -775,6 +766,15 @@ class ProcurementDetail(BaseModel):
         blank=False,
         verbose_name='产品',
         help_text="明细相关的产品"
+    )
+
+    lot = ActiveLimitForeignKey(
+        'product.Lot',
+        null=True,
+        blank=True,
+        default=None,
+        verbose_name="批次",
+        help_text="产品所属的批次"
     )
 
     procurement = ActiveLimitForeignKey(
