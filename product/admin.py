@@ -11,6 +11,12 @@ class AttributeInline(CommonTabInLine):
         (None,{'fields':('name','value')}),
     )
 
+class LotInline(CommonTabInLine):
+    model=models.Lot
+    fieldsets = (
+        (None,{'fields':('name',)}),
+    )
+
 @admin.register(models.ProductCategory)
 class ProductCategoryAdmin(CommonAdmin):
     list_display = ('name','sequence')
@@ -88,5 +94,8 @@ class ProductAdmin(CommonAdmin):
             ('weight','volume'),
             ('salable','purchasable','rentable')
         )}),
+    )
+    inlines = (
+        LotInline,
     )
 

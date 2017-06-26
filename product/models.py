@@ -124,6 +124,12 @@ class Product(BaseModel):
         help_text="商品的租借状态,如果为False则不能通过被租借"
     )
 
+    def __str__(self):
+        return (
+            self.template.name +
+            '(' + self.attributes_str + ')'
+        )
+
     class Meta:
         verbose_name = '产品'
         verbose_name_plural = '产品'
@@ -136,12 +142,6 @@ class Product(BaseModel):
                 '{}:{}'.format(key, value)
                 for key, value in self.attributes.items()
             ]
-        )
-
-    def __str__(self):
-        return (
-            self.template.name +
-            '(' + self.attributes_str + ')'
         )
 
 

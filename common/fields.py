@@ -35,8 +35,63 @@ class ActiveLimitManyToManyField(models.ManyToManyField):
 
 class MD5CharField(models.CharField):
     '''md5字符串字段,自动将输入的utf8字符串转换为md5值并保存'''
+
     def get_prep_value(self, value):
         from hashlib import md5
         m = md5()
         m.update(value.encode('utf8'))
         return m.hexdigest()
+
+
+class SimpleStateCharField(models.CharField):
+    def __init__(self, *args, **kwargs):
+        kwargs['choices'] = kwargs.get(
+            'choices',
+            (
+                ('draft', '草稿'),
+                ('confirmed', '已确定'),
+                ('done', '已完成')
+            )
+        )
+        kwargs['null'] = kwargs.get('null',False)
+        kwargs['blank'] = kwargs.get('blank',False)
+        kwargs['max_length'] = kwargs.get('max_length',10)
+        super(SimpleStateCharField, self).__init__(*args, **kwargs)
+
+
+class BaseStateCharField(models.CharField):
+    def __init__(self, *args, **kwargs):
+        kwargs['choices'] = kwargs.get(
+            'choices',
+            (
+                ('draft', '草稿'),
+                ('confirmed', '已确定'),
+                ('assigned', '已指派'),
+                ('accepted', '已接受'),
+                ('done', '已完成')
+            )
+        )
+        kwargs['null'] = kwargs.get('null', False)
+        kwargs['blank'] = kwargs.get('blank', False)
+        kwargs['max_length'] = kwargs.get('max_length', 10)
+        super(BaseStateCharField, self).__init__(*args, **kwargs)
+
+
+class FullStateCharField(models.CharField):
+    def __init__(self, *args, **kwargs):
+        kwargs['choices'] = kwargs.get(
+            'choices',
+            (
+                ('draft', '草稿'),
+                ('confirmed', '已确定'),
+                ('assigned', '已指派'),
+                ('accepted', '已接受'),
+                ('approving','审批中'),
+                ('approved', '已审批'),
+                ('done', '已完成')
+            )
+        )
+        kwargs['null'] = kwargs.get('null', False)
+        kwargs['blank'] = kwargs.get('blank', False)
+        kwargs['max_length'] = kwargs.get('max_length', 10)
+        super(FullStateCharField, self).__init__(*args, **kwargs)
