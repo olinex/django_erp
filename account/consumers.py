@@ -33,7 +33,7 @@ class Server(WebsocketConsumer):
             group=Group(online_group)
             group.send({'text':notice.to_json()})
             group.add(channel)
-        response=Response(detail=_('成功连接'))
+        response=Response(detail='成功连接')
         channel.send({'accept':True,'text':response.to_json()})
 
     @http_login_required
@@ -51,7 +51,7 @@ class Server(WebsocketConsumer):
         if user.profile.online_notice:
             group.send({'text':notice.to_json()})
         redis.hdel(online_group,str(user.id))
-        response=Response(detail=_('成功断开连接'))
+        response=Response(detail='成功断开连接')
         channel.send({'accept':True,'close':True,'text':response.to_json()})
 
 
@@ -65,7 +65,7 @@ class Server(WebsocketConsumer):
             message.reply_channel.send({
                 'accept':False,
                 'text':Response(
-                    detail=_('请求必须包含type和to_user'),
+                    detail='请求必须包含type和to_user',
                     status='error'
                 ).to_json()
             })
@@ -74,7 +74,7 @@ class Server(WebsocketConsumer):
             message.reply_channel.send({
                 'accept':False,
                 'text':Response(
-                    detail=_('请求to_user不能为自身'),
+                    detail='请求to_user不能为自身',
                     status='error'
                 ).to_json()
             })
@@ -85,7 +85,7 @@ class Server(WebsocketConsumer):
             message.reply_channel.send({
                 'accept':False,
                 'text':Response(
-                    detail=_('对方尚未上线'),
+                    detail='对方尚未上线',
                     status='warning'
                 ).to_json()
             })
@@ -99,14 +99,14 @@ class Server(WebsocketConsumer):
             message.reply_channel.send({
                 'accept':False,
                 'text':Response(
-                    detail=_('无效的输入内容'),
+                    detail='无效的输入内容',
                     status='warning'
                 ).to_json()
             })
             return None
         talk=Talk(
             user=message.user,
-            detail=_('新私聊'),
+            detail='新私聊',
             content=form.cleaned_data['content'],
             status='success'
         )

@@ -10,5 +10,6 @@ router.register(r'attribute',views.AttributeViewSet,'attribute')
 router.register(r'uom',views.UOMViewSet,'uom')
 router.register(r'template',views.ProductTemplateViewSet,'template')
 router.register(r'product',views.ProductViewSet,'product')
+router.register(r'lot',views.LotViewSet,'lot')
 
 urlpatterns = router.urls

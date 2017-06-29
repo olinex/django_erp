@@ -6,6 +6,7 @@ from rest_framework import routers
 
 router = routers.DefaultRouter()
 router.register(r'user',views.UserViewSet,'user')
+router.register(r'profile',views.ProfileViewSet,'profile')
 router.register(r'province',views.ProvinceViewSet,'province')
 router.register(r'city',views.CityViewSet,'city')
 router.register(r'region',views.RegionViewSet,'region')

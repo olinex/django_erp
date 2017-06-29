@@ -26,3 +26,7 @@ class ProductTemplateViewSet(BaseViewSet):
 class ProductViewSet(BaseViewSet):
     model=models.Product
     serializer_class = serializers.ProductSerializer
+
+class LotViewSet(BaseViewSet):
+    model=models.Lot
+    serializer_class = serializers.LotSerializer

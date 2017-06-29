@@ -30,8 +30,8 @@ class MoveInline(CommonTabInLine):
         )}),
     )
 
-class ProcurementFromLocationSettingsInline(CommonTabInLine):
-    model = models.ProcurementFromLocationSettings
+class ProcurementFromLocationSettingInline(CommonTabInLine):
+    model = models.ProcurementFromLocationSetting
     fieldsets = (
         (None, {'fields': (
             'detail', 'location', 'quantity', 'route'
@@ -70,8 +70,8 @@ class WarehouseAdmin(CommonAdmin):
 
 @admin.register(models.Zone)
 class ZoneAdmin(CommonAdmin):
-    list_display = ('warehouse', 'self_location', 'usage')
-    list_filter = ('usage', 'warehouse')
+    list_display = ('warehouse', 'usage')
+    list_filter = list_display
     list_editable = ('usage',)
     inlines = (
         LocationInline,
@@ -80,13 +80,13 @@ class ZoneAdmin(CommonAdmin):
 
 @admin.register(models.Location)
 class LocationAdmin(CommonAdmin):
-    list_display = ('zone', 'parent_location', 'is_virtual', 'x', 'y', 'z')
+    list_display = ('zone', 'parent_node', 'is_virtual', 'x', 'y', 'z')
     list_filter = ('is_virtual',)
     search_fields = ('x', 'y', 'z')
     list_editable = search_fields
     fieldsets = (
         (None, {'fields': (
-            ('zone', 'parent_location'),
+            ('zone', 'parent_node'),
             'is_virtual', ('x', 'y', 'z')
         )}),
     )
@@ -183,5 +183,5 @@ class ProcurementDetailAdmin(CommonAdmin):
         (None, {'fields': ('procurement', 'product', 'lot')}),
     )
     inlines = (
-        ProcurementFromLocationSettingsInline,
+        ProcurementFromLocationSettingInline,
     )

@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 #-*- coding:utf-8 -*-
 
-import json
 from . import models
-from django.db import transaction
 from rest_framework import serializers
 from common.rest.serializers import ActiveModelSerializer
 
@@ -60,5 +58,10 @@ class ProductSerializer(ActiveModelSerializer):
             'volume','salable','purchasable',
             'rentable','template_detail'
         )
+
+class LotSerializer(ActiveModelSerializer):
+    class Meta:
+        model=models.Lot
+        fields=('name','Product')
 
 

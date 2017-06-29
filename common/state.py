@@ -17,7 +17,6 @@ class StateMachine(object):
         '''
         check instance's state
         :param state: state symbol
-        :param from_db: True/False if check state from database
         :return: True/False
         '''
         statement = self.get_state(state)
@@ -41,9 +40,9 @@ class StateMachine(object):
 
     def check_to_set_state(self, check_state, set_state):
         '''
-        check if instance is check_state and set it to update_state
+        check if instance is check_state and set it to set_state
         :param check_state: check state symbol
-        :param update_state: set state symbol
+        :param set_state: set state symbol
         :return: True/False 
         '''
         check_statement = self.get_state(check_state)
@@ -106,11 +105,12 @@ class StateMachine(object):
         :param queryset: model queryset
         :return: True/False
         '''
-        filter_queryset=queryset.select_for_update()
-        if cls.check_state_queryset(check_state,filter_queryset):
-            cls.set_state_queryset(end_state,filter_queryset)
-            return True
-        return False
+        with transaction.atomic():
+            filter_queryset=queryset.select_for_update()
+            if cls.check_state_queryset(check_state,filter_queryset):
+                cls.set_state_queryset(end_state,filter_queryset)
+                return True
+            return False
 
     @classmethod
     def get_to_set_state_queryset(cls,check_state,end_state,queryset=None):
@@ -120,10 +120,11 @@ class StateMachine(object):
         :param end_state: state symbol
         :return: None
         '''
-        check_queryset=cls.get_state_queryset(
-            check_state,queryset=queryset
-        ).select_for_update()
-        cls.set_state_queryset(end_state,queryset=check_queryset)
+        with transaction.atomic():
+            check_queryset=cls.get_state_queryset(
+                check_state,queryset=queryset
+            ).select_for_update()
+            cls.set_state_queryset(end_state,queryset=check_queryset)
 
 
 class Statement(object):

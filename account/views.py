@@ -3,7 +3,7 @@
 
 from . import models
 from . import serializers
-from common.rest.viewsets import BaseViewSet,ActiveBaseViewSet
+from common.rest.viewsets import BaseViewSet,ActiveBaseViewSet,PermMethodViewSet
 from django.shortcuts import render
 from djangoperm.utils import view_perm_required
 from rest_framework import viewsets,status,permissions
@@ -16,8 +16,9 @@ User=get_user_model()
 def first_request(request):
     return render(request,'index.html')
 
-class UserViewSet(ActiveBaseViewSet):
+class UserViewSet(PermMethodViewSet):
     serializer_class = serializers.UserSerializer
+    allow_actions = ('create','list','retrieve','update')
 
     def get_queryset(self):
         from django.conf import settings
@@ -104,3 +105,15 @@ class AddressViewSet(BaseViewSet):
 class CompanyViewSet(BaseViewSet):
     model=models.Company
     serializer_class = serializers.CompanySerializer
+
+class ProfileViewSet(PermMethodViewSet):
+
+    def get_queryset(self):
+        from django.conf import settings
+        if self.request.user.is_superuser:
+            return models.Profile.objects.all()
+        return models.Profile.objects.filter(user=self.request.user)
+
+    model=models.Profile
+    allow_actions = ('create','list','retrieve','update')
+    serializer_class = serializers.ProfileSerializer

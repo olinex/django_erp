@@ -7,12 +7,11 @@ from common.fields import (
     ActiveLimitManyToManyField, ActiveLimitOneToOneField,
     SimpleStateCharField
 )
-from common.abstractModel import BaseModel
+from common.abstractModel import BaseModel,TreeModel
 from product.utils import QuantityField
 from account.utils import PartnerForeignKey
 from stock.utils import LocationForeignKey
 from djangoperm.db import models
-from django.db.models import Q, F, Value, Func
 from django.db import transaction
 
 
@@ -109,7 +108,7 @@ class Warehouse(BaseModel):
         '''
         with transaction.atomic():
             return {
-                usage[0]: Zone.objects.get_or_create(
+                usage[0]: Zone.objects.create(
                     warehouse=self,
                     usage=usage[0]
                 )
@@ -135,20 +134,6 @@ class Zone(BaseModel):
         ('initial', '初始区域')
     )
 
-    self_location = ActiveLimitOneToOneField(
-        'stock.Location',
-        null=True,
-        blank=False,
-        verbose_name='库位',
-        related_name='self_zone',
-        limit_choices_to={
-            'is_delete': False,
-            'is_active': True,
-            'is_virtual': True
-        },
-        help_text="区域的基本位置"
-    )
-
     warehouse = ActiveLimitForeignKey(
         'stock.Warehouse',
         null=False,
@@ -168,7 +153,7 @@ class Zone(BaseModel):
     )
 
     def __str__(self):
-        str(self.warehouse) + '/' + self.usage
+        return str(self.warehouse) + '/' + self.usage
 
     class Meta:
         verbose_name = '区域'
@@ -178,7 +163,7 @@ class Zone(BaseModel):
         )
 
 
-class Location(BaseModel):
+class Location(BaseModel,TreeModel):
     '''库位'''
 
     zone = ActiveLimitForeignKey(
@@ -190,7 +175,7 @@ class Location(BaseModel):
         help_text="库位所属的区域"
     )
 
-    parent_location = ActiveLimitForeignKey(
+    parent_node = ActiveLimitForeignKey(
         'self',
         null=True,
         blank=True,
@@ -290,7 +275,7 @@ class Move(BaseModel):
     )
 
     procurement_detail_setting = models.ForeignKey(
-        'stock.ProcurementFromLocationSettings',
+        'stock.ProcurementFromLocationSetting',
         null=False,
         blank=False,
         verbose_name='需求明细设置',
@@ -409,17 +394,25 @@ class Route(BaseModel):
         '名称',
         null=False,
         blank=False,
+        unique=True,
         max_length=190,
         help_text="路线的名称"
     )
 
-    map = models.ShortJSONField(
+    map = models.JSONField(
+        null=False,
+        blank=False,
+        json_type='list',
+        help_text="以json格式保存的路径顺序"
+    )
+
+    map_md5 = models.CharField(
+        '路径顺序列表的md5值',
         null=False,
         blank=False,
         unique=True,
-        json_type='list',
-        max_length=190,
-        help_text="以json格式保存的路径顺序"
+        max_length=40,
+        help_text='路径顺序列表的的md5值'
     )
 
     direct_path = ActiveLimitForeignKey(
@@ -625,7 +618,7 @@ class PackageTemplateProductSetting(models.Model):
         )
 
 
-class PackageNode(models.Model):
+class PackageNode(TreeModel):
     '''包裹节点'''
     name = models.CharField(
         '名称',
@@ -642,7 +635,7 @@ class PackageNode(models.Model):
         default=None,
         verbose_name='父节点',
         related_name='child_nodes',
-        help_text="包裹该节点的节点"
+        help_text="该节点的父节点"
     )
 
     template = ActiveLimitForeignKey(
@@ -661,23 +654,6 @@ class PackageNode(models.Model):
         help_text="包裹的数量"
     )
 
-    index = models.CharField(
-        '索引',
-        null=False,
-        blank=True,
-        default='',
-        max_length=190,
-        help_text="该包裹所在包裹树的索引"
-    )
-
-    level = models.PositiveSmallIntegerField(
-        '树层',
-        null=False,
-        blank=False,
-        default=0,
-        help_text="该包裹所距离所在包裹树的根的距离"
-    )
-
     def __str__(self):
         return self.name
 
@@ -687,80 +663,6 @@ class PackageNode(models.Model):
         unique_together = (
             ('parent_node', 'template'),
         )
-
-    @property
-    def root_node(self):
-        '''
-        获取当前节点的根节点
-        :return: PackageNode Instance
-        '''
-        if self.index:
-            return self.__class__.objects.filter(
-                id=int(self.index.split('-')[0]),
-                level=0
-            )
-        return self
-
-    @property
-    def all_child_nodes(self):
-        '''
-        获取当前节点下所有的子孙节点
-        :return: PackageNode Queryset
-        '''
-        return self.__class__.objects.filter(
-            index__startswith='{}-{}-'.format(self.index, self.id)
-        )
-
-    @property
-    def all_parent_nodes(self):
-        '''
-        获取当前节点的所有父节点
-        :return: PackageNode Queryset
-        '''
-        return self.__class__.objects.filter(
-            id__in=[int(node_id) for node_id in self.index.split('-')[:-1]]
-        )
-
-    @property
-    def sibling_nodes(self):
-        '''
-        获取当前节点下排除自己的的所有兄弟节点,并排除自身,若为根节点,则返回除了自己之外的所有根节点
-        :return: PackageNode Queryset
-        '''
-        return self.__class__.objects.filter(
-            index=self.index,
-            level=self.level
-        ).exclude(id=self.id)
-
-    @property
-    @classmethod
-    def root_nodes(cls):
-        '''
-        获取所有根节点
-        :return: PackageNode Queryset
-        '''
-        return cls.objects.filter(
-            parent_node=None,
-            index='',
-            level=0
-        )
-
-    def change_parent_node(self, node):
-        '''
-        修改父节点时,同步更新该节点下的所有子节点key和level
-        :node:PackageNode Instance
-        :return:True
-        '''
-        with transaction.atomic():
-            new_index = '{}-{}-'.format(node.index, str(node.id))
-            old_index = self.index
-            self.all_child_nodes.update(
-                index=Func(F('index'), Value(new_index), Value(old_index), function='replace'),
-                level=F('level') + Value(node.level - self.level)
-            )
-            self.index = new_index
-            self.parent_node = node
-            self.save()
 
 
 class Procurement(BaseModel):
@@ -796,7 +698,7 @@ class ProcurementDetail(BaseModel):
     from_locations = models.ManyToManyField(
         'stock.Location',
         blank=False,
-        through='stock.ProcurementFromLocationSettings',
+        through='stock.ProcurementFromLocationSetting',
         through_fields=('detail', 'location'),
         verbose_name='来源位置',
         related_name='procurement_details',
@@ -840,12 +742,12 @@ class ProcurementDetail(BaseModel):
     @property
     def quantity(self):
         return sum(
-            ProcurementFromLocationSettings.objects.filter(
+            ProcurementFromLocationSetting.objects.filter(
                 detail=self).values_list('quantity', flat=True)
         )
 
 
-class ProcurementFromLocationSettings(models.Model):
+class ProcurementFromLocationSetting(models.Model):
     '''需求产品指定的来源位置'''
     detail = ActiveLimitForeignKey(
         'stock.ProcurementDetail',
