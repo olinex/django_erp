@@ -286,7 +286,7 @@ class Move(BaseModel):
         '移动数量',
         null=False,
         blank=False,
-        uom='procurement_detail_setting.detail.product.uom',
+        uom='procurement_detail_setting.detail.product.template.uom',
         help_text="产品的数量"
     )
 
@@ -519,7 +519,7 @@ class PackageTypeProductSetting(models.Model):
         '最大数量',
         null=False,
         blank=False,
-        uom='product.uom',
+        uom='product.template.uom',
         help_text="包裹类型能够包含该产品的最大数量"
     )
 
@@ -599,7 +599,7 @@ class PackageTemplateProductSetting(models.Model):
         '最大数量',
         null=False,
         blank=False,
-        uom='product.uom',
+        uom='product.template.uom',
         help_text="包裹模板包含该产品的数量"
     )
 
@@ -770,7 +770,7 @@ class ProcurementFromLocationSetting(models.Model):
         '移动数量',
         null=False,
         blank=False,
-        uom='product.uom',
+        uom='product.template.uom',
         help_text="产品的数量"
     )
 

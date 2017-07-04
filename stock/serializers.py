@@ -2,15 +2,23 @@
 # -*- coding:utf-8 -*-
 
 from . import models
+from account.models import Address
 from rest_framework import serializers
-from common.rest.serializers import ActiveModelSerializer
+from common.rest.serializers import ActiveModelSerializer,StatePrimaryKeyRelatedField
 from account.serializers import UserSerializer, AddressSerializer
 from product.serializers import ProductSerializer,LotSerializer
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class WarehouseSerializer(ActiveModelSerializer):
     user_detail = UserSerializer(source='user', read_only=True)
     address_detail = AddressSerializer(source='address', read_only=True)
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(is_active=True,profile__is_partner=True)
+    )
+    address = StatePrimaryKeyRelatedField(Address,'active')
 
     class Meta:
         model = models.Warehouse

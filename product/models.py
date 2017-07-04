@@ -2,11 +2,11 @@
 # -*- coding:utf-8 -*-
 
 from decimal import Decimal as D
-
+from django.db import transaction
 from common import state
 from common.abstractModel import BaseModel
 from common.fields import (
-    ActiveLimitForeignKey,ActiveLimitManyToManyField,MD5CharField,
+    ActiveLimitForeignKey, ActiveLimitManyToManyField, MD5CharField,
     ActiveLimitOneToOneField
 )
 from djangoperm.db import models
@@ -35,6 +35,7 @@ class ProductCategory(BaseModel, state.StateMachine):
 
     def __str__(self):
         return self.name
+
 
 class Product(BaseModel):
     '''产品'''
@@ -68,6 +69,7 @@ class Product(BaseModel):
         '内部编码',
         null=False,
         blank=True,
+        default='',
         max_length=190,
         help_text="产品模板的内部编码"
     )
@@ -76,6 +78,7 @@ class Product(BaseModel):
         '外部编码',
         null=False,
         blank=True,
+        default='',
         max_length=190,
         help_text="产品模板的外部编码"
     )
@@ -133,7 +136,7 @@ class Product(BaseModel):
     class Meta:
         verbose_name = '产品'
         verbose_name_plural = '产品'
-        unique_together = ('template','attributes_md5')
+        unique_together = ('template', 'attributes_md5')
 
     @property
     def attributes_str(self):
@@ -220,6 +223,30 @@ class ProductTemplate(BaseModel):
     def __str__(self):
         self.name
 
+    @property
+    def attribute_combination(self):
+        from itertools import product
+        attributes = self.attributes.value_lists('name', 'value')
+        key_list = [attr[0] for attr in attributes]
+        for value_tuple in product(attr[1] for attr in attributes):
+            yield dict(zip(key_list,value_tuple))
+
+    def sync_create_products(self):
+        import json
+        from hashlib import md5
+        from django.core.serializers.json import DjangoJSONEncoder
+        with transaction.atomic():
+            for attributes in self.attribute_combination:
+                m = md5()
+                m.update(json.dumps(attributes, cls=DjangoJSONEncoder).encode('utf8'))
+                self.attributes.through.objects.get_or_create(
+                    template=self,
+                    attributes_md5=m.hexdigest(),
+                    defaults={
+                        'attributes': attributes,
+                        'is_active': False
+                    }
+                )
 
 class Attribute(BaseModel):
     '''属性'''
@@ -390,10 +417,11 @@ class Lot(BaseModel):
     def __str__(self):
         return self.name
 
+
 class Barcode(BaseModel):
     '''条形码类'''
     BARCODE_MODE = (
-        ('Standard39','标准39'),
+        ('Standard39', '标准39'),
     )
 
     product = ActiveLimitOneToOneField(

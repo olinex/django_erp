@@ -13,7 +13,7 @@ class PermMethodViewSet(
         mixins.DestroyModelMixin,
         viewsets.GenericViewSet):
     '''http请求方法级别权限'''
-    allow_actions = ('create','list','retrieve','update','destory')
+    allow_actions = ('create','list','retrieve','update','destroy')
 
     def get_queryset(self):
         queryset=self.queryset if self.queryset else self.model.objects.all()

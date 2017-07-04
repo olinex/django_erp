@@ -4,7 +4,7 @@
 from . import models
 from django.db import transaction
 from rest_framework import serializers, exceptions
-from common.rest.serializers import ActiveModelSerializer
+from common.rest.serializers import ActiveModelSerializer, StatePrimaryKeyRelatedField
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -17,12 +17,16 @@ class ProvinceSerializer(ActiveModelSerializer):
 
 
 class CitySerializer(ActiveModelSerializer):
+    province = StatePrimaryKeyRelatedField(models.Province, 'active')
+
     class Meta:
         model = models.City
         fields = ('id', 'province', 'name', 'is_active')
 
 
 class RegionSerializer(ActiveModelSerializer):
+    city = province = StatePrimaryKeyRelatedField(models.City, 'active')
+
     class Meta:
         model = models.Region
         fields = ('id', 'city', 'name', 'is_active')
@@ -41,6 +45,7 @@ class AddressSerializer(ActiveModelSerializer):
         source='region',
         read_only=True
     )
+    region = StatePrimaryKeyRelatedField(models.Region, 'active')
 
     class Meta:
         model = models.Address
@@ -82,6 +87,9 @@ class ProfileSerializer(serializers.ModelSerializer):
         read_only=True,
         many=True
     )
+    address = StatePrimaryKeyRelatedField(models.Address, 'active')
+    default_send_address = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
+    usual_send_addresses = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
 
     class Meta:
         model = models.Profile
@@ -167,6 +175,13 @@ class CompanySerializer(ActiveModelSerializer):
     belong_users_detail = UserSerializer(
         source='belong_customers',
         read_only=True,
+        many=True
+    )
+    address = StatePrimaryKeyRelatedField(models.Address, 'active')
+    default_send_address = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
+    usual_send_addresses = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
+    belong_users = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(is_active=True,is_superuser=False,is_staff=False),
         many=True
     )
 

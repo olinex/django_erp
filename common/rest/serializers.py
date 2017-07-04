@@ -8,3 +8,9 @@ class ActiveSerializer(serializers.Serializer):
 
 class ActiveModelSerializer(serializers.ModelSerializer):
     is_active=serializers.BooleanField(read_only=True)
+
+def StatePrimaryKeyRelatedField(cls,state,**kwargs):
+    return serializers.PrimaryKeyRelatedField(
+        queryset=cls.get_state_queryset(state),
+        **kwargs
+    )

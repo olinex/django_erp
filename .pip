@@ -15,12 +15,10 @@ msgpack-python==0.4.8
 packaging==16.8
 PyMySQL==0.7.11
 pyparsing==2.2.0
-pypiwin32==219
 pytz==2017.2
 redis==2.10.5
 selenium==3.4.1
 six==1.10.0
 Twisted==17.1.0
 txaio==2.7.1
-virtualenv==15.1.0
 zope.interface==4.4.0
