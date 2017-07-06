@@ -17,10 +17,13 @@ class Excel(object):
         save_path = ''
 
     def __init__(self, workbook):
-        try:
+        if isinstance(workbook , str):
             self.workbook = xlrd.open_workbook(workbook)
-        except:
-            self.workbook = workbook
+        else:
+            try:
+                self.workbook = xlrd.open_workbook(workbook)
+            except:
+                self.workbook = workbook
 
     @staticmethod
     def get_valid_value(cell):
