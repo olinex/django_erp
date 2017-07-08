@@ -17,12 +17,6 @@ class LotInline(CommonTabInLine):
         (None,{'fields':('name',)}),
     )
 
-class ValidationActionSettingInline(CommonTabInLine):
-    model=models.ValidationActionSetting
-    fieldsets = (
-        (None,{'fields':('validation','action','arguments')}),
-    )
-
 @admin.register(models.ProductCategory)
 class ProductCategoryAdmin(CommonAdmin):
     list_display = ('name','sequence')
@@ -108,14 +102,14 @@ class ProductAdmin(CommonAdmin):
 
 @admin.register(models.ValidateAction)
 class ValidationActionAdmin(CommonAdmin):
-    list_display = ('name','uom','arguments')
+    list_display = ('symbol','name','uom','explain')
     list_filter = ('uom',)
     search_fields = ('name',)
-    list_editable = list_filter
-    list_display_links = search_fields
+    list_editable = ('name','uom')
+    list_display_links = ('symbol',)
     fieldsets = (
         (None,{'fields':(
-            'name','uom','arguments'
+            ('symbol','name'),'uom','explain'
         )}),
     )
 
@@ -129,8 +123,4 @@ class ValidationAdmin(CommonAdmin):
             'name','actions'
         )}),
     )
-    inlines = (
-        ValidationActionSettingInline,
-    )
-
 

@@ -170,6 +170,8 @@ class Validation(BaseModel):
     actions = ActiveLimitManyToManyField(
         'product.ValidateAction',
         blank=False,
+        verbose_name='验货动作',
+        related_name='validations',
         help_text="对某产品所需执行的所有验货动作"
     )
 
@@ -180,62 +182,46 @@ class Validation(BaseModel):
         verbose_name = '产品验货配置'
         verbose_name_plural = '产品验货配置'
 
+    @property
+    def validators(self):
+        return {action.symbol: action.validator for action in self.actions}
 
-class ValidationActionSetting(models.Model):
-    '''产品动作配置'''
-    validation = ActiveLimitForeignKey(
-        'product.Validation',
-        null=False,
-        blank=False,
-        verbose_name='产品验货配置',
-        related_name='action_settings',
-        help_text="动作配置所属的验货配置"
-    )
-
-    action = ActiveLimitForeignKey(
-        'product.ValidateAction',
-        null=False,
-        blank=False,
-        verbose_name='验货动作',
-        related_name='action_settings',
-        help_text="动作配置所绑定的验货动作"
-    )
-
-    arguments = models.JSONField(
-        '动作参数',
-        null=False,
-        blank=False,
-        json_type='dict',
-        default={},
-        help_text="验货动作执行时,参考的动作参数"
-    )
-
-    class Meta:
-        verbose_name = '产品动作配置'
-        verbose_name_plural = '产品动作配置'
-        unique_together = ('validation','action')
-
-    def __str__(self):
-        return '{}-{}'.format(self.validation,self.action)
-
-    def validate_arguments(self):
-        '''
-        判断配置的参数arguments的所有键是否均属于action对应的arguments键，
-        判断配置的参数arguments的所有值是否均属于action对应的arguments值
-        :return: True／False
-        '''
-        return all(
-            choice in self.action.arguments[key]
-            for key,choice in self.arguments
-        ) and self.arguments.keys() == self.action.arguments.keys()
+    def is_valid(self, data):
+        '''根据定义的验证动作验证传入的data参数,并返回验证结果'''
+        validators = self.validators
+        if validators.keys() == data.keys():
+            self.validated_data = {}
+            self.errors = {}
+            is_valid = True
+            for symbol, value in data.items():
+                validator = validators[symbol]
+                validator(data={'value': value})
+                if validator.is_valid():
+                    self.validated_data[symbol] = validator.validated_data['value']
+                else:
+                    self.errors[symbol] = validator.errors['value']
+                    is_valid = False
+            return is_valid
+        return False
 
 
 class ValidateAction(BaseModel):
     '''产品验货动作'''
+    symbol = models.CharField(
+        '内部符号',
+        null=False,
+        blank=False,
+        max_length=40,
+        primary_key=True,
+        help_text="动作所要执行的验货器的名称"
+    )
+
     name = models.CharField(
         '验货动作名',
+        null=False,
+        blank=False,
+        unique=True,
         max_length=190,
-        primary_key=True,
         help_text="某类产品在验货时需要进行的验货动作"
     )
 
@@ -248,22 +234,26 @@ class ValidateAction(BaseModel):
         help_text="对产品验货时针对的单位"
     )
 
-    arguments = models.JSONField(
-        '动作参数',
+    explain = models.TextField(
+        '解释',
         null=False,
         blank=False,
-        json_type='dict',
-        default={},
-        help_text="验货动作执行时,参考的动作参数"
+        help_text="动作的含义解释"
     )
 
     def __str__(self):
-        return '{}({})'.format(self.name,self.uom)
+        return '{}({})'.format(self.symbol, self.uom)
 
     class Meta:
         verbose_name = '验货动作'
         verbose_name_plural = '验货动作'
 
+    @property
+    def validator(self):
+        from . import validators
+        if self.symbol in validators.__all__:
+            return getattr(validators, self.symbol, None)
+        return None
 
 
 class ProductTemplate(BaseModel):
@@ -325,13 +315,20 @@ class ProductTemplate(BaseModel):
         help_text="产品的外部说明"
     )
 
-    category = models.ForeignKey(
+    category = ActiveLimitForeignKey(
         'product.ProductCategory',
         null=True,
         blank=True,
-        on_delete=models.PROTECT,
         verbose_name='产品种类',
         help_text="产品的分类"
+    )
+
+    validation = ActiveLimitForeignKey(
+        'product.Validation',
+        null=True,
+        blank=False,
+        verbose_name='产品验证器',
+        help_text="产品验货时执行的验证器"
     )
 
     class Meta:
@@ -339,7 +336,7 @@ class ProductTemplate(BaseModel):
         verbose_name_plural = '产品模板'
 
     def __str__(self):
-        self.name
+        return self.name
 
     @property
     def attribute_combination(self):

@@ -12,7 +12,6 @@ router.register(r'template',views.ProductTemplateViewSet,'template')
 router.register(r'product',views.ProductViewSet,'product')
 router.register(r'lot',views.LotViewSet,'lot')
 router.register(r'validate-action',views.ValidateActionViewSet,'validate_action')
-router.register(r'validation-action-setting',views.ValidationActionSettingViewSet,'validation_action_setting')
 router.register(r'validation',views.ValidationViewSet,'validation')
 
 urlpatterns = router.urls

@@ -3,7 +3,7 @@
 
 from . import models
 from . import serializers
-from common.rest.viewsets import BaseViewSet,PermMethodViewSet
+from common.rest.viewsets import BaseViewSet, PermMethodViewSet
 from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 
@@ -42,10 +42,6 @@ class ValidateActionViewSet(BaseViewSet):
     model = models.ValidateAction
     serializer_class = serializers.ValidateActionSerializer
 
-class ValidationActionSettingViewSet(PermMethodViewSet):
-    model = models.ValidationActionSetting
-    allow_actions = ('create', 'list', 'retrieve', 'update')
-    serializer_class = serializers.ValidationActionSettingSerializer
 
 class ValidationViewSet(BaseViewSet):
     model = models.Validation

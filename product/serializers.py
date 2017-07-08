@@ -83,32 +83,16 @@ class LotSerializer(ActiveModelSerializer):
 
 
 class ValidateActionSerializer(ActiveModelSerializer):
-    arguments = serializers.DictField(
-        child=serializers.ListField(
-            child=serializers.CharField(max_length=190, trim_whitespace=True),
-            read_only=True
-        ),
-        read_only=True
-    )
+    symbol = serializers.ReadOnlyField()
+    uom = serializers.ReadOnlyField()
 
     class Meta:
         model = models.ValidateAction
-        fields = ('name', 'uom', 'arguments')
-
-
-class ValidationActionSettingSerializer(serializers.ModelSerializer):
-    action_detail = ValidateActionSerializer(source='action', read_only=True)
-    arguments = serializers.DictField(
-        child=serializers.CharField(max_length=190, trim_whitespace=True)
-    )
-
-    class Meta:
-        model = models.ValidationActionSetting
-        fields = ('validation', 'action', 'arguments')
+        fields = ('symbol','name', 'uom', 'explain')
 
 
 class ValidationSerializer(ActiveModelSerializer):
-    actions_detail = ValidationActionSettingSerializer(source='action', read_only=True, many=True)
+    actions_detail = ValidateActionSerializer(source='actions', read_only=True, many=True)
 
     class Meta:
         model = models.Validation
