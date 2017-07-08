@@ -7,7 +7,7 @@ from hashlib import md5
 from django.db import transaction
 from django.dispatch import receiver
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models.signals import pre_save, m2m_changed
+from django.db.models.signals import post_save, m2m_changed
 from django.core.serializers.json import DjangoJSONEncoder
 
 
@@ -18,7 +18,7 @@ def change_product_template_attribute(sender, instance, **kwargs):
         instance.sync_create_products()
 
 
-@receiver(pre_save, sender=models.Product)
+@receiver(post_save, sender=models.Product)
 def create_attribute_md5(sender, instance, created, **kwargs):
     '''保存时,更新产品属性的md5值'''
     if not created:

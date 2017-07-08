@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 import random, string
+from decimal import Decimal as D
 from . import models
 from django.test import TestCase
 from common.test import UserSetUpTestCase
@@ -54,3 +55,31 @@ class ProductCategory(TestCase):
     def test_check_to_set_state_queryset(self):
         self.assertEqual(models.ProductCategory.check_to_set_state_queryset('no_delete', 'delete', self.queryset), True)
         self.assertEqual(models.ProductCategory.check_to_set_state_queryset('delete', 'no_delete', self.queryset), True)
+
+
+class ProductTemplateTestCase(TestCase):
+    def setUp(self):
+        self.attribute1 = models.Attribute.objects.create(
+            name='attribute1',
+            value=['one','two','three'],
+            extra_price=[1,2,3]
+        )
+        self.attribute2 = models.Attribute.objects.create(
+            name='attribute2',
+            value=['four','five','six'],
+            extra_price=[4,5,6]
+        )
+        self.uom = models.UOM.objects.create(
+            name='mm',
+            symbol='mm',
+            decimal_places=2,
+            ratio_type='smaller',
+            ratio=D('0.001'),
+            category='m'
+        )
+        self.template = models.ProductTemplate.objects.create(
+            name='template',
+            uom=self.uom
+        )
+        self.template.attributes.set([self.attribute1,self.attribute2])
+

@@ -8,7 +8,7 @@ from common.admin import  CommonAdmin,CommonTabInLine
 class AttributeInline(CommonTabInLine):
     model=models.Attribute
     fieldsets = (
-        (None,{'fields':('name','value')}),
+        (None,{'fields':('name','value','extra_price')}),
     )
 
 class LotInline(CommonTabInLine):
@@ -17,28 +17,35 @@ class LotInline(CommonTabInLine):
         (None,{'fields':('name',)}),
     )
 
+class ValidationActionSettingInline(CommonTabInLine):
+    model=models.ValidationActionSetting
+    fieldsets = (
+        (None,{'fields':('validation','action','arguments')}),
+    )
+
 @admin.register(models.ProductCategory)
 class ProductCategoryAdmin(CommonAdmin):
     list_display = ('name','sequence')
     search_fields = ('name',)
-    list_editable = ('name','sequence')
+    list_editable = ('sequence',)
+    list_display_links = ('name',)
     fieldsets = (
         (None,{'fields':('name','sequence')}),
     )
 
 @admin.register(models.Attribute)
 class AttributeAdmin(CommonAdmin):
-    list_display = ('id','name','value')
+    list_display = ('id','name','value','extra_price',)
     search_fields = ('name',)
     list_editable = ('name',)
     fieldsets = (
-        (None,{'fields':('name','value')}),
+        (None,{'fields':('name','value','extra_price')}),
     )
 
 @admin.register(models.UOM)
 class UOMAdmin(CommonAdmin):
     list_display = (
-        'name','symbol','decimal_places',
+        'id','name','symbol','decimal_places',
         'round_method','ratio_type','ratio',
         'category'
     )
@@ -77,7 +84,7 @@ class ProductTemplateAdmin(CommonAdmin):
 @admin.register(models.Product)
 class ProductAdmin(CommonAdmin):
     list_display = (
-        'id','template','in_code',
+        'id','template','attributes','prices','in_code',
         'out_code','weight','volume',
         'salable','purchasable','rentable'
     )
@@ -89,7 +96,7 @@ class ProductAdmin(CommonAdmin):
     )
     fieldsets = (
         (None,{'fields':(
-            'template','attributes',
+            'template','attributes','prices',
             ('in_code','out_code'),
             ('weight','volume'),
             ('salable','purchasable','rentable')
@@ -98,4 +105,32 @@ class ProductAdmin(CommonAdmin):
     inlines = (
         LotInline,
     )
+
+@admin.register(models.ValidateAction)
+class ValidationActionAdmin(CommonAdmin):
+    list_display = ('name','uom','arguments')
+    list_filter = ('uom',)
+    search_fields = ('name',)
+    list_editable = list_filter
+    list_display_links = search_fields
+    fieldsets = (
+        (None,{'fields':(
+            'name','uom','arguments'
+        )}),
+    )
+
+@admin.register(models.Validation)
+class ValidationAdmin(CommonAdmin):
+    list_display = ('name',)
+    search_fields = list_display
+    list_display_links = ('name',)
+    fieldsets = (
+        (None,{'fields':(
+            'name','actions'
+        )}),
+    )
+    inlines = (
+        ValidationActionSettingInline,
+    )
+
 

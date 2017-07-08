@@ -16,7 +16,7 @@ class ProductCategory(BaseModel, state.StateMachine):
     '''产品分类'''
     name = models.CharField(
         '种类名称',
-        unique=True,
+        primary_key=True,
         max_length=90,
         help_text="产品的种类"
     )
@@ -45,16 +45,26 @@ class Product(BaseModel):
         blank=False,
         on_delete=models.PROTECT,
         verbose_name='模板',
+        related_name='products',
         help_text="产品的模板"
     )
 
     attributes = models.JSONField(
         '产品属性字典',
         null=False,
-        blank=True,
+        blank=False,
         default={},
         json_type='dict',
         help_text="根据产品模板的属性列表设置的产品属性值字典"
+    )
+
+    prices = models.JSONField(
+        '产品溢价字典',
+        null=False,
+        blank=False,
+        default={},
+        json_type='dict',
+        help_text="根据产品模版的属性溢价列表设置的产品溢价字典"
     )
 
     attributes_md5 = models.CharField(
@@ -148,6 +158,114 @@ class Product(BaseModel):
         )
 
 
+class Validation(BaseModel):
+    '''产品验货配置'''
+    name = models.CharField(
+        '验货配置名',
+        max_length=190,
+        primary_key=True,
+        help_text="某类产品在验货时需要进行的验货动作配置"
+    )
+
+    actions = ActiveLimitManyToManyField(
+        'product.ValidateAction',
+        blank=False,
+        help_text="对某产品所需执行的所有验货动作"
+    )
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = '产品验货配置'
+        verbose_name_plural = '产品验货配置'
+
+
+class ValidationActionSetting(models.Model):
+    '''产品动作配置'''
+    validation = ActiveLimitForeignKey(
+        'product.Validation',
+        null=False,
+        blank=False,
+        verbose_name='产品验货配置',
+        related_name='action_settings',
+        help_text="动作配置所属的验货配置"
+    )
+
+    action = ActiveLimitForeignKey(
+        'product.ValidateAction',
+        null=False,
+        blank=False,
+        verbose_name='验货动作',
+        related_name='action_settings',
+        help_text="动作配置所绑定的验货动作"
+    )
+
+    arguments = models.JSONField(
+        '动作参数',
+        null=False,
+        blank=False,
+        json_type='dict',
+        default={},
+        help_text="验货动作执行时,参考的动作参数"
+    )
+
+    class Meta:
+        verbose_name = '产品动作配置'
+        verbose_name_plural = '产品动作配置'
+        unique_together = ('validation','action')
+
+    def __str__(self):
+        return '{}-{}'.format(self.validation,self.action)
+
+    def validate_arguments(self):
+        '''
+        判断配置的参数arguments的所有键是否均属于action对应的arguments键，
+        判断配置的参数arguments的所有值是否均属于action对应的arguments值
+        :return: True／False
+        '''
+        return all(
+            choice in self.action.arguments[key]
+            for key,choice in self.arguments
+        ) and self.arguments.keys() == self.action.arguments.keys()
+
+
+class ValidateAction(BaseModel):
+    '''产品验货动作'''
+    name = models.CharField(
+        '验货动作名',
+        max_length=190,
+        primary_key=True,
+        help_text="某类产品在验货时需要进行的验货动作"
+    )
+
+    uom = ActiveLimitForeignKey(
+        'product.UOM',
+        null=False,
+        blank=False,
+        verbose_name='验货单位',
+        related_name='validate_actions',
+        help_text="对产品验货时针对的单位"
+    )
+
+    arguments = models.JSONField(
+        '动作参数',
+        null=False,
+        blank=False,
+        json_type='dict',
+        default={},
+        help_text="验货动作执行时,参考的动作参数"
+    )
+
+    def __str__(self):
+        return '{}({})'.format(self.name,self.uom)
+
+    class Meta:
+        verbose_name = '验货动作'
+        verbose_name_plural = '验货动作'
+
+
+
 class ProductTemplate(BaseModel):
     '''产品模版'''
     name = models.CharField(
@@ -226,10 +344,11 @@ class ProductTemplate(BaseModel):
     @property
     def attribute_combination(self):
         from itertools import product
-        attributes = self.attributes.value_lists('name', 'value')
+        attributes = self.attributes.all().values_list('name', 'value', 'extra_price')
         key_list = [attr[0] for attr in attributes]
-        for value_tuple in product(attr[1] for attr in attributes):
-            yield dict(zip(key_list,value_tuple))
+        attribute_value = [zip(*attr[1:]) for attr in attributes]
+        for value_tuple in product(*attribute_value):
+            yield dict(zip(key_list, value_tuple))
 
     def sync_create_products(self):
         import json
@@ -238,15 +357,19 @@ class ProductTemplate(BaseModel):
         with transaction.atomic():
             for attributes in self.attribute_combination:
                 m = md5()
-                m.update(json.dumps(attributes, cls=DjangoJSONEncoder).encode('utf8'))
-                self.attributes.through.objects.get_or_create(
+                value_dict = {attr: value[0] for attr, value in attributes.items()}
+                price_dict = {attr: value[1] for attr, value in attributes.items()}
+                m.update(json.dumps(value_dict, cls=DjangoJSONEncoder).encode('utf8'))
+                Product.objects.get_or_create(
                     template=self,
                     attributes_md5=m.hexdigest(),
                     defaults={
-                        'attributes': attributes,
+                        'attributes': value_dict,
+                        'prices': price_dict,
                         'is_active': False
                     }
                 )
+
 
 class Attribute(BaseModel):
     '''属性'''
@@ -267,12 +390,27 @@ class Attribute(BaseModel):
         help_text="JSON格式保存的属性可选值"
     )
 
+    extra_price = models.JSONField(
+        '值的溢价',
+        null=False,
+        blank=False,
+        json_type='list',
+        help_text='JSON格式保存的属性可选值溢价'
+    )
+
     class Meta:
         verbose_name = '属性'
         verbose_name_plural = '属性'
 
     def __str__(self):
         return self.name
+
+    @property
+    def value_price_tuple(self):
+        return zip(
+            self.value,
+            self.extra_price
+        )
 
 
 class UOM(BaseModel):

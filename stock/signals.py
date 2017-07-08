@@ -25,6 +25,13 @@ def create_zone_location(sender, instance, created, **kwargs):
         )
 
 
+@receiver(post_save, sender=models.Path)
+def create_order_config_path(sender, instance, created, **kwargs):
+    '''保存时,创建配置路径'''
+    if created:
+        instance.create_order_config_path()
+
+
 @receiver(pre_save, sender=models.Route)
 def create_map_md5(sender, instance, **kwargs):
     '''保存时,更新路径列表的md5值'''

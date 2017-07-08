@@ -106,14 +106,10 @@ class Warehouse(BaseModel):
         创建仓库下的各个区域
         :return:dict
         '''
-        with transaction.atomic():
-            return {
-                usage[0]: Zone.objects.create(
-                    warehouse=self,
-                    usage=usage[0]
-                )
-                for usage in Zone.LAYOUT_USAGE
-            }
+        Zone.objects.bulk_create([
+            Zone(warehouse=self,usage=usage)
+            for usage in Zone.LAYOUT_USAGE
+        ])
 
 
 class Zone(BaseModel):
@@ -306,16 +302,12 @@ class Move(BaseModel):
         verbose_name_plural = '移动'
 
 
-# class InPickOrder(StockOrder):
-#     '''捡入表单'''
-#     pass
-#
-# class OutPickOrder(StockOrder):
-#     '''捡出表单'''
+# class PickOrder(StockOrder):
+#     '''分拣表单'''
 #     pass
 #
 # class CheckOrder(StockOrder):
-#     '''验货表单'''
+#     '''送检表单'''
 #     pass
 #
 # class PackOrder(StockOrder):
@@ -326,11 +318,11 @@ class Move(BaseModel):
 #     '''拆包表单'''
 #     pass
 #
-# class OutOrder(StockOrder):
+# class OutPutOrder(StockOrder):
 #     '''出库表单'''
 #     pass
 #
-# class InOrder(StockOrder):
+# class InPutOrder(StockOrder):
 #     '''入库表单'''
 #     pass
 #
@@ -381,6 +373,39 @@ class Path(BaseModel):
             ('from_location', 'to_location')
         )
 
+    def create_order_config_path(self):
+       OrderConfigPath.objects.bulk_create([
+            OrderConfigPath(path=self,create_order=True),
+            OrderConfigPath(path=self,create_order=False)
+        ])
+
+class OrderConfigPath(BaseModel):
+    '''订单配置路径'''
+    path = ActiveLimitForeignKey(
+        'stock.Path',
+        null=False,
+        blank=False,
+        verbose_name='路径',
+        related_name='order_configs',
+        help_text="相关的原始路径"
+    )
+
+    create_order = models.BooleanField(
+        '是否创建单据',
+        null=False,
+        blank=False,
+        default=False,
+        help_text="根据配置路径生成移动单时决定是否生成单据的配置"
+    )
+
+    def __str__(self):
+        return '{}({})'.format(self.path,self.create_order)
+
+    class Meta:
+        verbose_name = '路径配置',
+        verbose_name_plural = '路径配置',
+        unique_together = ('path','create_order')
+
 
 class Route(BaseModel):
     '''路线'''
@@ -416,7 +441,7 @@ class Route(BaseModel):
     )
 
     direct_path = ActiveLimitForeignKey(
-        'stock.Path',
+        'stock.OrderConfigPath',
         null=False,
         blank=False,
         related_name='direct_routes',
@@ -425,7 +450,7 @@ class Route(BaseModel):
     )
 
     paths = models.ManyToManyField(
-        'stock.Path',
+        'stock.OrderConfigPath',
         blank=False,
         verbose_name='路径',
         help_text="路线的详细路径"

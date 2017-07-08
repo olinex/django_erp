@@ -14,10 +14,11 @@ class ProductCategorySerializer(ActiveModelSerializer):
 
 class AttributeSerializer(ActiveModelSerializer):
     value = serializers.ListField(child=serializers.CharField(max_length=190))
+    extra_price = serializers.ListField(child=serializers.CharField(max_length=190))
 
     class Meta:
         model = models.Attribute
-        fields = ('id', 'name', 'value')
+        fields = ('id', 'name', 'value', 'extra_price')
 
 
 class UOMSerializer(ActiveModelSerializer):
@@ -59,13 +60,14 @@ class ProductSerializer(ActiveModelSerializer):
         source='template',
         read_only=True
     )
-    attributes = serializers.DictField(child=serializers.CharField(max_length=190))
-    template = StatePrimaryKeyRelatedField(models.ProductTemplate,'active')
+    attributes = serializers.DictField(child=serializers.CharField(max_length=190), read_only=True)
+    prices = serializers.DictField(child=serializers.CharField(max_length=190), read_only=True)
+    template = StatePrimaryKeyRelatedField(models.ProductTemplate, 'active')
 
     class Meta:
         model = models.Product
         fields = (
-            'id', 'template', 'attributes',
+            'id', 'template', 'attributes', 'prices',
             'in_code', 'out_code', 'weight',
             'volume', 'salable', 'purchasable',
             'rentable', 'template_detail'
@@ -73,8 +75,41 @@ class ProductSerializer(ActiveModelSerializer):
 
 
 class LotSerializer(ActiveModelSerializer):
-    product = StatePrimaryKeyRelatedField(models.Product,'active')
+    product = StatePrimaryKeyRelatedField(models.Product, 'active')
 
     class Meta:
         model = models.Lot
         fields = ('name', 'product')
+
+
+class ValidateActionSerializer(ActiveModelSerializer):
+    arguments = serializers.DictField(
+        child=serializers.ListField(
+            child=serializers.CharField(max_length=190, trim_whitespace=True),
+            read_only=True
+        ),
+        read_only=True
+    )
+
+    class Meta:
+        model = models.ValidateAction
+        fields = ('name', 'uom', 'arguments')
+
+
+class ValidationActionSettingSerializer(serializers.ModelSerializer):
+    action_detail = ValidateActionSerializer(source='action', read_only=True)
+    arguments = serializers.DictField(
+        child=serializers.CharField(max_length=190, trim_whitespace=True)
+    )
+
+    class Meta:
+        model = models.ValidationActionSetting
+        fields = ('validation', 'action', 'arguments')
+
+
+class ValidationSerializer(ActiveModelSerializer):
+    actions_detail = ValidationActionSettingSerializer(source='action', read_only=True, many=True)
+
+    class Meta:
+        model = models.Validation
+        fields = ('name', 'actions')

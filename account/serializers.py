@@ -25,7 +25,7 @@ class CitySerializer(ActiveModelSerializer):
 
 
 class RegionSerializer(ActiveModelSerializer):
-    city = province = StatePrimaryKeyRelatedField(models.City, 'active')
+    city = StatePrimaryKeyRelatedField(models.City, 'active')
 
     class Meta:
         model = models.Region
