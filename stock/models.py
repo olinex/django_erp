@@ -13,6 +13,7 @@ from account.utils import PartnerForeignKey
 from stock.utils import LocationForeignKey
 from djangoperm.db import models
 from django.db import transaction
+from django.db.models import Q
 
 
 
@@ -67,14 +68,6 @@ class Warehouse(BaseModel):
         help_text="仓库的名称"
     )
 
-    is_inside = models.BooleanField(
-        '是否为内部仓库',
-        null=False,
-        blank=False,
-        default=True,
-        help_text="是否为内部仓库"
-    )
-
     user = PartnerForeignKey(
         null=False,
         blank=False,
@@ -96,10 +89,6 @@ class Warehouse(BaseModel):
     class Meta:
         verbose_name = '仓库'
         verbose_name_plural = '仓库'
-
-    class States(BaseModel.States):
-        inside = Statement(*BaseModel.States.active.query, is_inside=True)
-        no_inside = Statement(*BaseModel.States.active.query, is_inside=False)
 
     def create_zones(self):
         '''
@@ -127,7 +116,8 @@ class Zone(BaseModel):
         ('repair', '返工维修区域'),
         ('scrap', '报废区域'),
         ('close-out', '平仓区域'),
-        ('initial', '初始区域')
+        ('initial', '初始区域'),
+        ('midway','中途岛区域')
     )
 
     warehouse = ActiveLimitForeignKey(
@@ -157,6 +147,26 @@ class Zone(BaseModel):
         unique_together = (
             ('warehouse', 'usage'),
         )
+
+    class States(BaseModel.States):
+        active = Statement(
+            Q(warehouse__is_active=True) & Q(warehouse__is_delete=False),
+            inherits=BaseModel.States.active
+        )
+        stock = Statement(inherits=active,usage='stock')
+        pick = Statement(inherits=active,usage='transfer-pick')
+        check = Statement(inherits=active,usage='transfer-check')
+        pack = Statement(inherits=active,usage='transfer-pack')
+        wait = Statement(inherits=active,usage='transfer-stream-wait')
+        deliver = Statement(inherits=active,usage='transfer-stream-deliver')
+        customer = Statement(inherits=active,usage='customer')
+        supplier = Statement(inherits=active,usage='supplier')
+        produce = Statement(inherits=active,usage='produce')
+        repair = Statement(inherits=active,usage='repair')
+        scrap = Statement(inherits=active,usage='scrap')
+        closeout = Statement(inherits=active,usage='close-out')
+        initial = Statement(inherits=active,usage='initial')
+        midway = Statement(inherits=active,usage='midway')
 
 
 class Location(BaseModel,TreeModel):
@@ -224,6 +234,29 @@ class Location(BaseModel,TreeModel):
         unique_together = (
             ('zone', 'x', 'y', 'z'),
         )
+
+    class States(BaseModel.States):
+        active = Statement(
+            (
+                Q(zone__is_delete=False) &
+                Q(zone__is_active=True) &
+                Q(zone__warehouse__is_delete=False) &
+                Q(zone__warehouse__is_active=True)
+            ),
+            inherits=BaseModel.States.active
+        )
+        virtual = Statement(inherits=active,is_virtual=True)
+        no_virtual = Statement(inherits=active,is_virtual=False)
+
+    def change_parent_node(self, node):
+        '''判断上级库位是否为虚拟库位'''
+        if node.is_virtual is True:
+            return super(Location, self).change_parent_node(node.id)
+        raise ValueError('上级库位必须为虚拟库位')
+
+    def get_product_quantity(self,product):
+        '''获取指定产品的数量'''
+        pass
 
 
 class Move(BaseModel):
@@ -301,6 +334,12 @@ class Move(BaseModel):
         verbose_name = '移动'
         verbose_name_plural = '移动'
 
+    class States(BaseModel.States):
+        active = BaseModel.States.active
+        draft = Statement(inherits=active,state='draft')
+        confirmed = Statement(inherits=active,state='confirmed')
+        done = Statement(inherits=active,state='done')
+
 
 # class PickOrder(StockOrder):
 #     '''分拣表单'''
@@ -342,6 +381,7 @@ class Move(BaseModel):
 #     '''报废表单'''
 #     pass
 
+
 class Path(BaseModel):
     '''路径'''
     from_location = LocationForeignKey(
@@ -372,40 +412,6 @@ class Path(BaseModel):
         unique_together = (
             ('from_location', 'to_location')
         )
-
-    def create_order_config_path(self):
-       OrderConfigPath.objects.bulk_create([
-            OrderConfigPath(path=self,create_order=True),
-            OrderConfigPath(path=self,create_order=False)
-        ])
-
-class OrderConfigPath(BaseModel):
-    '''订单配置路径'''
-    path = ActiveLimitForeignKey(
-        'stock.Path',
-        null=False,
-        blank=False,
-        verbose_name='路径',
-        related_name='order_configs',
-        help_text="相关的原始路径"
-    )
-
-    create_order = models.BooleanField(
-        '是否创建单据',
-        null=False,
-        blank=False,
-        default=False,
-        help_text="根据配置路径生成移动单时决定是否生成单据的配置"
-    )
-
-    def __str__(self):
-        return '{}({})'.format(self.path,self.create_order)
-
-    class Meta:
-        verbose_name = '路径配置',
-        verbose_name_plural = '路径配置',
-        unique_together = ('path','create_order')
-
 
 class Route(BaseModel):
     '''路线'''
@@ -441,7 +447,7 @@ class Route(BaseModel):
     )
 
     direct_path = ActiveLimitForeignKey(
-        'stock.OrderConfigPath',
+        'stock.Path',
         null=False,
         blank=False,
         related_name='direct_routes',
@@ -450,7 +456,7 @@ class Route(BaseModel):
     )
 
     paths = models.ManyToManyField(
-        'stock.OrderConfigPath',
+        'stock.Path',
         blank=False,
         verbose_name='路径',
         help_text="路线的详细路径"
@@ -489,6 +495,12 @@ class Route(BaseModel):
     class Meta:
         verbose_name = '路线'
         verbose_name_plural = '路线'
+
+    class States(BaseModel.States):
+        active = BaseModel.States.active
+        direct = Statement(inherits=active,return_method='direct')
+        fallback = Statement(inherits=active,return_method='fallback')
+        config = Statement(Q(return_route__isnull=False),inherits=active,return_method='config')
 
 
 class PackageType(BaseModel):

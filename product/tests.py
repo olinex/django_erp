@@ -16,11 +16,15 @@ class ProductCategory(TestCase):
         ])
         self.queryset = models.ProductCategory.objects.all()
 
-    def test_check_state(self):
-        self.assertEqual(self.instance.check_state('delete'), False)
-        self.assertEqual(self.instance.check_state('no_delete'), True)
-        self.assertEqual(self.instance.check_state('active'), True)
-        self.assertEqual(self.instance.check_state('no_active'), False)
+    def test_check_states(self):
+        self.assertEqual(self.instance.check_states('delete'), False)
+        self.assertEqual(self.instance.check_states('no_delete'), True)
+        self.assertEqual(self.instance.check_states('active'), True)
+        self.assertEqual(self.instance.check_states('no_active'), False)
+        self.assertTrue(self.instance.check_states('no_delete','active'))
+        self.assertTrue(self.instance.check_states('no_delete','no_active'))
+        self.assertTrue(self.instance.check_states('delete','active'))
+        self.assertFalse(self.instance.check_states('delete','no_active'))
 
     def test_set_state(self):
         self.instance.set_state('delete')
@@ -33,13 +37,13 @@ class ProductCategory(TestCase):
         self.assertEqual(self.instance.is_active, True)
 
     def test_check_to_set_state(self):
-        self.assertEqual(self.instance.check_to_set_state('no_delete', 'delete'), True)
+        self.assertEqual(self.instance.check_to_set_state('no_delete', set_state='delete'), True)
         self.assertEqual(self.instance.is_delete, True)
-        self.assertEqual(self.instance.check_to_set_state('delete', 'no_delete'), True)
+        self.assertEqual(self.instance.check_to_set_state('delete', set_state='no_delete'), True)
         self.assertEqual(self.instance.is_delete, False)
-        self.assertEqual(self.instance.check_to_set_state('active', 'no_active'), True)
+        self.assertEqual(self.instance.check_to_set_state('active', set_state='no_active'), True)
         self.assertEqual(self.instance.is_active, False)
-        self.assertEqual(self.instance.check_to_set_state('no_active', 'active'), True)
+        self.assertEqual(self.instance.check_to_set_state('no_active', set_state='active'), True)
         self.assertEqual(self.instance.is_active, True)
 
     def test_check_state_queryset(self):

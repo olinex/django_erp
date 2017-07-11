@@ -13,17 +13,16 @@ class StateMachine(object):
     class States:
         pass
 
-    def check_state(self, state):
+    def check_states(self,*states):
         '''
-        check instance's state
-        :param state: state symbol
+        check whether the instance's state is in states list
+        :param states: list of state symbol string
         :return: True/False
         '''
-        statement = self.get_state(state)
+
         return self.__class__.objects.filter(
-            *statement.args,
-            pk=self.pk,
-            **statement.kwargs
+            Q(pk=self.pk) &
+            self.__get_states_quest(*states)
         ).exists()
 
     def set_state(self, state):
@@ -38,23 +37,21 @@ class StateMachine(object):
         )
         self.refresh_from_db()
 
-    def check_to_set_state(self, check_state, set_state):
+    def check_to_set_state(self, *check_states,set_state):
         '''
-        check if instance is check_state and set it to set_state
-        :param check_state: check state symbol
-        :param set_state: set state symbol
-        :return: True/False 
+        check whether the instance's state in check_states and set it to set_state
+        :param check_states: list of state symbol string
+        :param set_state: state symbol string
+        :return: True/False
         '''
-        check_statement = self.get_state(check_state)
-        set_satement = self.get_state(set_state)
+        set_statement = self.get_state(set_state)
         with transaction.atomic():
             instance = self.__class__.objects.select_for_update().filter(
-                *check_statement.args,
-                pk=self.pk,
-                **check_statement.kwargs
+                Q(pk=self.pk) &
+                self.__get_states_quest(*check_states)
             )
             if instance:
-                instance.update(**set_satement.kwargs)
+                instance.update(**set_statement.kwargs)
                 self.refresh_from_db()
                 return True
             return False
@@ -62,6 +59,17 @@ class StateMachine(object):
     def get_state(self, state):
         '''get statement instance'''
         return getattr(self.States, state)
+
+    def __get_states_quest(self,*states):
+        '''get statement instances by list'''
+        from functools import reduce
+        if len(states) > 1:
+            return reduce(
+                lambda a,b:Q(*a.args,**a.kwargs) | Q(*b.args,**b.kwargs),
+                [self.get_state(state) for state in states]
+            )
+        statement = self.get_state(states[0])
+        return Q(*statement.args,**statement.kwargs)
 
     @classmethod
     def check_state_queryset(cls,state,queryset):
@@ -130,9 +138,10 @@ class StateMachine(object):
 class Statement(object):
     '''model's statement define in States inner class'''
 
-    def __init__(self, *args, inherits=None, **kwargs):
+    def __init__(self, *args, inherits=None,error_message='', **kwargs):
         self.kwargs = kwargs
         self.args = args
+        self.error_message = error_message
         if inherits:
             try:
                 for state in inherits:

@@ -59,8 +59,7 @@ class PackageTemplateProductSettingInline(CommonTabInLine):
 
 @admin.register(models.Warehouse)
 class WarehouseAdmin(CommonAdmin):
-    list_display = ('name', 'is_inside', 'user', 'address')
-    list_filter = ('is_inside',)
+    list_display = ('name', 'user', 'address')
     search_fields = ('name',)
     list_editable = ('name',)
     inlines = (

@@ -22,7 +22,7 @@ class WarehouseSerializer(ActiveModelSerializer):
 
     class Meta:
         model = models.Warehouse
-        fields = ('name', 'is_inside', 'user', 'address', 'user_detail', 'address_detail')
+        fields = ('name', 'user', 'address', 'user_detail', 'address_detail')
 
 
 class ZoneSerializer(ActiveModelSerializer):
