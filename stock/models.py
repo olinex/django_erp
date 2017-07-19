@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
+from decimal import Decimal as D
+from common import Redis
 from common.state import Statement
 from common.fields import (
     ActiveLimitForeignKey,
     ActiveLimitManyToManyField, ActiveLimitOneToOneField,
     SimpleStateCharField
 )
-from common.abstractModel import BaseModel,TreeModel
+from common.abstractModel import BaseModel, TreeModel
 from product.utils import QuantityField
 from account.utils import PartnerForeignKey
 from stock.utils import LocationForeignKey
@@ -15,6 +17,53 @@ from djangoperm.db import models
 from django.db import transaction
 from django.db.models import Q
 
+
+class CacheLocation(object):
+    '''库位的缓存类'''
+
+    def __init__(self, location):
+        self.location = location
+
+    @property
+    def cache_name(self):
+        return 'warehouse_{}_zone_{}_location_{}'.format(
+            self.location.zone.warehouse.pk,
+            self.location.zone.pk,
+            self.location.pk
+        )
+
+    def refresh(self, product, quantity, pipe=None):
+        redis = pipe or Redis()
+        redis.zincrby(self.cache_name, 'product_{}'.format(product.pk), quantity)
+
+    def lock(self,product,quantity,pipe=None):
+        redis = pipe or Redis()
+        redis.zincrby(self.cache_name, 'product_lock_{}'.format(product.pk), -quantity)
+
+    def free_all(self,product,pipe=None):
+        redis = pipe or Redis()
+        redis.zrem(self.cache_name,'product_lock_{}'.format(product.pk))
+
+    def sync(self):
+        '''同步库存的产品数量'''
+        if self.location.check_states('no_virtual'):
+            from product.models import Product
+            redis = Redis()
+            pipe = redis.pipeline()
+            pipe.delete(self.cache_name)
+            product_set = set(
+                move.procurement_detail_setting.detail.product
+                for move in Move.get_state_queryset('done')
+            )
+            for product in product_set:
+                self.refresh(
+                    product,
+                    self.location.in_sum(product) - self.location.out_sum(product),
+                    pipe=pipe
+                )
+            pipe.execute()
+            return True
+        return False
 
 
 class StockOrder(BaseModel):
@@ -95,29 +144,70 @@ class Warehouse(BaseModel):
         创建仓库下的各个区域
         :return:dict
         '''
-        Zone.objects.bulk_create([
-            Zone(warehouse=self,usage=usage)
-            for usage in Zone.LAYOUT_USAGE
-        ])
+        with transaction.atomic():
+            for usage in Zone.LAYOUT_USAGE:
+                zone = Zone.objects.create(
+                    warehouse=self,
+                    usage=usage[0]
+                )
+                location = Location.objects.create(
+                    zone=zone,
+                    parent_node=None,
+                    is_virtual=True,
+                    x='', y='', z=''
+                )
+                zone.root_location = location
+                zone.save()
+
+    @property
+    def leaf_child_locations(self):
+        '''获得仓库下所有的叶节点库位'''
+        return Location.get_state_queryset('no_virtual').filter(zone__warehouse=self)
+
+    @property
+    @classmethod
+    def leaf_child_locations_cache_name(cls):
+        from functools import reduce
+        return reduce(
+            lambda a, b: a + b,
+            [
+                [node.cache.cache_name for node in warehouse.leaf_child_locations]
+                for warehouse in cls.get_state_queryset('active')
+            ]
+        )
+
+    def get_product_quantity(self, product, usage='all'):
+        if usage in Zone.States.USAGE_STATES.keys():
+            zone = Zone.get_state_queryset(usage, self.zones.all())[0]
+            return zone.get_product_quantity(product)
+        elif usage == 'all':
+            redis = Redis()
+            return D(redis.zinterstore(
+                dest=('product_{}'.format(product.pk),),
+                keys=[location.cache.cache_name for location in self.leaf_child_locations]
+            )
+            )
+        else:
+            return D('0')
 
 
 class Zone(BaseModel):
     '''区域'''
     LAYOUT_USAGE = (
         ('stock', '仓库'),
-        ('transfer-pick', '分拣流程区域'),
-        ('transfer-check', '验货流程区域'),
-        ('transfer-pack', '包裹流程区域'),
-        ('transfer-stream-wait', '物流等待流程区域'),
-        ('transfer-stream-deliver', '物流运输流程区域'),
+        ('pick', '分拣流程区域'),
+        ('check', '验货流程区域'),
+        ('pack', '包裹流程区域'),
+        ('wait', '物流等待流程区域'),
+        ('deliver', '物流运输流程区域'),
         ('customer', '顾客区域'),
         ('supplier', '供应商区域'),
         ('produce', '生产区域'),
         ('repair', '返工维修区域'),
         ('scrap', '报废区域'),
-        ('close-out', '平仓区域'),
+        ('closeout', '平仓区域'),
         ('initial', '初始区域'),
-        ('midway','中途岛区域')
+        ('midway', '中途岛区域')
     )
 
     warehouse = ActiveLimitForeignKey(
@@ -125,6 +215,7 @@ class Zone(BaseModel):
         null=False,
         blank=False,
         verbose_name='仓库',
+        related_name='zones',
         help_text="区域所属的仓库"
     )
 
@@ -133,9 +224,18 @@ class Zone(BaseModel):
         null=False,
         blank=False,
         choices=LAYOUT_USAGE,
-        max_length=20,
+        max_length=30,
         default='container',
         help_text="区域的用途"
+    )
+
+    root_location = ActiveLimitForeignKey(
+        'stock.Location',
+        null=True,
+        blank=True,
+        verbose_name='根节点',
+        related_name='self_zone',
+        help_text="代表区域本身的根库位"
     )
 
     def __str__(self):
@@ -153,23 +253,43 @@ class Zone(BaseModel):
             Q(warehouse__is_active=True) & Q(warehouse__is_delete=False),
             inherits=BaseModel.States.active
         )
-        stock = Statement(inherits=active,usage='stock')
-        pick = Statement(inherits=active,usage='transfer-pick')
-        check = Statement(inherits=active,usage='transfer-check')
-        pack = Statement(inherits=active,usage='transfer-pack')
-        wait = Statement(inherits=active,usage='transfer-stream-wait')
-        deliver = Statement(inherits=active,usage='transfer-stream-deliver')
-        customer = Statement(inherits=active,usage='customer')
-        supplier = Statement(inherits=active,usage='supplier')
-        produce = Statement(inherits=active,usage='produce')
-        repair = Statement(inherits=active,usage='repair')
-        scrap = Statement(inherits=active,usage='scrap')
-        closeout = Statement(inherits=active,usage='close-out')
-        initial = Statement(inherits=active,usage='initial')
-        midway = Statement(inherits=active,usage='midway')
+        stock = Statement(inherits=active, usage='stock')
+        pick = Statement(inherits=active, usage='pick')
+        check = Statement(inherits=active, usage='check')
+        pack = Statement(inherits=active, usage='pack')
+        wait = Statement(inherits=active, usage='wait')
+        deliver = Statement(inherits=active, usage='deliver')
+        customer = Statement(inherits=active, usage='customer')
+        supplier = Statement(inherits=active, usage='supplier')
+        produce = Statement(inherits=active, usage='produce')
+        repair = Statement(inherits=active, usage='repair')
+        scrap = Statement(inherits=active, usage='scrap')
+        closeout = Statement(inherits=active, usage='closeout')
+        initial = Statement(inherits=active, usage='initial')
+        midway = Statement(inherits=active, usage='midway')
+        USAGE_STATES = {
+            'stock': stock,
+            'pick': pick,
+            'check': check,
+            'pack': pack,
+            'wait': wait,
+            'deliver': deliver,
+            'customer': customer,
+            'supplier': supplier,
+            'produce': produce,
+            'repair': repair,
+            'scrap': scrap,
+            'closeout': closeout,
+            'initial': initial,
+            'midway': midway
+        }
+
+    def get_product_quantity(self, product):
+        '''获得区域指定产品的数量'''
+        return self.root_location.get_product_quantity(product)
 
 
-class Location(BaseModel,TreeModel):
+class Location(BaseModel, TreeModel):
     '''库位'''
 
     zone = ActiveLimitForeignKey(
@@ -245,18 +365,66 @@ class Location(BaseModel,TreeModel):
             ),
             inherits=BaseModel.States.active
         )
-        virtual = Statement(inherits=active,is_virtual=True)
-        no_virtual = Statement(inherits=active,is_virtual=False)
+        virtual = Statement(inherits=active, is_virtual=True)
+        no_virtual = Statement(inherits=active, is_virtual=False)
+        root = Statement(inherits=virtual, parent_node=None)
 
     def change_parent_node(self, node):
         '''判断上级库位是否为虚拟库位'''
-        if node.is_virtual is True:
+        if node.check_states('virtual'):
             return super(Location, self).change_parent_node(node.id)
         raise ValueError('上级库位必须为虚拟库位')
 
-    def get_product_quantity(self,product):
+    @property
+    def leaf_child_nodes(self):
+        '''获得所有叶子节点'''
+        return self.__class__.get_state_queryset('no_virtual', self.all_child_nodes)
+
+    @property
+    def cache(self):
+        return CacheLocation(location=self)
+
+    def in_sum(self, product):
+        '''获取指定产品在库位的移入数量'''
+        from django.db.models import Sum
+        return Move.get_state_queryset('done').filter(
+            to_location=self,
+            procurement_detail_setting__detail__product=product
+        ).aggregate(in_sum=Sum('quantity'))['in_sum'] or D('0')
+
+    def out_sum(self, product):
+        '''获取指定产品的库位的移出数量'''
+        from django.db.models import Sum
+        return Move.get_state_queryset('done').filter(
+            from_location=self,
+            procurement_detail_setting__detail__product=product
+        ).aggregate(out_sum=Sum('quantity'))['out_sum'] or D('0')
+
+    def get_lock_product_quantity(self,product):
+        redis = Redis()
+        return D(redis.zscore(self.cache.cache_name,'product_lock_{}'.format(product.pk)))
+
+    def get_product_quantity(self, product):
         '''获取指定产品的数量'''
-        pass
+        redis = Redis()
+        product_field = 'product_{}'.format(product.pk)
+        product_lock_field = 'product_lock_{}'.format(product.pk)
+        if self.check_states('virtual'):
+            keys = [node.cache.cache_name for node in self.leaf_child_nodes]
+            return D(redis.zinterstore(
+                dest=(product_field,product_lock_field),
+                keys=keys
+            ))
+        elif self.check_states('no_virtual'):
+            return D(redis.zscore(
+                self.cache.cache_name,
+                product_field
+            ) or '0') + D(redis.zscore(
+                self.cache.cache_name,
+                product_lock_field
+            ) or '0')
+        else:
+            return D('0')
 
 
 class Move(BaseModel):
@@ -336,9 +504,51 @@ class Move(BaseModel):
 
     class States(BaseModel.States):
         active = BaseModel.States.active
-        draft = Statement(inherits=active,state='draft')
-        confirmed = Statement(inherits=active,state='confirmed')
-        done = Statement(inherits=active,state='done')
+        draft = Statement(inherits=active, state='draft')
+        confirmed = Statement(inherits=active, state='confirmed')
+        done = Statement(inherits=active, state='done')
+
+    @property
+    def product(self):
+        return self.procurement_detail_setting.detail.product
+
+    def refresh_lock_product_quantity(self):
+        return self.from_location.cache.lock(
+            product=self.product,
+            quantity=self.quantity
+        )
+
+    def refresh_product_quantity(self):
+        redis = Redis()
+        pipe = redis.pipeline()
+        product = self.product
+        self.from_location.cache.refresh(
+            product=product,
+            quantity=(-self.quantity),
+            pipe=pipe
+        )
+        self.to_location.cache.refresh(
+            product=product,
+            quantity=self.quantity,
+            pipe=pipe
+        )
+        self.from_location.cache.lock(product,-self.quantity,pipe=pipe)
+        if self.from_location.zone.usage != self.to_location.zone.usage:
+            product.cache.refresh(self.from_location.zone.usage, -self.quantity, pipe=pipe)
+            product.cache.refresh(self.to_location.zone.usage, self.quantity, pipe=pipe)
+        pipe.execute()
+
+    def confirm(self):
+        if self.check_to_set_state('draft',set_state='confirmed'):
+            self.refresh_lock_product_quantity()
+            return True
+        return False
+
+    def done(self):
+        if self.check_to_set_state('confirmed',set_state='done'):
+            self.refresh_product_quantity()
+            return True
+        return False
 
 
 # class PickOrder(StockOrder):
@@ -413,6 +623,7 @@ class Path(BaseModel):
             ('from_location', 'to_location')
         )
 
+
 class Route(BaseModel):
     '''路线'''
     RETURN_METHOD = (
@@ -430,20 +641,11 @@ class Route(BaseModel):
         help_text="路线的名称"
     )
 
-    map = models.JSONField(
-        null=False,
-        blank=False,
-        json_type='list',
-        help_text="以json格式保存的路径顺序"
-    )
-
-    map_md5 = models.CharField(
-        '路径顺序列表的md5值',
-        null=False,
-        blank=False,
-        unique=True,
-        max_length=40,
-        help_text='路径顺序列表的的md5值'
+    warehouse = ActiveLimitForeignKey(
+        'stock.Warehouse',
+        verbose_name='仓库',
+        related_name='routes',
+        help_text="路线所属的仓库"
     )
 
     direct_path = ActiveLimitForeignKey(
@@ -457,8 +659,11 @@ class Route(BaseModel):
 
     paths = models.ManyToManyField(
         'stock.Path',
+        through='stock.RoutePathSortSetting',
+        through_fields=('route','path'),
         blank=False,
         verbose_name='路径',
+        related_name='routes',
         help_text="路线的详细路径"
     )
 
@@ -498,9 +703,43 @@ class Route(BaseModel):
 
     class States(BaseModel.States):
         active = BaseModel.States.active
-        direct = Statement(inherits=active,return_method='direct')
-        fallback = Statement(inherits=active,return_method='fallback')
-        config = Statement(Q(return_route__isnull=False),inherits=active,return_method='config')
+        direct = Statement(inherits=active, return_method='direct')
+        fallback = Statement(inherits=active, return_method='fallback')
+        config = Statement(Q(return_route__isnull=False), inherits=active, return_method='config')
+
+class RoutePathSortSetting(models.Model):
+    '''路线的路径配置'''
+    route = ActiveLimitForeignKey(
+        'stock.Route',
+        null=False,
+        blank=False,
+        verbose_name='路线',
+        related_name='route_path_sort_settings',
+        help_text="路径设置所属的路线"
+    )
+
+    path = ActiveLimitForeignKey(
+        'stock.Path',
+        null=False,
+        blank=False,
+        verbose_name='路径',
+        related_name='route_path_sort_settings',
+        help_text="路径设置所设置的路径"
+    )
+
+    sequence = models.PositiveSmallIntegerField(
+        '排序',
+        null=False,
+        blank=False,
+        default=0,
+        help_text="路径设置的排序"
+    )
+
+    class Meta:
+        verbose_name = '路线的路径配置'
+        verbose_name_plural = '路线的路径配置'
+        unique_together = ('route','path','sequence')
+        ordering = ('sequence',)
 
 
 class PackageType(BaseModel):
@@ -729,6 +968,21 @@ class Procurement(BaseModel):
     class Meta:
         verbose_name = '需求'
         verbose_name_plural = '需求'
+
+    class States(BaseModel.States):
+        active = BaseModel.States.active
+        draft = Statement(inherits=active,state='draft')
+        confirmed = Statement(inherits=active,state='confirmed')
+        done = Statement(inherits=active,state='done')
+
+    def confirm(self):
+        '''判断'''
+        with transaction.atomic():
+            if self.check_states('draft'):
+                self.set_state('confirmed')
+                return True
+            return False
+
 
 class ProcurementDetail(BaseModel):
     '''需求明细'''

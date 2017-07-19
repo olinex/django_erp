@@ -55,6 +55,7 @@ class SimpleStateCharField(models.CharField):
         )
         kwargs['null'] = kwargs.get('null',False)
         kwargs['blank'] = kwargs.get('blank',False)
+        kwargs['default'] = 'draft'
         kwargs['max_length'] = kwargs.get('max_length',10)
         super(SimpleStateCharField, self).__init__(*args, **kwargs)
 

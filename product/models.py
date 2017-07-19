@@ -4,12 +4,78 @@
 from decimal import Decimal as D
 from django.db import transaction
 from common import state
+from common import Redis
 from common.abstractModel import BaseModel
 from common.fields import (
     ActiveLimitForeignKey, ActiveLimitManyToManyField, MD5CharField,
     ActiveLimitOneToOneField
 )
 from djangoperm.db import models
+
+
+class CacheProduct(object):
+    '''产品的缓存对象'''
+    ALL = ['stock','pick','check','pack','wait','deliver','midway']
+    SETTLED = ['customer','repair']
+    TRANSPORTING = ['pick','check','pack','wait','deliver','midway']
+
+    def __init__(self, product):
+        self.product = product
+
+    @property
+    def cache_name(self):
+        return 'template_{}_product_{}'.format(
+            self.product.template.pk,
+            self.product.pk
+        )
+
+    def get_quantity(self,usages):
+        from stock.models import Zone
+        redis = Redis()
+        usage_list = list(Zone.States.USAGE_STATES.keys())
+        if usages in usage_list:
+            return D(redis.zscore(self.cache_name,usages))
+        elif isinstance(usages,(list,tuple)) and all(usage in usage_list for usage in usages):
+            return sum(
+                D(redis.zscore(self.cache_name,usage)) for usage in usages
+            )
+
+    @property
+    def all(self):
+        return self.get_quantity(self.ALL)
+
+    @property
+    def settled(self):
+        return self.get_quantity(self.SETTLED)
+
+    @property
+    def transporting(self):
+        return self.get_quantity(self.TRANSPORTING)
+
+    def refresh(self, field, quantity, pipe=None):
+        '''更新字段数量'''
+        from stock.models import Zone
+        if field in Zone.States.USAGE_STATES.keys():
+            redis = pipe or Redis()
+            return redis.zincrby(self.cache_name, field, quantity)
+        raise AttributeError('错误的字段类型名称')
+
+    def sync(self):
+        '''同步所有的仓库的产品数量'''
+        from stock.models import Warehouse, Zone
+        redis = Redis()
+        pipe = redis.pipeline()
+        watch_keys = Warehouse.leaf_child_locations_cache_name
+        pipe.watch(watch_keys)
+        pipe.delete(self.cache_name)
+        for warehouse in Warehouse.get_state_queryset('active'):
+            for usage in Zone.States.USAGE_STATES.keys():
+                quantity = warehouse.get_product_quantity(
+                    product=self.product,
+                    usage=usage,
+                )
+                pipe.zincrby(self.cache_name, usage, quantity)
+        pipe.execute()
 
 
 class ProductCategory(BaseModel, state.StateMachine):
@@ -157,6 +223,10 @@ class Product(BaseModel):
             ]
         )
 
+    @property
+    def cache(self):
+        return CacheProduct(self)
+
 
 class Validation(BaseModel):
     '''产品验货配置'''
@@ -258,6 +328,13 @@ class ValidateAction(BaseModel):
 
 class ProductTemplate(BaseModel):
     '''产品模版'''
+    STOCK_TYPE = (
+        ('service','服务'),
+        ('digital','数字产品'),
+        ('stock-expiration','过期仓储'),
+        ('stock-no-expiration','不过期仓储'),
+        ('consumable','易耗品')
+    )
     name = models.CharField(
         '名称',
         unique=True,
@@ -265,6 +342,15 @@ class ProductTemplate(BaseModel):
         blank=False,
         max_length=190,
         help_text="产品模板的名称"
+    )
+
+    stock_type = models.CharField(
+        '库存类型',
+        null=False,
+        blank=False,
+        max_length=20,
+        choices=STOCK_TYPE,
+        help_text="产品的库存类型"
     )
 
     attributes = ActiveLimitManyToManyField(
@@ -511,7 +597,7 @@ class UOM(BaseModel):
     def __str__(self):
         return self.name + '(' + self.symbol + ')'
 
-    def floor_value(self, value):
+    def accuracy_convert(self, value):
         '''
         将value转换为单位的精度
         :param value: decimal
@@ -524,6 +610,27 @@ class UOM(BaseModel):
                 decimal.Decimal('0.' + ('0' * self.decimal_places)),
                 rounding=getattr(decimal, self.round_method),
             )
+
+    def convert(self, value, to_uom):
+        '''
+        将value转换为指定单位的值
+        :param value: decimal
+        :param to_uom: uom
+        :return: decimal
+        '''
+        if self.category == to_uom.category:
+            if self.ratio_type == 'smaller':
+                new_value = value * self.ratio
+            elif self.ratio_type == 'greater':
+                new_value = value / self.ratio
+            else:
+                new_value = value
+            if to_uom.ratio_type == 'smaller':
+                new_value = new_value * to_uom.ratio
+            elif self.ratio_type == 'greater':
+                new_value = new_value / self.ratio
+            return to_uom.accuracy_convert(new_value)
+        raise AttributeError('转换与被转换的单位必须属于相同的单位类型')
 
 
 class Lot(BaseModel):

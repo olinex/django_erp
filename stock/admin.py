@@ -38,6 +38,14 @@ class ProcurementFromLocationSettingInline(CommonTabInLine):
         )}),
     )
 
+class RoutePathSortSettingInline(CommonTabInLine):
+    model = models.RoutePathSortSetting
+    fieldsets = (
+        (None, {'fields': (
+            'route', 'path', 'sequence'
+        )})
+    )
+
 
 class PackageTypeProductSettingInline(CommonTabInLine):
     model = models.PackageTypeProductSetting
@@ -120,13 +128,13 @@ class PathAdmin(CommonAdmin):
 
 @admin.register(models.Route)
 class RouteAdmin(CommonAdmin):
-    list_display = ('name', 'direct_path', 'return_method', 'sequence')
-    list_filter = ('return_method',)
+    list_display = ('name', 'warehouse', 'direct_path', 'return_method', 'sequence')
+    list_filter = ('return_method','warehouse')
     list_editable = ('name', 'return_method', 'sequence')
     search_fields = ('name',)
     fieldsets = (
         (None, {'fields': (
-            'name', ('direct_path', 'paths'),
+            'name', 'warehouse', 'direct_path',
             ('return_route', 'return_method'), 'sequence'
         )}),
     )

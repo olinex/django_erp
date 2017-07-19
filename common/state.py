@@ -20,9 +20,9 @@ class StateMachine(object):
         :return: True/False
         '''
 
-        return self.__class__.objects.filter(
+        return self.__class__.objects.select_for_update().filter(
             Q(pk=self.pk) &
-            self.__get_states_quest(*states)
+            self.__get_states_query(*states)
         ).exists()
 
     def set_state(self, state):
@@ -48,7 +48,7 @@ class StateMachine(object):
         with transaction.atomic():
             instance = self.__class__.objects.select_for_update().filter(
                 Q(pk=self.pk) &
-                self.__get_states_quest(*check_states)
+                self.__get_states_query(*check_states)
             )
             if instance:
                 instance.update(**set_statement.kwargs)
@@ -60,7 +60,7 @@ class StateMachine(object):
         '''get statement instance'''
         return getattr(self.States, state)
 
-    def __get_states_quest(self,*states):
+    def __get_states_query(self,*states):
         '''get statement instances by list'''
         from functools import reduce
         if len(states) > 1:

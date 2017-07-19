@@ -16,3 +16,10 @@ class QuantityField(models.DecimalField):
         name, path, args, kwargs = super(QuantityField, self).deconstruct()
         kwargs['uom'] = self.uom
         return name, path, args, kwargs
+
+def get_quantity_by_uom(instance,field_name,uom=None):
+    '''获得对象指定单位格式的数量'''
+    from functools import reduce
+    quantity = getattr(instance,field_name)
+    default_uom = reduce(getattr,[instance] + instance.__class__._meta.fields[field_name].uom.join('.'))
+

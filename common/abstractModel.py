@@ -147,14 +147,14 @@ class TreeModel(models.Model):
             level=0
         )
 
-    def change_parent_node(self, node_id):
+    def change_parent_node(self, node_pk):
         '''
         修改父节点时,同步更新该节点下的所有子节点key和level
         :node:PackageNode Instance
         :return:True
         '''
         with transaction.atomic():
-            node=self.__class__.objects.select_for_update().get(id=node_id)
+            node=self.__class__.objects.select_for_update().get(pk=node_pk)
             new_index = '{}{}-'.format(node.index, str(node.id))
             old_index = self.index
             self.all_child_nodes.select_for_update().update(

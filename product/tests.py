@@ -5,7 +5,7 @@ import random, string
 from decimal import Decimal as D
 from . import models
 from django.test import TestCase
-from common.test import UserSetUpTestCase
+from common.test import EnvSetUpTestCase
 
 
 class ProductCategory(TestCase):
