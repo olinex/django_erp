@@ -9,7 +9,10 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from account.models import Province,City,Region,Address,Company
 from product.models import ProductCategory,ProductTemplate,UOM,Attribute,Lot,Barcode
-from stock.models import Warehouse,Location,Move,Path,Route,Procurement,ProcurementDetail,ProcurementFromLocationSetting
+from stock.models import (
+    Warehouse,Location,Move,Path,Route,Procurement,ProcurementDetail,
+    ProcurementFromLocationSetting,RoutePathSortSetting
+)
 
 User=get_user_model()
 
@@ -205,11 +208,11 @@ class EnvSetUpTestCase(TestCase):
         )
         self.route = Route.objects.create(
             name='route_test',
-            map=[self.path.pk],
+            warehouse=self.warehouse,
             direct_path=self.path,
             return_method='direct',
         )
-        self.route.paths.add(self.path)
+        RoutePathSortSetting.objects.create(route=self.route,path=self.path)
         self.procurement = Procurement.objects.create(
             to_location=self.location_stock,
             user=self.superuser
