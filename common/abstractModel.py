@@ -97,7 +97,7 @@ class TreeModel(models.Model):
         :return: PackageNode Instance
         '''
         if self.index != '':
-            return self.__class__.objects.filter(
+            return self.__class__.objects.get(
                 id=int(self.index.split('-')[0]),
                 level=0
             )

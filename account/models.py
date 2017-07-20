@@ -1,23 +1,31 @@
 #!/usr/bin/env python3
-#-*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 
 from djangoperm.db import models
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.db.models import Manager
 from common.abstractModel import BaseModel
-from common.fields import ActiveLimitForeignKey,ActiveLimitOneToOneField,ActiveLimitManyToManyField
+from common.fields import ActiveLimitForeignKey, ActiveLimitOneToOneField, ActiveLimitManyToManyField
 
-COUNTRYS = (
-    ('China','中国'),
+COUNTRIES = (
+    ('China', '中国'),
 )
+
 
 class Province(BaseModel):
     '''省份'''
+
+    class KeyManager(Manager):
+        def get_by_natural_key(self, country, name):
+            return self.get(country=country, name=name)
+
+    objects = KeyManager()
+
     country = models.CharField(
         '国家',
         null=False,
         blank=False,
-        choices=COUNTRYS,
+        choices=COUNTRIES,
         max_length=90,
         help_text="省份的所属国家"
     )
@@ -33,13 +41,27 @@ class Province(BaseModel):
     class Meta:
         verbose_name = '省份'
         verbose_name_plural = '省份'
-        unique_together=('country','name')
+        unique_together = ('country', 'name')
 
     def __str__(self):
         return self.get_country_display() + '/' + self.name
 
+    def natural_key(self):
+        return (self.country, self.name)
+
+
 class City(BaseModel):
     '''城市'''
+    class KeyManager(Manager):
+        def get_by_natural_key(self,country,province,name):
+            return self.get(
+                province__country=country,
+                province__name=province,
+                name=name
+            )
+
+    objects = KeyManager()
+
     province = ActiveLimitForeignKey(
         'account.Province',
         null=False,
@@ -49,7 +71,7 @@ class City(BaseModel):
         help_text="城市的所属省份"
     )
 
-    name =  models.CharField(
+    name = models.CharField(
         '名称',
         null=False,
         blank=False,
@@ -60,10 +82,15 @@ class City(BaseModel):
     class Meta:
         verbose_name = '城市'
         verbose_name_plural = '城市'
-        unique_together=('province','name')
+        unique_together = ('province', 'name')
 
     def __str__(self):
         return str(self.province) + '/' + self.name
+
+    def natural_key(self):
+        return self.province.natural_key() + (self.name,)
+    natural_key.dependencies = ['account.Province']
+
 
 class Region(BaseModel):
     '''地区'''
@@ -76,7 +103,7 @@ class Region(BaseModel):
         help_text="地区的所属城市"
     )
 
-    name =  models.CharField(
+    name = models.CharField(
         '名称',
         null=False,
         blank=False,
@@ -87,10 +114,11 @@ class Region(BaseModel):
     class Meta:
         verbose_name = '地区'
         verbose_name_plural = '地区'
-        unique_together=('city','name')
+        unique_together = ('city', 'name')
 
     def __str__(self):
         return str(self.city) + '/' + self.name
+
 
 class Address(BaseModel):
     '''顾客或公司的地址'''
@@ -114,10 +142,11 @@ class Address(BaseModel):
     class Meta:
         verbose_name = '地址'
         verbose_name_plural = '地址'
-        unique_together = ('region','name')
+        unique_together = ('region', 'name')
 
     def __str__(self):
-        return str(self.region)+'/'+self.name
+        return str(self.region) + '/' + self.name
+
 
 class Profile(models.Model):
     '''用户的其他信息'''
@@ -223,6 +252,7 @@ class Profile(models.Model):
     def __str__(self):
         return '{}-{}'.format(self.user.id, self.user.get_full_name() or self.user.get_username())
 
+
 class Company(BaseModel):
     '''公司'''
     name = models.CharField(
@@ -268,7 +298,7 @@ class Company(BaseModel):
         settings.AUTH_USER_MODEL,
         verbose_name='公司管理员',
         related_name='belong_companies',
-        limit_choices_to={'is_active':True,'is_superuser':False,'is_staff':False},
+        limit_choices_to={'is_active': True, 'is_superuser': False, 'is_staff': False},
         help_text='管理公司的人员')
 
     salable = models.BooleanField(
@@ -286,8 +316,7 @@ class Company(BaseModel):
     class Meta:
         verbose_name = '公司'
         verbose_name_plural = '公司'
-        unique_together=('name','address')
+        unique_together = ('name', 'address')
 
     def __str__(self):
         return self.name
-

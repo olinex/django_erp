@@ -1,0 +1,13 @@
+- model: account.City
+  fields:
+    province: [China,广东省]
+    name: 深圳市
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.City
+  fields:
+    province: [China,广西省]
+    name: 桂林市
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'

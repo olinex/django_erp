@@ -1,0 +1,13 @@
+- model: account.Province
+  fields:
+    country: China
+    name: 广东省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 广西省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
