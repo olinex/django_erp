@@ -21,7 +21,14 @@ class WarehouseTestCase(EnvSetUpTestCase):
         self.assertEqual(self.product.cache.transporting,D('0'))
 
     def test_location_tree(self):
-        self.assertEqual(self.location_initial.root_node,self.zone_initial.root_location)
+        self.assertTrue(self.location_initial.all_parent_nodes)
         self.assertFalse(self.location_initial.all_child_nodes)
+        self.assertEqual(self.location_initial.root_node,self.zone_initial.root_location)
+        self.assertEqual(self.location_initial.all_parent_nodes.first(),self.zone_initial.root_location)
+        self.assertEqual(self.zone_initial.root_location.all_child_nodes.first(),self.location_initial)
+        self.assertFalse(self.location_initial.sibling_nodes)
+        self.assertIsNone(self.location_initial.change_parent_node(self.zone_stock.root_location))
+        self.assertIsNotNone(self.location_stock.sibling_nodes.first())
+        self.assertEqual(self.location_stock.sibling_nodes.first(),self.location_initial)
 
 

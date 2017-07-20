@@ -26,6 +26,7 @@ class WarehouseSerializer(ActiveModelSerializer):
 
 
 class ZoneSerializer(ActiveModelSerializer):
+    warehouse = StatePrimaryKeyRelatedField(models.Warehouse,'active')
     warehouse_detail = WarehouseSerializer(source='warehouse', read_only=True)
 
     class Meta:

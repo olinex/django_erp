@@ -1,6 +1,132 @@
 - model: account.Province
   fields:
     country: China
+    name: 北京市
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 天津市
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 上海市
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 重庆市
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 河北省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 山西省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 辽宁省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 吉林省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 黑龙江省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 江苏省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 浙江省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 安徽省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 福建省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 江西省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 山东省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 河南省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 湖北省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 湖南省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
     name: 广东省
     create_time: '2017-07-20 05:15:05.622672+08:00'
     last_modify_time: '2017-07-20 05:15:05.622672+08:00'
@@ -8,6 +134,104 @@
 - model: account.Province
   fields:
     country: China
-    name: 广西省
+    name: 海南省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 四川省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 贵州省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 云南省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 陕西省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 甘肃省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 青海省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 台湾省
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 内蒙古自治区
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 广西壮族自治区
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 西藏自治区
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 宁夏回族自治区
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 新疆维吾尔自治区
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 香港特别行政区
+    create_time: '2017-07-20 05:15:05.622672+08:00'
+    last_modify_time: '2017-07-20 05:15:05.622672+08:00'
+
+- model: account.Province
+  fields:
+    country: China
+    name: 澳门特别行政区
     create_time: '2017-07-20 05:15:05.622672+08:00'
     last_modify_time: '2017-07-20 05:15:05.622672+08:00'

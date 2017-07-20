@@ -15,7 +15,7 @@ from account.utils import PartnerForeignKey
 from stock.utils import LocationForeignKey
 from djangoperm.db import models
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q,F
 
 
 class CacheLocation(object):
@@ -371,7 +371,7 @@ class Location(BaseModel, TreeModel):
 
     def change_parent_node(self, node):
         '''判断上级库位是否为虚拟库位'''
-        if node.check_states('virtual'):
+        if node.check_states('virtual') and self.check_states('active') and self.zone is node.zone:
             return super(Location, self).change_parent_node(node.id)
         raise ValueError('上级库位必须为虚拟库位')
 

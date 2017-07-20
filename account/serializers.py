@@ -132,7 +132,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id', 'username', 'first_name', 'last_name',
-            'is_active', 'email', 'profile', 'profile_detail', 'permissions'
+            'is_active', 'email', 'profile_detail', 'permissions'
         )
 
     def create(self, validated_data):

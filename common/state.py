@@ -31,7 +31,7 @@ class StateMachine(object):
         :param state: state symbol
         :return: True/False
         '''
-        statement = self.get_state(state)
+        statement = self.get_statement(state)
         self.__class__.objects.filter(pk=self.pk).update(
             **statement.kwargs
         )
@@ -44,7 +44,7 @@ class StateMachine(object):
         :param set_state: state symbol string
         :return: True/False
         '''
-        set_statement = self.get_state(set_state)
+        set_statement = self.get_statement(set_state)
         with transaction.atomic():
             instance = self.__class__.objects.select_for_update().filter(
                 Q(pk=self.pk) &
@@ -56,7 +56,7 @@ class StateMachine(object):
                 return True
             return False
 
-    def get_state(self, state):
+    def get_statement(self, state):
         '''get statement instance'''
         return getattr(self.States, state)
 
@@ -66,9 +66,9 @@ class StateMachine(object):
         if len(states) > 1:
             return reduce(
                 lambda a,b:Q(*a.args,**a.kwargs) | Q(*b.args,**b.kwargs),
-                [self.get_state(state) for state in states]
+                [self.get_statement(state) for state in states]
             )
-        statement = self.get_state(states[0])
+        statement = self.get_statement(states[0])
         return Q(*statement.args,**statement.kwargs)
 
     @classmethod

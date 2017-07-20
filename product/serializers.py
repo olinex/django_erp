@@ -92,6 +92,7 @@ class ValidateActionSerializer(ActiveModelSerializer):
 
 
 class ValidationSerializer(ActiveModelSerializer):
+    actions = StatePrimaryKeyRelatedField(models.ValidateAction,'active',many=True)
     actions_detail = ValidateActionSerializer(source='actions', read_only=True, many=True)
 
     class Meta:
