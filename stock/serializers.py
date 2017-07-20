@@ -77,14 +77,21 @@ class PathSerializer(ActiveModelSerializer):
         )
 
 class RouteSerializer(ActiveModelSerializer):
-    map=serializers.ListField(child=serializers.IntegerField())
+    warehouse_detail=WarehouseSerializer(source='warehouse',read_only=True)
     paths_detail=PathSerializer(source='paths',many=True,read_only=True)
     class Meta:
         model=models.Route
         fields=(
-            'name','map','direct_path',
+            'name','warehouse','warehouse_detail','direct_path',
             'paths','paths_detail','return_route',
             'return_method','sequence'
+        )
+
+class RoutePathSortSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=models.RoutePathSortSetting
+        fields=(
+            'route','path','sequence'
         )
 
 class PackageTypeProductSettingSerializer(serializers.ModelSerializer):

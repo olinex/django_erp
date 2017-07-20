@@ -31,9 +31,13 @@ class RouteViewSet(BaseViewSet):
     model=models.Route
     serializer_class = serializers.RouteSerializer
 
+class RoutePathSortSettingViewSet(PermMethodViewSet):
+    model=models.RoutePathSortSetting
+    allow_actions = ('create','list','retrieve','update','destroy')
+
 class PackageTypeProductSettingViewSet(PermMethodViewSet):
     model=models.PackageTypeProductSetting
-    allow_actions = ('create','list','retrieve','update')
+    allow_actions = ('create','list','retrieve','update','destroy')
     serializer_class = serializers.PackageTypeProductSettingSerializer
 
 class PackageTypeViewSet(BaseViewSet):
@@ -42,7 +46,7 @@ class PackageTypeViewSet(BaseViewSet):
 
 class PackageTemplateProductSettingViewSet(PermMethodViewSet):
     model = models.PackageTemplateProductSetting
-    allow_actions = ('create', 'list', 'retrieve', 'update')
+    allow_actions = ('create', 'list', 'retrieve', 'update','destroy')
     serializer_class = serializers.PackageTypeProductSettingSerializer
 
 class PackageTemplateViewSet(BaseViewSet):
@@ -55,7 +59,7 @@ class PackageNodeViewSet(BaseViewSet):
 
 class ProcurementFromLocationSettingViewSet(PermMethodViewSet):
     model = models.ProcurementFromLocationSetting
-    allow_actions = ('create', 'list', 'retrieve', 'update')
+    allow_actions = ('create', 'list', 'retrieve', 'update','destroy')
     serializer_class = serializers.ProcurementFromLocationSettingSerializer
 
 class ProcurementDetailViewSet(BaseViewSet):
