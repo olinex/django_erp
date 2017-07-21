@@ -83,6 +83,12 @@ class StateMachine(object):
         return not queryset.exclude(*statement.query).exists()
 
     @classmethod
+    def get_state_instance(cls,state,queryset=None):
+        query = cls.objects.all() if not queryset else queryset
+        statement = getattr(cls.States, state)
+        return query.get(*statement.query)
+
+    @classmethod
     def get_state_queryset(cls,state,queryset=None):
         '''
         get queryset that filter by state's args and kwargs

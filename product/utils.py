@@ -22,4 +22,7 @@ def get_quantity_by_uom(instance,field_name,uom=None):
     from functools import reduce
     quantity = getattr(instance,field_name)
     default_uom = reduce(getattr,[instance] + instance.__class__._meta.fields[field_name].uom.join('.'))
+    if uom:
+        return default_uom.convert(quantity,to_uom=uom)
+    return default_uom.accuracy_convert(quantity)
 

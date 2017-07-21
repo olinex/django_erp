@@ -21,6 +21,7 @@ class LocationViewSet(BaseViewSet):
 
 class MoveViewSet(BaseViewSet):
     model=models.Move
+    allow_actions = ('list','retrieve')
     serializer_class = serializers.MoveSerializer
 
 class PathViewSet(BaseViewSet):

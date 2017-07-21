@@ -3,7 +3,7 @@
 
 from decimal import Decimal as D
 from common import Redis
-from common.state import Statement
+from common.state import Statement,StateMachine
 from common.fields import (
     ActiveLimitForeignKey,
     ActiveLimitManyToManyField, ActiveLimitOneToOneField,
@@ -371,9 +371,9 @@ class Location(BaseModel, TreeModel):
 
     def change_parent_node(self, node):
         '''判断上级库位是否为虚拟库位'''
-        if node.check_states('virtual') and self.check_states('active') and self.zone is node.zone:
+        if node.check_states('virtual') and self.check_states('active') and self.zone == node.zone:
             return super(Location, self).change_parent_node(node.id)
-        raise ValueError('上级库位必须为虚拟库位')
+        raise ValueError('上级库位必须为虚拟库位,且当前库位和新的上级库位必须在同一个区域内')
 
     @property
     def leaf_child_nodes(self):
@@ -476,7 +476,17 @@ class Move(BaseModel):
         null=False,
         blank=False,
         verbose_name='需求明细设置',
+        related_name='moves',
         help_text="生成该移动的需求明细设置"
+    )
+
+    route_path_sort_setting = models.ForeignKey(
+        'stock.RoutePathSortSetting',
+        null=False,
+        blank=False,
+        verbose_name='需求匹配路径设置',
+        related_name='moves',
+        help_text="生成该移动的路线路径"
     )
 
     quantity = QuantityField(
@@ -705,7 +715,12 @@ class Route(BaseModel):
         active = BaseModel.States.active
         direct = Statement(inherits=active, return_method='direct')
         fallback = Statement(inherits=active, return_method='fallback')
-        config = Statement(Q(return_route__isnull=False), inherits=active, return_method='config')
+        config = Statement(
+            Q(return_route__isnull=False),
+            inherits=active,
+            return_method='config'
+        )
+
 
 class RoutePathSortSetting(models.Model):
     '''路线的路径配置'''
@@ -829,6 +844,7 @@ class PackageTemplate(BaseModel):
         'stock.PackageType',
         null=False,
         blank=False,
+        editable=False,
         verbose_name='包裹类型',
         help_text="包裹模板的类型"
     )
@@ -894,7 +910,7 @@ class PackageTemplateProductSetting(models.Model):
         )
 
 
-class PackageNode(TreeModel):
+class PackageNode(TreeModel,StateMachine):
     '''包裹节点'''
     name = models.CharField(
         '名称',
@@ -939,6 +955,7 @@ class PackageNode(TreeModel):
         unique_together = (
             ('parent_node', 'template'),
         )
+
 
 
 class Procurement(BaseModel):
@@ -1082,3 +1099,10 @@ class ProcurementFromLocationSetting(models.Model):
         unique_together = (
             ('detail', 'location'),
         )
+
+    @property
+    def moving(self):
+        '''获得当前需求来源位置正在执行的移动'''
+        return Move.get_state_instance('confirmed',self.moves.all())
+
+

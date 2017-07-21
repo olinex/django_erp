@@ -212,7 +212,7 @@ class EnvSetUpTestCase(TestCase):
             direct_path=self.path,
             return_method='direct',
         )
-        RoutePathSortSetting.objects.create(route=self.route,path=self.path)
+        self.path_setting = RoutePathSortSetting.objects.create(route=self.route,path=self.path)
         self.procurement = Procurement.objects.create(
             to_location=self.location_stock,
             user=self.superuser
@@ -234,6 +234,7 @@ class EnvSetUpTestCase(TestCase):
             from_location=self.location_initial,
             to_location=self.location_stock,
             procurement_detail_setting=self.procurement_from_location_setting,
+            route_path_sort_setting=self.path_setting,
             quantity=D('5')
         )
 
