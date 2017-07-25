@@ -8,7 +8,7 @@ from common import Redis
 from common.abstractModel import BaseModel
 from common.fields import (
     ActiveLimitForeignKey, ActiveLimitManyToManyField, MD5CharField,
-    ActiveLimitOneToOneField
+    ActiveLimitOneToOneField,QuantityField
 )
 from djangoperm.db import models
 
@@ -28,6 +28,10 @@ class CacheProduct(object):
             self.product.template.pk,
             self.product.pk
         )
+
+    @property
+    def lock_name(self):
+        return '{}_lock'.format(self.cache_name)
 
     def get_quantity(self,usages):
         from stock.models import Zone
@@ -708,3 +712,166 @@ class Barcode(BaseModel):
         default=False,
         help_text="条形码是否检查合计"
     )
+
+class Assembly(BaseModel):
+    '''组装品'''
+    name = models.CharField(
+        '名称',
+        null=False,
+        blank=False,
+        unique=True,
+        max_length=64,
+        help_text="组装品的名称"
+    )
+
+    template = ActiveLimitForeignKey(
+        'product.AssemblyTemplateSetting',
+        null=False,
+        blank=False,
+        verbose_name='组装品模板',
+        related_name='assemblies',
+        help_text="组装品所属的模板"
+    )
+
+    products = models.ManyToManyField(
+        'product.Product',
+        blank=True,
+        verbose_name='产品',
+        related_name='assemblies',
+        through='product.AssemblySetting',
+        through_fields=('assembly','product'),
+        help_text="所属产品"
+    )
+
+    def __str__(self):
+        return '{}/{}'.format(self.template,self.name)
+
+    class Meta:
+        verbose_name = '组装品'
+        verbose_name_plural = '组装品'
+
+
+class AssemblySetting(models.Model):
+    '''组装品明细'''
+    RELATED_NAME = 'assembly_settings'
+
+    assembly = ActiveLimitForeignKey(
+        'product.Assembly',
+        null=False,
+        blank=False,
+        verbose_name='组装品',
+        related_name=RELATED_NAME,
+        help_text="组装品明细所属的组装品"
+    )
+
+    product = ActiveLimitForeignKey(
+        'product.Product',
+        null=False,
+        blank=False,
+        verbose_name='产品',
+        related_name=RELATED_NAME,
+        help_text="组装品明细指定的产品"
+    )
+
+    quantity = QuantityField(
+        '数量',
+        null=False,
+        blank=False,
+        uom='template_setting.uom',
+        help_text="所含指定产品类型的数量"
+    )
+
+    template_setting = models.ForeignKey(
+        'product.AssemblyTemplateSetting',
+        null=False,
+        blank=False,
+        verbose_name='组装品模板明细',
+        related_name=RELATED_NAME,
+        help_text="组装品明细相关的模板明细"
+    )
+
+    def __str__(self):
+        return '{}({})'.format(self.product,self.assembly)
+
+    class Meta:
+        verbose_name = '组装品明细',
+        verbose_name_plural = '组装品明细'
+        unique_together = ('assembly','product')
+
+class AssemblyTemplate(BaseModel):
+    '''组装品模板'''
+    name = models.CharField(
+        '名称',
+        null=False,
+        blank=False,
+        max_length=190,
+        unique=True,
+        help_text="组装品模板的名称"
+    )
+
+    detail = models.TextField(
+        '说明',
+        null=False,
+        blank=True,
+        help_text="组装品模板的说明"
+    )
+
+    product_category = models.ManyToManyField(
+        'product.ProductCategory',
+        blank=False,
+        verbose_name='产品类别',
+        related_name='assembly_templates',
+        through='product.AssemblyTemplateSetting',
+        through_fields=('assembly_template','product_category'),
+        help_text="组装品可包含的产品类别"
+    )
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = '组装品模板'
+        verbose_name_plural = '组装品模板'
+
+class AssemblyTemplateSetting(models.Model):
+    '''组装品模板明细'''
+    RELATED_NAME = 'assembly_template_settings'
+
+    assembly_template = ActiveLimitForeignKey(
+        'product.AssemblyTemplate',
+        null=False,
+        blank=False,
+        verbose_name='组装品模板',
+        related_name=RELATED_NAME,
+        help_text="模板明细所属的组装品模板"
+    )
+
+    product_category = ActiveLimitForeignKey(
+        'product.ProductCategory',
+        null=False,
+        blank=False,
+        verbose_name='产品类型',
+        related_name=RELATED_NAME,
+        help_text="模板明细的产品类型"
+    )
+
+    uom = ActiveLimitForeignKey(
+        'product.UOM',
+        null=False,
+        blank=False,
+        verbose_name='单位',
+        related_name=RELATED_NAME,
+        help_text="组装品产品类型的单位,所选产品必须为指定产品类型且为指定单位"
+    )
+
+    def __str__(self):
+        return '{}:{}({})'.format(self.product_category,self.uom,self.assembly_template)
+
+    class Meta:
+        verbose_name = '组装品模板明细'
+        verbose_name_plural = '组装品模板明细'
+        unique_together = ('assembly_template','product_category','uom')
+
+# class SingleProduct(BaseModel):
+#     '''单品'''
+#     pass

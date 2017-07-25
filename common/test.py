@@ -10,8 +10,7 @@ from django.contrib.auth.models import AnonymousUser
 from account.models import Province,City,Region,Address,Company
 from product.models import ProductCategory,ProductTemplate,UOM,Attribute,Lot,Barcode
 from stock.models import (
-    Warehouse,Location,Move,Path,Route,Procurement,ProcurementDetail,
-    ProcurementFromLocationSetting,RoutePathSortSetting
+    Warehouse,Location,Move,Route,Procurement,ProcurementDetail,RouteLocationSetting
 )
 
 User=get_user_model()
@@ -202,42 +201,39 @@ class EnvSetUpTestCase(TestCase):
 
         self.product.cache.sync()
 
-        self.path = Path.objects.create(
-            from_location=self.location_initial,
-            to_location=self.location_initial
-        )
         self.route = Route.objects.create(
             name='route_test',
             warehouse=self.warehouse,
-            direct_path=self.path,
             return_method='direct',
         )
-        self.path_setting = RoutePathSortSetting.objects.create(route=self.route,path=self.path)
+        self.location_setting1 = RouteLocationSetting.objects.create(
+            route=self.route,
+            location=self.location_initial,
+            sequence=1
+        )
+        self.location_setting2 = RouteLocationSetting.objects.create(
+            route=self.route,
+            location=self.location_pick,
+            sequence=2
+        )
+        self.location_setting3 = RouteLocationSetting.objects.create(
+            route=self.route,
+            location=self.location_stock,
+            sequence=3
+        )
         self.procurement = Procurement.objects.create(
             to_location=self.location_stock,
             user=self.superuser
         )
         self.procurement_detail = ProcurementDetail.objects.create(
+            route=self.route,
             product=self.product,
             lot=self.lot,
-            procurement=self.procurement
-        )
-        self.procurement_from_location_setting = ProcurementFromLocationSetting.objects.create(
-            detail=self.procurement_detail,
-            location=self.location_initial,
-            quantity=D('5'),
-            route=self.route
-        )
-        self.move = Move.objects.create(
-            initial_location=self.location_initial,
-            end_location=self.location_stock,
-            from_location=self.location_initial,
-            to_location=self.location_stock,
-            procurement_detail_setting=self.procurement_from_location_setting,
-            route_path_sort_setting=self.path_setting,
+            procurement=self.procurement,
             quantity=D('5')
         )
-
+        self.procurement_detail.confirm()
+        self.move = Move.objects.get(procurement_detail=self.procurement_detail)
 
 
 

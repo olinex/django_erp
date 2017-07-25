@@ -30,20 +30,13 @@ class MoveInline(CommonTabInLine):
         )}),
     )
 
-class ProcurementFromLocationSettingInline(CommonTabInLine):
-    model = models.ProcurementFromLocationSetting
-    fieldsets = (
-        (None, {'fields': (
-            'detail', 'location', 'quantity', 'route'
-        )}),
-    )
 
-class RoutePathSortSettingInline(CommonTabInLine):
-    model = models.RoutePathSortSetting
+class RouteLocationSettingInline(CommonTabInLine):
+    model = models.RouteLocationSetting
     fieldsets = (
         (None, {'fields': (
-            'route', 'path', 'sequence'
-        )})
+            'route', 'location', 'sequence'
+        )}),
     )
 
 
@@ -60,7 +53,7 @@ class PackageTemplateProductSettingInline(CommonTabInLine):
     model = models.PackageTemplateProductSetting
     fieldsets = (
         (None, {'fields': (
-            'package_template', 'product', 'quantity'
+            'package_template', 'type_setting', 'quantity'
         )}),
     )
 
@@ -103,7 +96,7 @@ class LocationAdmin(CommonAdmin):
 class MoveAdmin(CommonAdmin):
     list_display = (
         'initial_location', 'end_location', 'from_location', 'to_location',
-        'to_move', 'procurement_detail_setting', 'quantity', 'state'
+        'to_move', 'procurement_detail', 'route_location_setting', 'quantity', 'state'
     )
     list_filter = ('state',)
     list_editable = list_filter
@@ -111,32 +104,26 @@ class MoveAdmin(CommonAdmin):
         (None, {'fields': (
             ('initial_location', 'end_location'),
             ('from_location', 'to_location'),
-            'to_move', 'procurement_detail_setting',
-            'quantity', 'state'
+            'to_move', 'procurement_detail',
+            'route_location_setting', 'quantity', 'state'
         )}),
-    )
-
-
-@admin.register(models.Path)
-class PathAdmin(CommonAdmin):
-    list_display = ('from_location', 'to_location')
-    list_filter = list_display
-    fieldsets = (
-        (None, {'fields': ('from_location', 'to_location')}),
     )
 
 
 @admin.register(models.Route)
 class RouteAdmin(CommonAdmin):
-    list_display = ('name', 'warehouse', 'direct_path', 'return_method', 'sequence')
-    list_filter = ('return_method','warehouse')
+    list_display = ('name', 'warehouse', 'return_method', 'sequence')
+    list_filter = ('return_method', 'warehouse')
     list_editable = ('name', 'return_method', 'sequence')
     search_fields = ('name',)
     fieldsets = (
         (None, {'fields': (
-            'name', 'warehouse', 'direct_path',
+            'name', 'warehouse',
             ('return_route', 'return_method'), 'sequence'
         )}),
+    )
+    inlines = (
+        RouteLocationSettingInline,
     )
 
 
@@ -167,28 +154,27 @@ class PackageTemplateAdmin(CommonAdmin):
 
 @admin.register(models.PackageNode)
 class PackageNodeAdmin(admin.ModelAdmin):
-    list_display = ('id','name', 'parent_node', 'template', 'quantity')
+    list_display = ('id', 'name', 'parent_node', 'template', 'quantity')
     list_editable = ('name', 'quantity')
     search_fields = ('name',)
     fieldsets = (
         (None, {'fields': ('name', 'quantity', ('parent_node', 'template'))}),
     )
 
+
 @admin.register(models.Procurement)
 class ProcurementAdmin(CommonAdmin):
-    list_display = ('to_location','user','state')
-    list_filter = ('state',)
+    list_display = ('to_location', 'user', 'is_return', 'return_procurement', 'state')
+    list_filter = ('state', 'is_return')
     list_editable = list_filter
     fieldsets = (
-        (None, {'fields': ('to_location', 'user', 'state')}),
+        (None, {'fields': ('to_location', 'user', 'is_return', 'return_procurement', 'state')}),
     )
+
 
 @admin.register(models.ProcurementDetail)
 class ProcurementDetailAdmin(CommonAdmin):
-    list_display = ('procurement','product','lot')
+    list_display = ('procurement', 'product', 'route', 'quantity', 'lot')
     fieldsets = (
-        (None, {'fields': ('procurement', 'product', 'lot')}),
-    )
-    inlines = (
-        ProcurementFromLocationSettingInline,
+        (None, {'fields': (('procurement', 'route'), ('product', 'quantity'), 'lot')}),
     )

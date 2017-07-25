@@ -65,11 +65,11 @@ class StateMachine(object):
         from functools import reduce
         if len(states) > 1:
             return reduce(
-                lambda a,b:Q(*a.args,**a.kwargs) | Q(*b.args,**b.kwargs),
+                lambda a,b:a.query | b.query,
                 [self.get_statement(state) for state in states]
             )
         statement = self.get_statement(states[0])
-        return Q(*statement.args,**statement.kwargs)
+        return statement.query
 
     @classmethod
     def check_state_queryset(cls,state,queryset):
@@ -80,13 +80,13 @@ class StateMachine(object):
         :return: True/False
         '''
         statement=getattr(cls.States,state)
-        return not queryset.exclude(*statement.query).exists()
+        return not queryset.exclude(statement.query).exists()
 
     @classmethod
     def get_state_instance(cls,state,queryset=None):
         query = cls.objects.all() if not queryset else queryset
         statement = getattr(cls.States, state)
-        return query.get(*statement.query)
+        return query.get(statement.query)
 
     @classmethod
     def get_state_queryset(cls,state,queryset=None):
@@ -97,7 +97,7 @@ class StateMachine(object):
         '''
         query = cls.objects.all() if not queryset else queryset
         statement=getattr(cls.States,state)
-        return query.filter(*statement.query)
+        return query.filter(statement.query)
 
     @classmethod
     def set_state_queryset(cls,state,queryset):
@@ -160,6 +160,7 @@ class Statement(object):
     @property
     def query(self):
         '''return the statement's filter query'''
+        from functools import reduce
         query = self.args
         query += tuple(Q(**{key: value}) for key, value in self.kwargs.items())
-        return query
+        return reduce(lambda Q1,Q2:Q1 & Q2,query)

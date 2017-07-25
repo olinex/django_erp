@@ -60,6 +60,24 @@ class SimpleStateCharField(models.CharField):
         super(SimpleStateCharField, self).__init__(*args, **kwargs)
 
 
+class CancelableSimpleStateCharField(models.CharField):
+    def __init__(self, *args, **kwargs):
+        kwargs['choices'] = kwargs.get(
+            'choices',
+            (
+                ('draft', '草稿'),
+                ('confirmed', '已确定'),
+                ('done', '已完成'),
+                ('cancel','取消'),
+            )
+        )
+        kwargs['null'] = kwargs.get('null',False)
+        kwargs['blank'] = kwargs.get('blank',False)
+        kwargs['default'] = 'draft'
+        kwargs['max_length'] = kwargs.get('max_length',10)
+        super(CancelableSimpleStateCharField, self).__init__(*args, **kwargs)
+
+
 class BaseStateCharField(models.CharField):
     def __init__(self, *args, **kwargs):
         kwargs['choices'] = kwargs.get(
