@@ -98,7 +98,7 @@ class TreeModel(models.Model):
         '''
         if self.index != '':
             return self.__class__.objects.get(
-                id=int(self.index.split('-')[0]),
+                pk=int(self.index.split('-')[0]),
                 level=0
             )
         return self
@@ -120,7 +120,7 @@ class TreeModel(models.Model):
         :return: PackageNode Queryset
         '''
         return self.__class__.objects.filter(
-            id__in=[int(node_id) for node_id in self.index.split('-')[:-1]]
+            pk__in=[int(node_pk) for node_pk in self.index.split('-')[:-1]]
         )
 
     @property
@@ -132,7 +132,7 @@ class TreeModel(models.Model):
         return self.__class__.objects.filter(
             index=self.index,
             level=self.level
-        ).exclude(id=self.id)
+        ).exclude(pk=self.pk)
 
     @property
     @classmethod
@@ -155,7 +155,7 @@ class TreeModel(models.Model):
         '''
         with transaction.atomic():
             node=self.__class__.objects.select_for_update().get(pk=node_pk)
-            new_index = '{}{}-'.format(node.index, str(node.id))
+            new_index = '{}{}-'.format(node.index, str(node.pk))
             old_index = self.index
             self.all_child_nodes.select_for_update().update(
                 index=Func(F('index'), Value(new_index), Value(old_index), function='replace'),

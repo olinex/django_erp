@@ -223,7 +223,8 @@ class EnvSetUpTestCase(TestCase):
         )
         self.procurement = Procurement.objects.create(
             to_location=self.location_stock,
-            user=self.superuser
+            user=self.superuser,
+            address=self.address
         )
         self.procurement_detail = ProcurementDetail.objects.create(
             route=self.route,

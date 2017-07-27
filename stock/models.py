@@ -15,7 +15,7 @@ from account.utils import PartnerForeignKey
 from stock.utils import LocationForeignKey
 from djangoperm.db import models
 from django.db import transaction
-from django.db.models import Q,F
+from django.db.models import Q
 from django.conf import settings
 
 
@@ -568,7 +568,8 @@ class Move(BaseModel):
                     now_route_location_setting=self.route_location_setting
                 )
                 procurement = self.procurement_detail.procurement
-                if next_route_location_setting and not procurement.check_states('cancel'):
+                procurement_cancel_status = procurement.check_states('cancel')
+                if next_route_location_setting and not procurement_cancel_status:
                     next_move = Move.objects.create(
                         initial_location=self.initial_location,
                         end_location=self.end_location,
@@ -587,7 +588,7 @@ class Move(BaseModel):
                         Move.objects.filter(
                             procurement_detail__procurement=self.procurement_detail.procurement
                         )
-                    ) and not procurement.check_states('cancel'):
+                    ) and not procurement_cancel_status:
                         self.procurement_detail.procurement.set_state('done')
                 self.refresh_product_quantity()
                 return True
@@ -637,11 +638,6 @@ class Move(BaseModel):
 
 class Route(BaseModel):
     '''路线'''
-    RETURN_METHOD = (
-        ('direct', '直接退货'),
-        ('fallback', '回滚退货'),
-        ('config', '自定义退货')
-    )
 
     name = models.CharField(
         '名称',
@@ -687,25 +683,6 @@ class Route(BaseModel):
         help_text="路线的详细路径"
     )
 
-    return_route = ActiveLimitForeignKey(
-        'self',
-        null=True,
-        blank=True,
-        verbose_name='自定义退货路线',
-        related_name='origin_routes',
-        help_text="路线的自定义退货路线"
-    )
-
-    return_method = models.CharField(
-        '退货方法',
-        null=False,
-        blank=False,
-        choices=RETURN_METHOD,
-        default='direct',
-        max_length=10,
-        help_text="路线的退货方法"
-    )
-
     users = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=False,
@@ -731,13 +708,6 @@ class Route(BaseModel):
 
     class States(BaseModel.States):
         active = BaseModel.States.active
-        direct = Statement(inherits=active, return_method='direct')
-        fallback = Statement(inherits=active, return_method='fallback')
-        config = Statement(
-            Q(return_route__isnull=False),
-            inherits=active,
-            return_method='config'
-        )
 
     @property
     def direct_path(self):
@@ -1032,6 +1002,7 @@ class Procurement(BaseModel):
         null=True,
         blank=True,
         verbose_name='退货需求',
+        related_name='origin_procurement',
         help_text="产生退货时,需求对应的退货需求"
     )
 
@@ -1059,6 +1030,7 @@ class Procurement(BaseModel):
         cancelable = Statement(inherits=confirmed,is_return=False)
         cancel = Statement(inherits=active,state='cancel')
 
+
     def confirm(self):
         with transaction.atomic():
             if self.check_states('draft'):
@@ -1067,9 +1039,9 @@ class Procurement(BaseModel):
                 return True
             return False
 
-    def cancel(self):
-        if self.check_states('confirmed'):
-            pass
+
+    def cancel(self,route):
+        return self.check_to_set_state('confirmed',set_state='cancel')
 
 
 
@@ -1127,6 +1099,18 @@ class ProcurementDetail(models.Model):
         verbose_name_plural = "需求明细"
         unique_together = ('procurement', 'product', 'route', 'lot')
 
+    @property
+    def moving(self):
+        '''获得当前与需求明细相关的进行中的移动'''
+        moves = Move.get_state_queryset('confirmed',self.moves.all())
+        moves_count = moves.count()
+        if moves_count == 1:
+            return moves[0]
+        elif moves_count == 0 and self.procurement.check_s:
+            return None
+        else:
+            raise ValueError('同一需求明细下不能存在多个进行中的移动')
+
     def confirm(self):
         first_route_location_setting=self.route.next_route_location_setting()
         initial_location,end_location = self.route.direct_path
@@ -1140,3 +1124,14 @@ class ProcurementDetail(models.Model):
             quantity=self.quantity,
             state='draft'
         )
+
+    def can_be_return_route(self,route):
+        '''判断路线是否可为该需求明细的退货路线'''
+        end_location,initial_location = self.route.direct_path
+        move = self.moving
+        if move:
+            initial_location = move.location
+        if route.initial_location == end_location and route.end_location == initial_location:
+            return True
+        return False
+

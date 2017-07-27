@@ -112,14 +112,13 @@ class MoveAdmin(CommonAdmin):
 
 @admin.register(models.Route)
 class RouteAdmin(CommonAdmin):
-    list_display = ('name', 'warehouse', 'return_method', 'sequence')
-    list_filter = ('return_method', 'warehouse')
-    list_editable = ('name', 'return_method', 'sequence')
+    list_display = ('name', 'warehouse', 'sequence')
+    list_filter = ('warehouse',)
+    list_editable = ('name', 'sequence')
     search_fields = ('name',)
     fieldsets = (
         (None, {'fields': (
-            'name', 'warehouse',
-            ('return_route', 'return_method'), 'sequence'
+            'name', 'warehouse', 'sequence'
         )}),
     )
     inlines = (

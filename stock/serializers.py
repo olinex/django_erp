@@ -79,8 +79,7 @@ class RouteSerializer(ActiveModelSerializer):
         model=models.Route
         fields=(
             'name','warehouse','warehouse_detail',
-            'locations_detail','return_route',
-            'return_method','sequence'
+            'locations_detail','sequence'
         )
 
 class RouteLocationSettingSerializer(serializers.ModelSerializer):
