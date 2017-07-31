@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-from djangoperm.db import models
-from django.conf import settings
-from account.utils import PartnerForeignKey
-from product.utils import QuantityField
-from stock.utils import LocationForeignKey
+from apps.djangoperm import models
 
 
 class ActiveLimitForeignKey(models.ForeignKey):

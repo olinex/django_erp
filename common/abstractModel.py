@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-from . import state
-from djangoperm.db import models
-from django.db.models import Q, F, Value, Func
 from django.db import transaction
+from django.db.models import F, Value, Func
+
+from apps.djangoperm import models
+from . import state
+
 
 class BaseModel(models.Model, state.StateMachine):
     is_active = models.BooleanField(

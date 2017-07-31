@@ -4,14 +4,16 @@
 import random
 import string
 from decimal import Decimal as D
-from django.test import TestCase
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
-from account.models import Province,City,Region,Address,Company
-from product.models import ProductCategory,ProductTemplate,UOM,Attribute,Lot,Barcode
-from stock.models import (
-    Warehouse,Location,Move,Route,Procurement,ProcurementDetail,RouteLocationSetting
+from django.test import TestCase
+from apps.stock.models import (
+    Warehouse, Location, Move, Route, Procurement, ProcurementDetail, RouteLocationSetting
 )
+
+from apps.account.models import Province, City, Region, Address, Company
+from apps.product.models import ProductCategory, ProductTemplate, UOM, Attribute, Lot
 
 User=get_user_model()
 
@@ -203,8 +205,7 @@ class EnvSetUpTestCase(TestCase):
 
         self.route = Route.objects.create(
             name='route_test',
-            warehouse=self.warehouse,
-            return_method='direct',
+            warehouse=self.warehouse
         )
         self.location_setting1 = RouteLocationSetting.objects.create(
             route=self.route,

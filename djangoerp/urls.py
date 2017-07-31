@@ -13,20 +13,21 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import url,include
-from django.contrib import admin
 from django.conf import settings
-from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.conf.urls import url, include
 from django.conf.urls.static import static
-from account.views import first_request
+from django.contrib import admin
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
+from apps.account.views import first_request
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^auth/',include('rest_framework.urls',namespace='rest_framework',app_name='rest_framework')),
-    url(r'^account/',include('account.urls',namespace='account',app_name='account')),
-    url(r'^product/',include('product.urls',namespace='product',app_name='product')),
-    url(r'^stock/',include('stock.urls',namespace='stock',app_name='stock')),
-    url(r'^test/',include('djangoperm.urls',namespace='djangoperm',app_name='djangoperm')),
+    url(r'^account/', include('apps.account.urls', namespace='account', app_name='account')),
+    url(r'^product/', include('apps.product.urls', namespace='product', app_name='product')),
+    url(r'^stock/', include('apps.stock.urls', namespace='stock', app_name='stock')),
+    url(r'^test/', include('apps.djangoperm.urls', namespace='djangoperm', app_name='djangoperm')),
     url(r'^$', first_request, name='first_request'),
 ]
 
