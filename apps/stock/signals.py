@@ -13,20 +13,20 @@ def create_warehouse_zone(sender, instance, created, **kwargs):
     if created:
         instance.create_zones()
 
-@receiver(post_save, sender=models.RouteLocationSetting)
-def sync_initial_and_end_location(sender, instance, **kwargs):
+@receiver(post_save, sender=models.RouteZoneSetting)
+def sync_initial_and_end_zone(sender, instance, **kwargs):
     '''路线的路径库位变化时,同步改变路线的起点库位和终点库位'''
     route = instance.route
-    location_settings = models.RouteLocationSetting.objects.filter(route=route)
-    initial_location = location_settings.first().location
-    end_location = location_settings.last().location
+    location_settings = models.RouteZoneSetting.objects.filter(route=route)
+    initial_zone = location_settings.first().zone
+    end_zone = location_settings.last().zone
     changed = False
-    if route.initial_location != initial_location:
-        route.initial_location = initial_location
+    if route.initial_zone != initial_zone:
+        route.initial_zone = initial_zone
         changed = True
-    if route.end_location != end_location:
-        route.end_location = end_location
+    if route.end_zone != end_zone:
+        route.end_zone = end_zone
         changed = True
     if changed:
-        route.save(update_fields=('initial_location','end_location'))
+        route.save(update_fields=('initial_zone','end_zone'))
 

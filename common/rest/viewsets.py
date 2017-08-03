@@ -16,8 +16,7 @@ class PermMethodViewSet(
     allow_actions = ('create','list','retrieve','update','destroy')
 
     def get_queryset(self):
-        queryset=self.queryset if self.queryset else self.model.objects.all()
-        return queryset.filter(is_delete=False)
+        return self.queryset if self.queryset else self.model.objects.all()
 
     def create(self,request,*args,**kwargs):
         if 'create' in self.allow_actions:
@@ -45,7 +44,8 @@ class PermMethodViewSet(
         raise exceptions.PermissionDenied
 
 class ActiveBaseViewSet(IsActiveModelMixin,PermMethodViewSet):
-    pass
+    def get_queryset(self):
+        return super(ActiveBaseViewSet,self).get_queryset().filter(is_delete=False)
 
 class DeleteBaseViewSet(IsDeleteModelMixin,PermMethodViewSet):
     pass

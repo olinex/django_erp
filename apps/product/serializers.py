@@ -98,4 +98,4 @@ class ValidationSerializer(ActiveModelSerializer):
 
     class Meta:
         model = models.Validation
-        fields = ('name', 'actions')
+        fields = ('name', 'actions','actions_detail')

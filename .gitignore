@@ -97,11 +97,11 @@ ENV/
 db.sqlite3
 settings.py
 migrations/0*.py
-product/migrations/0*.py
-account/migrations/0*.py
-staticfile/migrations/0*.py
-stock/migrations/0*.py
-djangoperm/migrations/0*.py
+apps/product/migrations/0*.py
+apps/account/migrations/0*.py
+apps/staticfile/migrations/0*.py
+apps/stock/migrations/0*.py
+apps/djangoperm/migrations/0*.py
 noderp
 djangoperm
 

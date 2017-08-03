@@ -28,34 +28,37 @@ class RouteViewSet(BaseViewSet):
     model=models.Route
     serializer_class = serializers.RouteSerializer
 
-class RouteLocationSettingViewSet(PermMethodViewSet):
-    model=models.RouteLocationSetting
+class RouteZoneSettingViewSet(PermMethodViewSet):
+    model=models.RouteZoneSetting
     allow_actions = ('create','list','retrieve','update','destroy')
+    serializer_class = serializers.RouteZoneSettingSerializer
 
-class PackageTypeProductSettingViewSet(PermMethodViewSet):
-    model=models.PackageTypeProductSetting
+class PackageTypeCategorySettingViewSet(PermMethodViewSet):
+    model=models.PackageTypeCategorySetting
     allow_actions = ('create','list','retrieve','update','destroy')
-    serializer_class = serializers.PackageTypeProductSettingSerializer
+    serializer_class = serializers.PackageTypeCategorySettingSerializer
 
 class PackageTypeViewSet(BaseViewSet):
     model=models.PackageType
     serializer_class = serializers.PackageTypeSerializer
 
-class PackageTemplateProductSettingViewSet(PermMethodViewSet):
-    model = models.PackageTemplateProductSetting
+class PackageTemplateCategorySettingViewSet(PermMethodViewSet):
+    model = models.PackageTemplateCategorySetting
     allow_actions = ('create', 'list', 'retrieve', 'update','destroy')
-    serializer_class = serializers.PackageTypeProductSettingSerializer
+    serializer_class = serializers.PackageTemplateCategorySettingSerializer
 
 class PackageTemplateViewSet(BaseViewSet):
     model=models.PackageTemplate
     serializer_class = serializers.PackageTemplateSerializer
 
-class PackageNodeViewSet(BaseViewSet):
+class PackageNodeViewSet(PermMethodViewSet):
     model=models.PackageNode
+    allow_actions = ('create', 'list', 'retrieve', 'update','destroy')
     serializer_class = serializers.PackageNodeSerializer
 
-class ProcurementDetailViewSet(BaseViewSet):
+class ProcurementDetailViewSet(PermMethodViewSet):
     model=models.ProcurementDetail
+    allow_actions = ('create', 'list', 'retrieve', 'update','destroy')
     serializer_class = serializers.ProcurementDetailSerializer
 
 class ProcurementViewSet(BaseViewSet):

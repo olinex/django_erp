@@ -4,7 +4,7 @@
 import redis
 from django.conf import settings
 
-__all__ = ['Redis']
+__all__ = ('Redis',)
 
 
 class Redis(redis.Redis):

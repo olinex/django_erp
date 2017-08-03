@@ -436,22 +436,6 @@ class Location(BaseModel, TreeModel):
 class Move(BaseModel):
     '''移动'''
 
-    initial_location = LocationForeignKey(
-        null=False,
-        blank=False,
-        verbose_name='初始库位',
-        related_name='spread_moves',
-        help_text="移动链的最初的库位"
-    )
-
-    end_location = LocationForeignKey(
-        null=False,
-        blank=False,
-        verbose_name='最终库位',
-        related_name='converge_moves',
-        help_text="移动链的最终的库位"
-    )
-
     from_location = LocationForeignKey(
         null=False,
         blank=False,
@@ -486,13 +470,13 @@ class Move(BaseModel):
         help_text="生成该移动的需求明细"
     )
 
-    route_location_setting = models.ForeignKey(
-        'stock.RouteLocationSetting',
+    route_zone_setting = models.ForeignKey(
+        'stock.RouteZoneSetting',
         null=False,
         blank=False,
-        verbose_name='需求匹配路径设置',
+        verbose_name='需求匹配区域设置',
         related_name='moves',
-        help_text="生成该移动的路线路径"
+        help_text="生成该移动的路线区域"
     )
 
     quantity = QuantityField(
@@ -517,7 +501,7 @@ class Move(BaseModel):
     class Meta:
         verbose_name = '移动'
         verbose_name_plural = '移动'
-        unique_together = ('procurement_detail','route_location_setting')
+        unique_together = ('procurement_detail','route_zone_setting')
 
     class States(BaseModel.States):
         active = BaseModel.States.active
@@ -563,22 +547,21 @@ class Move(BaseModel):
             return True
         return False
 
-    def done(self):
+    def done(self,next_location=None):
         with transaction.atomic():
-            if self.check_to_set_state('confirmed',set_state='done'):
-                next_route_location_setting = self.procurement_detail.route.next_route_location_setting(
-                    now_route_location_setting=self.route_location_setting
-                )
+            next_route_zone_setting = self.procurement_detail.procurement.route.next_route_zone_setting(
+                now_route_zone_setting=self.route_zone_setting
+            )
+            if (((not next_route_zone_setting and not next_location) or next_location.zone == next_route_zone_setting.zone) and
+                self.check_to_set_state('confirmed',set_state='done')):
                 procurement = self.procurement_detail.procurement
                 procurement_cancel_status = procurement.check_states('cancel')
-                if next_route_location_setting and not procurement_cancel_status:
+                if next_route_zone_setting and not procurement_cancel_status:
                     next_move = Move.objects.create(
-                        initial_location=self.initial_location,
-                        end_location=self.end_location,
                         from_location=self.to_location,
-                        to_location=next_route_location_setting.location,
+                        to_location=next_location,
                         procurement_detail=self.procurement_detail,
-                        route_location_setting=next_route_location_setting,
+                        route_zone_setting=next_route_zone_setting,
                         quantity=self.quantity,
                         state='draft'
                     )
@@ -657,32 +640,32 @@ class Route(BaseModel):
         help_text="路线所属的仓库"
     )
 
-    initial_location = ActiveLimitForeignKey(
-        'stock.Location',
+    initial_zone = ActiveLimitForeignKey(
+        'stock.Zone',
         null=True,
         blank=True,
-        verbose_name='起始库位',
+        verbose_name='起始区域',
         related_name='initial_routes',
-        help_text="路线的起始库位"
+        help_text="路线的起始区域"
     )
 
-    end_location = ActiveLimitForeignKey(
-        'stock.Location',
+    end_zone = ActiveLimitForeignKey(
+        'stock.Zone',
         null=True,
         blank=True,
-        verbose_name='终点库位',
+        verbose_name='终点区域',
         related_name='end_routes',
-        help_text="路线的终点库位"
+        help_text="路线的终点区域"
     )
 
-    locations = models.ManyToManyField(
-        'stock.Location',
-        through='stock.RouteLocationSetting',
-        through_fields=('route','location'),
+    zones = models.ManyToManyField(
+        'stock.Zone',
+        through='stock.RouteZoneSetting',
+        through_fields=('route','zone'),
         blank=False,
-        verbose_name='路径',
+        verbose_name='区域',
         related_name='routes',
-        help_text="路线的详细路径"
+        help_text="路线的详细路径区域"
     )
 
     users = models.ManyToManyField(
@@ -707,29 +690,29 @@ class Route(BaseModel):
     class Meta:
         verbose_name = '路线'
         verbose_name_plural = '路线'
-        unique_together = ('initial_location','end_location','sequence')
+        unique_together = ('initial_zone','end_zone','sequence')
 
     class States(BaseModel.States):
         active = BaseModel.States.active
 
     @property
     def direct_path(self):
-        return (self.initial_location,self.end_location)
+        return (self.initial_zone,self.end_zone)
 
-    def next_route_location_setting(self,now_route_location_setting=None):
-        if now_route_location_setting:
-            return RouteLocationSetting.objects.filter(
+    def next_route_zone_setting(self,now_route_zone_setting=None):
+        if now_route_zone_setting:
+            return RouteZoneSetting.objects.filter(
                 route=self,
-                sequence__gt=now_route_location_setting.sequence
+                sequence__gt=now_route_zone_setting.sequence
             ).first()
-        return RouteLocationSetting.objects.filter(
+        return RouteZoneSetting.objects.filter(
             route=self
         )[1]
 
 
-class RouteLocationSetting(models.Model):
+class RouteZoneSetting(models.Model):
     '''路线的路径配置'''
-    RELATED_NAME = 'route_location_settings'
+    RELATED_NAME = 'route_zone_settings'
 
     route = ActiveLimitForeignKey(
         'stock.Route',
@@ -740,13 +723,13 @@ class RouteLocationSetting(models.Model):
         help_text="路径设置所属的路线"
     )
 
-    location = ActiveLimitForeignKey(
-        'stock.Location',
+    zone = ActiveLimitForeignKey(
+        'stock.Zone',
         null=False,
         blank=False,
-        verbose_name='路径',
+        verbose_name='区域',
         related_name=RELATED_NAME,
-        help_text="路径设置所设置的路径"
+        help_text="路径设置所设置的区域"
     )
 
     sequence = models.PositiveSmallIntegerField(
@@ -758,9 +741,9 @@ class RouteLocationSetting(models.Model):
     )
 
     class Meta:
-        verbose_name = '路线的路径配置'
+        verbose_name = '路线的路径区域配置'
         verbose_name_plural = '路线的路径配置'
-        unique_together = ('route','sequence')
+        unique_together = ('zone','sequence')
         ordering = ('sequence',)
 
 
@@ -775,14 +758,14 @@ class PackageType(BaseModel):
         help_text="包裹类型的名称"
     )
 
-    products = models.ManyToManyField(
-        'product.Product',
+    categories = models.ManyToManyField(
+        'product.ProductCategory',
         blank=False,
-        through='stock.PackageTypeProductSetting',
-        through_fields=('package_type', 'product'),
-        verbose_name='产品',
+        through='stock.PackageTypeCategorySetting',
+        through_fields=('package_type', 'product_category'),
+        verbose_name='产品分类',
         related_name='package_types',
-        help_text="包裹可包装的产品"
+        help_text="包裹可包装的产品分类"
     )
 
     def __str__(self):
@@ -793,8 +776,8 @@ class PackageType(BaseModel):
         verbose_name_plural = '包裹类型'
 
 
-class PackageTypeProductSetting(models.Model):
-    '''包裹类型产品设置'''
+class PackageTypeCategorySetting(models.Model):
+    '''包裹类型产品分类设置'''
     RELATED_NAME = 'type_settings'
 
     package_type = ActiveLimitForeignKey(
@@ -806,20 +789,29 @@ class PackageTypeProductSetting(models.Model):
         help_text="相关的包裹类型"
     )
 
-    product = ActiveLimitForeignKey(
-        'product.Product',
+    product_category = ActiveLimitForeignKey(
+        'product.ProductCategory',
         null=False,
         blank=False,
-        verbose_name='产品',
+        verbose_name='产品分类',
         related_name=RELATED_NAME,
-        help_text="相关的产品"
+        help_text="相关的产品分类"
+    )
+
+    uom = ActiveLimitForeignKey(
+        'product.UOM',
+        null=False,
+        blank=False,
+        verbose_name='单位',
+        related_name='type_settings',
+        help_text="包裹类型的计量单位"
     )
 
     max_quantity = QuantityField(
         '最大数量',
         null=False,
         blank=False,
-        uom='product.template.uom',
+        uom='uom',
         help_text="包裹类型能够包含该产品的最大数量"
     )
 
@@ -831,10 +823,10 @@ class PackageTypeProductSetting(models.Model):
         )
 
     class Meta:
-        verbose_name = '包裹类型产品设置'
-        verbose_name_plural = '包裹类型产品设置'
+        verbose_name = '包裹类型产品类型设置'
+        verbose_name_plural = '包裹类型产品类型设置'
         unique_together = (
-            ('package_type', 'product'),
+            ('package_type', 'product_category'),
         )
 
 
@@ -859,13 +851,13 @@ class PackageTemplate(BaseModel):
     )
 
     type_settings = models.ManyToManyField(
-        'stock.PackageTypeProductSetting',
+        'stock.PackageTypeCategorySetting',
         blank=False,
-        through='stock.PackageTemplateProductSetting',
+        through='stock.PackageTemplateCategorySetting',
         through_fields=('package_template', 'type_setting'),
-        verbose_name='产品',
+        verbose_name='产品分类设置',
         related_name='package_templates',
-        help_text="包裹可包装的产品"
+        help_text="包裹可包装的产品分类"
     )
 
     def __str__(self):
@@ -876,7 +868,7 @@ class PackageTemplate(BaseModel):
         verbose_name_plural = '包裹模板'
 
 
-class PackageTemplateProductSetting(models.Model):
+class PackageTemplateCategorySetting(models.Model):
     '''包裹模板产品设置'''
     RELATED_NAME = 'template_settings'
 
@@ -890,7 +882,7 @@ class PackageTemplateProductSetting(models.Model):
     )
 
     type_setting = models.ForeignKey(
-        'stock.PackageTypeProductSetting',
+        'stock.PackageTypeCategorySetting',
         null=False,
         blank=False,
         verbose_name='包裹类型明细',
@@ -902,7 +894,7 @@ class PackageTemplateProductSetting(models.Model):
         '最大数量',
         null=False,
         blank=False,
-        uom='product.template.uom',
+        uom='type_setting.uom',
         help_text="包裹模板包含该产品的数量"
     )
 
@@ -957,6 +949,7 @@ class PackageNode(TreeModel,StateMachine):
         help_text="包裹的数量"
     )
 
+
     def __str__(self):
         return self.name
 
@@ -966,6 +959,16 @@ class PackageNode(TreeModel,StateMachine):
         unique_together = (
             ('parent_node', 'template'),
         )
+
+
+class Package(BaseModel):
+    '''包裹记录'''
+    root_node = models.ForeignKey(
+        'stock.PackageNode',
+        null=False,
+        blank=False,
+        verbose_name='包裹树',
+    )
 
 
 
@@ -1009,6 +1012,15 @@ class Procurement(BaseModel):
         help_text="产生退货时,需求对应的退货需求"
     )
 
+    route = ActiveLimitForeignKey(
+        'stock.Route',
+        null=False,
+        blank=False,
+        verbose_name='路线',
+        related_name='procurements',
+        help_text="根据需求产生的位置以及指定的产品来源库位自动匹配的移动路线"
+    )
+
     state = CancelableSimpleStateCharField(
         '状态',
         help_text="需求单的状态"
@@ -1024,7 +1036,6 @@ class Procurement(BaseModel):
     class States(BaseModel.States):
         active = BaseModel.States.active
         draft = Statement(
-            Q(details__state='draft'),
             inherits=active,
             state='draft'
         )
@@ -1034,18 +1045,23 @@ class Procurement(BaseModel):
         cancel = Statement(inherits=active,state='cancel')
 
 
-    def confirm(self):
+    def confirm(self,initial_location,next_location):
         with transaction.atomic():
-            if self.check_states('draft'):
+            next_zone_setting = self.route.next_route_zone_setting()
+            if (self.route.initial_zone == initial_location.zone and
+                next_zone_setting.zone == next_location.zone and
+                self.check_states('draft')):
                 self.set_state('confirmed')
-                map(lambda detail:detail.confirm(),self.details.all())
+                Move.objects.bulk_create([
+                    detail.get_first_move(
+                        first_route_zone_setting=next_zone_setting,
+                        initial_location=initial_location,
+                        next_location=next_location
+                    )
+                    for detail in self.details.all()
+                ])
                 return True
             return False
-
-
-    def cancel(self):
-        return self.check_to_set_state('confirmed',set_state='cancel')
-
 
 
 class ProcurementDetail(models.Model):
@@ -1085,14 +1101,6 @@ class ProcurementDetail(models.Model):
         help_text="需求明细所属的需求"
     )
 
-    route = ActiveLimitForeignKey(
-        'stock.Route',
-        null=False,
-        blank=False,
-        verbose_name='路线',
-        related_name='procurement_details',
-        help_text="根据需求产生的位置以及指定的产品来源库位自动匹配的移动路线"
-    )
 
     def __str__(self):
         return '{}/{}'.format(str(self.procurement), str(self.product))
@@ -1100,7 +1108,7 @@ class ProcurementDetail(models.Model):
     class Meta:
         verbose_name = "需求明细"
         verbose_name_plural = "需求明细"
-        unique_together = ('procurement', 'product', 'route', 'lot')
+        unique_together = ('procurement', 'product', 'lot')
 
     @property
     def moving(self):
@@ -1114,38 +1122,13 @@ class ProcurementDetail(models.Model):
         else:
             raise ValueError('同一需求明细下不能存在多个进行中的移动')
 
-    @property
-    def now_location(self):
-        '''获得当前需求明细对应产品的所在库位'''
-        pass
-
-    def get_return_route(self,user):
-        '''获取相应用户的退货路线'''
-        moving = self.moving
-        usable_route = user.usable_routes.get(initial_location=None)
-        route = Route.get_state_queryset('active')
-
-    def confirm(self):
-        first_route_location_setting=self.route.next_route_location_setting()
-        initial_location,end_location = self.route.direct_path
-        Move.objects.create(
-            initial_location=initial_location,
-            end_location=end_location,
+    def get_first_move(self,first_route_zone_setting,initial_location,next_location):
+        return Move(
             from_location=initial_location,
-            to_location=first_route_location_setting.location,
+            to_location=next_location,
             procurement_detail=self,
-            route_location_setting=first_route_location_setting,
+            route_zone_setting=first_route_zone_setting,
             quantity=self.quantity,
             state='draft'
         )
-
-    def can_be_return_route(self,route):
-        '''判断路线是否可为该需求明细的退货路线'''
-        end_location,initial_location = self.route.direct_path
-        move = self.moving
-        if move:
-            initial_location = move.location
-        if route.initial_location == end_location and route.end_location == initial_location:
-            return True
-        return False
 

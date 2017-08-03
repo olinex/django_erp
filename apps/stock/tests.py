@@ -14,7 +14,7 @@ class WarehouseTestCase(EnvSetUpTestCase):
         self.assertEqual(self.product.cache.all,D('0'))
         self.assertEqual(self.product.cache.settled,D('0'))
         self.assertEqual(self.product.cache.transporting,D('0'))
-        self.assertTrue(self.move.done())
+        self.assertTrue(self.move.done(next_location=self.location_stock))
         self.assertFalse(self.procurement.check_states('done'))
         self.assertEqual(self.product.cache.all, D('5'))
         self.assertEqual(self.product.cache.settled, D('0'))

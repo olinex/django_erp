@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 from apps.stock.models import (
-    Warehouse, Location, Move, Route, Procurement, ProcurementDetail, RouteLocationSetting
+    Warehouse, Location, Move, Route, Procurement, ProcurementDetail, RouteZoneSetting
 )
 
 from apps.account.models import Province, City, Region, Address, Company
@@ -207,34 +207,34 @@ class EnvSetUpTestCase(TestCase):
             name='route_test',
             warehouse=self.warehouse
         )
-        self.location_setting1 = RouteLocationSetting.objects.create(
+        self.zone_setting1 = RouteZoneSetting.objects.create(
             route=self.route,
-            location=self.location_initial,
+            zone=self.zone_initial,
             sequence=1
         )
-        self.location_setting2 = RouteLocationSetting.objects.create(
+        self.zone_setting2 = RouteZoneSetting.objects.create(
             route=self.route,
-            location=self.location_pick,
+            zone=self.zone_pick,
             sequence=2
         )
-        self.location_setting3 = RouteLocationSetting.objects.create(
+        self.zone_setting3 = RouteZoneSetting.objects.create(
             route=self.route,
-            location=self.location_stock,
+            zone=self.zone_stock,
             sequence=3
         )
         self.procurement = Procurement.objects.create(
             to_location=self.location_stock,
             user=self.superuser,
-            address=self.address
+            address=self.address,
+            route=self.route
         )
         self.procurement_detail = ProcurementDetail.objects.create(
-            route=self.route,
             product=self.product,
             lot=self.lot,
             procurement=self.procurement,
             quantity=D('5')
         )
-        self.procurement_detail.confirm()
+        self.procurement.confirm(initial_location=self.location_initial,next_location=self.location_pick)
         self.move = Move.objects.get(procurement_detail=self.procurement_detail)
 
 
