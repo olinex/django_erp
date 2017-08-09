@@ -508,6 +508,8 @@ class Move(BaseModel):
         draft = Statement(inherits=active, state='draft')
         confirmed = Statement(inherits=active, state='confirmed')
         doing = Statement(Q(state='draft') | Q(state='confirmed'),inherits=active)
+        free_confirmed = Statement(Q(procurement_detail__lock__isnull=True),inherits=confirmed)
+        lock_confirmed = Statement(Q(procurement_detail__lock__isnull=False),inherits=confirmed)
         done = Statement(inherits=active, state='done')
 
     @property
@@ -553,29 +555,23 @@ class Move(BaseModel):
                 now_route_zone_setting=self.route_zone_setting
             )
             if (((not next_route_zone_setting and not next_location) or next_location.zone == next_route_zone_setting.zone) and
-                self.check_to_set_state('confirmed',set_state='done')):
-                procurement = self.procurement_detail.procurement
-                procurement_cancel_status = procurement.check_states('cancel')
-                if next_route_zone_setting and not procurement_cancel_status:
-                    next_move = Move.objects.create(
-                        from_location=self.to_location,
-                        to_location=next_location,
-                        procurement_detail=self.procurement_detail,
-                        route_zone_setting=next_route_zone_setting,
-                        quantity=self.quantity,
-                        state='draft'
-                    )
-                    self.to_move=next_move
-                    self.save()
-                else:
-                    if Move.check_state_queryset(
-                        'done',
-                        Move.objects.filter(
-                            procurement_detail__procurement=self.procurement_detail.procurement
-                        )
-                    ) and not procurement_cancel_status:
-                        self.procurement_detail.procurement.set_state('done')
+                self.check_to_set_state('free_confirmed',set_state='done')):
                 self.refresh_product_quantity()
+                procurement = self.procurement_detail.procurement
+                if not procurement.check_states('cancel'):
+                    if next_route_zone_setting:
+                        next_move = Move.objects.create(
+                            from_location=self.to_location,
+                            to_location=next_location,
+                            procurement_detail=self.procurement_detail,
+                            route_zone_setting=next_route_zone_setting,
+                            quantity=self.quantity,
+                            state='draft'
+                        )
+                        self.to_move=next_move
+                        self.save()
+                    elif Move.check_state_queryset('done', Move.objects.filter(procurement_detail__procurement=procurement)):
+                        procurement.set_state('done')
                 return True
             return False
 
@@ -685,7 +681,7 @@ class Route(BaseModel):
     )
 
     def __str__(self):
-        return str(self.direct_path)
+        return self.name
 
     class Meta:
         verbose_name = '路线'
@@ -739,6 +735,9 @@ class RouteZoneSetting(models.Model):
         default=0,
         help_text="路径设置的排序"
     )
+
+    def __str__(self):
+        return '{}/{}/{}'.format(self.route,self.zone,self.sequence)
 
     class Meta:
         verbose_name = '路线的路径区域配置'
@@ -1035,10 +1034,7 @@ class Procurement(BaseModel):
 
     class States(BaseModel.States):
         active = BaseModel.States.active
-        draft = Statement(
-            inherits=active,
-            state='draft'
-        )
+        draft = Statement(inherits=active,state='draft')
         confirmed = Statement(inherits=active,state='confirmed')
         done = Statement(inherits=active,state='done')
         cancelable = Statement(inherits=confirmed,is_return=False)
@@ -1101,6 +1097,15 @@ class ProcurementDetail(models.Model):
         help_text="需求明细所属的需求"
     )
 
+    lock = models.ForeignKey(
+        'stock.ProcurementLock',
+        null=True,
+        blank=True,
+        verbose_name='需求锁',
+        related_name='details',
+        help_text="与该需求明细相关的需求锁"
+    )
+
 
     def __str__(self):
         return '{}/{}'.format(str(self.procurement), str(self.product))
@@ -1131,4 +1136,49 @@ class ProcurementDetail(models.Model):
             quantity=self.quantity,
             state='draft'
         )
+
+    def cancel(self):
+        if self.procurement.check_states('cancelable'):
+            pass
+
+
+class ProcurementLock(models.Model):
+    '''需求锁'''
+    WAY_TYPE = (
+        ('direct','正向'),
+        ('return','反向'),
+        ('both','双向')
+    )
+
+    way_type = models.CharField(
+        '锁的方向',
+        null=False,
+        blank=False,
+        choices=WAY_TYPE,
+        default='both',
+        max_length=10,
+        help_text="需求锁的方向"
+    )
+
+    procurement = ActiveLimitForeignKey(
+        'stock.Procurement',
+        null=False,
+        blank=False,
+        verbose_name='需求',
+        related_name='locks',
+        help_text="锁的相关需求"
+    )
+
+    def __str__(self):
+        return '{}({})'.format(self.procurement,self.way_type)
+
+    @property
+    def moves(self):
+        return Move.get_state_queryset('confirmed',Move.objects.filter(procurement_detail__in=self.details.all()))
+
+    def progress(self,):
+        return self.details.all().count() == self.moves.count()
+
+
+
 

@@ -164,3 +164,7 @@ class Statement(object):
         query = self.args
         query += tuple(Q(**{key: value}) for key, value in self.kwargs.items())
         return reduce(lambda Q1,Q2:Q1 & Q2,query)
+
+
+class StateSet(object):
+    '''状态集'''

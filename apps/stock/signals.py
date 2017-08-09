@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
+__all__ = ('create_warehouse_zone','sync_initial_and_end_zone')
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 

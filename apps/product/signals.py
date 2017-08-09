@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
+__all__ = ('change_product_template_attribute','create_attribute_md5')
+
 import json
 from hashlib import md5
 
