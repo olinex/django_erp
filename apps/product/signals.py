@@ -23,7 +23,10 @@ def change_product_template_attribute(sender, instance, **kwargs):
 @receiver(post_save, sender=models.Product)
 def create_attribute_md5(sender, instance, created, **kwargs):
     '''保存时,更新产品属性的md5值'''
+    from apps.stock.models import Item
     if not created:
         m = md5()
         m.update(json.dumps(instance.attributes, cls=DjangoJSONEncoder).encode('utf8'))
         instance.attributes_md5 = m.hexdigest()
+    else:
+        Item.objects.create(instance=instance)

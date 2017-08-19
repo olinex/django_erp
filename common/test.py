@@ -78,6 +78,7 @@ class EnvSetUpTestCase(TestCase):
         self.product.purchasable = True
         self.product.rentable = True
         self.product.save()
+        self.item = self.product.item
         self.lot = Lot.objects.create(
             name='lot_test',
             product=self.product
@@ -201,7 +202,7 @@ class EnvSetUpTestCase(TestCase):
         self.location_initial.cache.sync()
         self.location_midway.cache.sync()
 
-        self.product.cache.sync()
+        self.product.item.cache.sync()
 
         self.route = Route.objects.create(
             name='route_test',
@@ -223,19 +224,19 @@ class EnvSetUpTestCase(TestCase):
             sequence=3
         )
         self.procurement = Procurement.objects.create(
-            to_location=self.location_stock,
             user=self.superuser,
             address=self.address,
             route=self.route
         )
         self.procurement_detail = ProcurementDetail.objects.create(
-            product=self.product,
-            lot=self.lot,
+            from_location=self.location_initial,
+            next_location=self.location_pick,
+            item=self.item,
             procurement=self.procurement,
             quantity=D('5')
         )
-        self.procurement.confirm(initial_location=self.location_initial,next_location=self.location_pick)
-        self.move = Move.objects.get(procurement_detail=self.procurement_detail)
+        self.procurement.confirm()
+        self.move = self.procurement_detail.moves.first()
 
 
 

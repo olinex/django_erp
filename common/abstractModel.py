@@ -81,16 +81,15 @@ class TreeModel(models.Model):
         help_text="该包裹所在包裹树的索引"
     )
 
-    level = models.PositiveSmallIntegerField(
-        '树层',
-        null=False,
-        blank=False,
-        default=0,
-        help_text="该包裹所距离所在包裹树的根的距离"
-    )
-
     class Meta:
         abstract = True
+
+    @property
+    def level(self):
+        if self.index != '':
+            return len(self.index.split('-')) - 1
+        else:
+            return 0
 
     @property
     def root_node(self):
@@ -100,8 +99,7 @@ class TreeModel(models.Model):
         '''
         if self.index != '':
             return self.__class__.objects.get(
-                pk=int(self.index.split('-')[0]),
-                level=0
+                pk=int(self.index.split('-')[0])
             )
         return self
 
@@ -132,8 +130,7 @@ class TreeModel(models.Model):
         :return: PackageNode Queryset
         '''
         return self.__class__.objects.filter(
-            index=self.index,
-            level=self.level
+            index=self.index
         ).exclude(pk=self.pk)
 
     @property
@@ -145,23 +142,27 @@ class TreeModel(models.Model):
         '''
         return cls.objects.filter(
             parent_node=None,
-            index='',
-            level=0
+            index=''
         )
 
-    def change_parent_node(self, node_pk):
+    def change_parent_node(self, parent):
         '''
         修改父节点时,同步更新该节点下的所有子节点key和level
-        :node:PackageNode Instance
-        :return:True
+        :parent:PackageNode Instance
+        :return:None
         '''
         with transaction.atomic():
-            node=self.__class__.objects.select_for_update().get(pk=node_pk)
-            new_index = '{}{}-'.format(node.index, str(node.pk))
+            if parent == self.parent_node:
+                return None
+            if parent:
+                node = self.__class__.objects.select_for_update().get(pk=parent.pk)
+                new_index = '{}{}-'.format(node.index, str(node.pk))
+            else:
+                node=None
+                new_index = ''
             old_index = self.index
             self.all_child_nodes.select_for_update().update(
-                index=Func(F('index'), Value(new_index), Value(old_index), function='replace'),
-                level=F('level') + Value(node.level - self.level)
+                index=Func(F('index'), Value(new_index), Value(old_index), function='replace')
             )
             self.index = new_index
             self.parent_node = node

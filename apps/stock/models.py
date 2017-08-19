@@ -5,10 +5,13 @@ from decimal import Decimal as D
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, F
+
 from apps.djangoperm import models
 from .utils import LocationForeignKey
-
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
+from apps.product.models import Assembly, Product
 from apps.account.utils import PartnerForeignKey
 from apps.product.utils import QuantityField
 from common import Redis
@@ -19,6 +22,65 @@ from common.fields import (
     SimpleStateCharField, CancelableSimpleStateCharField
 )
 from common.state import Statement, StateMachine
+
+
+class CacheItem(object):
+    '''产品的缓存对象'''
+    ALL = {'stock', 'pick', 'check', 'pack', 'wait', 'deliver', 'midway'}
+    SETTLED = {'customer', 'repair'}
+    TRANSPORTING = {'pick', 'check', 'pack', 'wait', 'deliver', 'midway'}
+
+    def __init__(self, item):
+        self.item = item
+
+    @property
+    def cache_name(self):
+        return 'item_{}'.format(self.item.pk)
+
+    def get_quantity(self, usages):
+        redis = Redis()
+        usage_list = set(Zone.States.USAGE_STATES.keys())
+        if isinstance(usages, (set,)) and not usages.difference(usage_list):
+            return sum(
+                D(redis.zscore(self.cache_name, usage)) for usage in usages
+            )
+        elif usages in usage_list:
+            return D(redis.zscore(self.cache_name, usages))
+
+    @property
+    def all(self):
+        return self.get_quantity(self.ALL)
+
+    @property
+    def settled(self):
+        return self.get_quantity(self.SETTLED)
+
+    @property
+    def transporting(self):
+        return self.get_quantity(self.TRANSPORTING)
+
+    def refresh(self, field, quantity, pipe=None):
+        '''更新字段数量'''
+        if field in Zone.States.USAGE_STATES.keys():
+            redis = pipe or Redis()
+            return redis.zincrby(self.cache_name, field, quantity)
+        raise AttributeError('错误的字段类型名称')
+
+    def sync(self):
+        '''同步所有的仓库的产品数量'''
+        redis = Redis()
+        pipe = redis.pipeline()
+        watch_keys = Warehouse.leaf_child_locations_cache_name
+        pipe.watch(watch_keys)
+        pipe.delete(self.cache_name)
+        for warehouse in Warehouse.get_state_queryset('active'):
+            for usage in Zone.States.USAGE_STATES.keys():
+                quantity = warehouse.get_item_quantity(
+                    item=self.item,
+                    usage=usage,
+                )
+                pipe.zincrby(self.cache_name, usage, quantity)
+        pipe.execute()
 
 
 class CacheLocation(object):
@@ -35,21 +97,25 @@ class CacheLocation(object):
             self.location.pk
         )
 
-    @property
-    def lock_name(self):
-        return '{}_lock'.format(self.cache_name)
+    @staticmethod
+    def item_name(item):
+        return 'item_{}'.format(item.pk)
 
-    def refresh(self, product, quantity, pipe=None):
-        redis = pipe or Redis()
-        redis.zincrby(self.cache_name, 'product_{}'.format(product.pk), quantity)
+    @staticmethod
+    def item_lock_name(item):
+        return 'item_lock_{}'.format(item.pk)
 
-    def lock(self,product,quantity,pipe=None):
+    def refresh(self, item, quantity, pipe=None):
         redis = pipe or Redis()
-        redis.zincrby(self.cache_name, 'product_lock_{}'.format(product.pk), -quantity)
+        redis.zincrby(self.cache_name, self.item_name(item), quantity)
 
-    def free_all(self,product,pipe=None):
+    def lock(self, item, quantity, pipe=None):
         redis = pipe or Redis()
-        redis.zrem(self.cache_name,'product_lock_{}'.format(product.pk))
+        redis.zincrby(self.cache_name, self.item_lock_name(item), -quantity)
+
+    def free_all(self, item, pipe=None):
+        redis = pipe or Redis()
+        redis.zrem(self.cache_name, self.item_lock_name(item))
 
     def sync(self):
         '''同步库存的产品数量'''
@@ -57,14 +123,10 @@ class CacheLocation(object):
             redis = Redis()
             pipe = redis.pipeline()
             pipe.delete(self.cache_name)
-            product_set = set(
-                move.procurement_detail_setting.detail.product
-                for move in Move.get_state_queryset('done')
-            )
-            for product in product_set:
+            for item in set(move.item for move in Move.get_state_queryset('done')):
                 self.refresh(
-                    product,
-                    self.location.in_sum(product) - self.location.out_sum(product),
+                    item,
+                    self.location.in_sum(item) - self.location.out_sum(item),
                     pipe=pipe
                 )
             pipe.execute()
@@ -182,14 +244,14 @@ class Warehouse(BaseModel):
             ]
         )
 
-    def get_product_quantity(self, product, usage='all'):
+    def get_item_quantity(self, item, usage='all'):
         if usage in Zone.States.USAGE_STATES.keys():
             zone = Zone.get_state_queryset(usage, self.zones.all())[0]
-            return zone.get_product_quantity(product)
+            return zone.get_item_quantity(item)
         elif usage == 'all':
             redis = Redis()
             return D(redis.zinterstore(
-                dest=('product_{}'.format(product.pk),),
+                dest=('item_{}'.format(item.pk),),
                 keys=[location.cache.cache_name for location in self.leaf_child_locations]
             )
             )
@@ -290,9 +352,9 @@ class Zone(BaseModel):
             'midway': midway
         }
 
-    def get_product_quantity(self, product):
+    def get_item_quantity(self, item):
         '''获得区域指定产品的数量'''
-        return self.root_location.get_product_quantity(product)
+        return self.root_location.get_item_quantity(item)
 
 
 class Location(BaseModel, TreeModel):
@@ -378,7 +440,7 @@ class Location(BaseModel, TreeModel):
     def change_parent_node(self, node):
         '''判断上级库位是否为虚拟库位'''
         if node.check_states('virtual') and self.check_states('active') and self.zone == node.zone:
-            return super(Location, self).change_parent_node(node.id)
+            return super(Location, self).change_parent_node(node)
         raise ValueError('上级库位必须为虚拟库位,且当前库位和新的上级库位必须在同一个区域内')
 
     @property
@@ -388,49 +450,61 @@ class Location(BaseModel, TreeModel):
 
     @property
     def cache(self):
-        return CacheLocation(location=self)
+        if not hasattr(self, '_cache'):
+            self._cache = CacheLocation(location=self)
+        return self._cache
 
-    def in_sum(self, product):
+    def in_sum(self, item):
         '''获取指定产品在库位的移入数量'''
         from django.db.models import Sum
         return Move.get_state_queryset('done').filter(
             to_location=self,
-            procurement_detail_setting__detail__product=product
+            procurement_detail_setting__detail__item=item
         ).aggregate(in_sum=Sum('quantity'))['in_sum'] or D('0')
 
-    def out_sum(self, product):
+    def out_sum(self, item):
         '''获取指定产品的库位的移出数量'''
         from django.db.models import Sum
         return Move.get_state_queryset('done').filter(
             from_location=self,
-            procurement_detail_setting__detail__product=product
+            procurement_detail_setting__detail__item=item
         ).aggregate(out_sum=Sum('quantity'))['out_sum'] or D('0')
 
-    def get_lock_product_quantity(self,product):
+    def get_lock_item_quantity(self, item):
         redis = Redis()
-        return D(redis.zscore(self.cache.cache_name,'product_lock_{}'.format(product.pk)))
+        return D(redis.zscore(self.cache.cache_name, self.cache.item_lock_name(item)))
 
-    def get_product_quantity(self, product):
+    def get_item_quantity(self, item):
         '''获取指定产品的数量'''
         redis = Redis()
-        product_field = 'product_{}'.format(product.pk)
-        product_lock_field = 'product_lock_{}'.format(product.pk)
+        item_field = self.cache.item_name(item)
+        item_lock_field = self.cache.item_lock_name(item)
         if self.check_states('virtual'):
             keys = [node.cache.cache_name for node in self.leaf_child_nodes]
             return D(redis.zinterstore(
-                dest=(product_field,product_lock_field),
+                dest=(item_field, item_lock_field),
                 keys=keys
             ))
         elif self.check_states('no_virtual'):
             return D(redis.zscore(
                 self.cache.cache_name,
-                product_field
+                item_field
             ) or '0') + D(redis.zscore(
                 self.cache.cache_name,
-                product_lock_field
+                item_lock_field
             ) or '0')
         else:
             return D('0')
+
+
+class Package(BaseModel):
+    '''包裹记录'''
+    root_node = models.ForeignKey(
+        'stock.PackageNode',
+        null=False,
+        blank=False,
+        verbose_name='包裹树',
+    )
 
 
 class Move(BaseModel):
@@ -452,22 +526,29 @@ class Move(BaseModel):
         help_text="移动的结束库位"
     )
 
-    to_move = ActiveLimitOneToOneField(
+    to_moves = models.ManyToManyField(
         'self',
-        null=True,
         blank=True,
         verbose_name='后续移动',
-        related_name='from_move',
+        related_name='from_moves',
         help_text="计划移动链的后续移动"
     )
 
-    procurement_detail = models.ForeignKey(
+    procurement_details = models.ManyToManyField(
         'stock.ProcurementDetail',
-        null=False,
         blank=False,
         verbose_name='需求明细',
         related_name='moves',
         help_text="生成该移动的需求明细"
+    )
+
+    item = ActiveLimitForeignKey(
+        'stock.Item',
+        null=False,
+        blank=False,
+        verbose_name='移库元素',
+        related_name='moves',
+        help_text="进行移库的元素"
     )
 
     route_zone_setting = models.ForeignKey(
@@ -483,7 +564,7 @@ class Move(BaseModel):
         '移动数量',
         null=False,
         blank=False,
-        uom='procurement_detail.product.template.uom',
+        uom='item.instance.uom',
         help_text="产品的数量"
     )
 
@@ -501,76 +582,71 @@ class Move(BaseModel):
     class Meta:
         verbose_name = '移动'
         verbose_name_plural = '移动'
-        unique_together = ('procurement_detail','route_zone_setting')
+        unique_together = ('item', 'route_zone_setting')
 
     class States(BaseModel.States):
         active = BaseModel.States.active
         draft = Statement(inherits=active, state='draft')
         confirmed = Statement(inherits=active, state='confirmed')
-        doing = Statement(Q(state='draft') | Q(state='confirmed'),inherits=active)
-        free_confirmed = Statement(Q(procurement_detail__lock__isnull=True),inherits=confirmed)
-        lock_confirmed = Statement(Q(procurement_detail__lock__isnull=False),inherits=confirmed)
+        doing = Statement(Q(state='draft') | Q(state='confirmed'), inherits=active)
         done = Statement(inherits=active, state='done')
 
-    @property
-    def product(self):
-        return self.procurement_detail.product
-
-    def refresh_lock_product_quantity(self):
+    def refresh_lock_item_quantity(self):
         return self.from_location.cache.lock(
-            product=self.product,
+            item=self.item,
             quantity=self.quantity
         )
 
-    def refresh_product_quantity(self):
+    def refresh_item_quantity(self):
         redis = Redis()
         pipe = redis.pipeline()
-        product = self.product
         self.from_location.cache.refresh(
-            product=product,
+            item=self.item,
             quantity=(-self.quantity),
             pipe=pipe
         )
         self.to_location.cache.refresh(
-            product=product,
+            item=self.item,
             quantity=self.quantity,
             pipe=pipe
         )
-        self.from_location.cache.lock(product,-self.quantity,pipe=pipe)
+        self.from_location.cache.lock(self.item, -self.quantity, pipe=pipe)
         if self.from_location.zone.usage != self.to_location.zone.usage:
-            product.cache.refresh(self.from_location.zone.usage, -self.quantity, pipe=pipe)
-            product.cache.refresh(self.to_location.zone.usage, self.quantity, pipe=pipe)
+            self.item.cache.refresh(self.from_location.zone.usage, -self.quantity, pipe=pipe)
+            self.item.cache.refresh(self.to_location.zone.usage, self.quantity, pipe=pipe)
         pipe.execute()
 
-
     def confirm(self):
-        if self.check_to_set_state('draft',set_state='confirmed'):
-            self.refresh_lock_product_quantity()
+        if self.check_to_set_state('draft', set_state='confirmed'):
+            self.refresh_lock_item_quantity()
             return True
         return False
 
-    def done(self,next_location=None):
+    def done(self, next_location=None):
         with transaction.atomic():
-            next_route_zone_setting = self.procurement_detail.procurement.route.next_route_zone_setting(
+            procurement = self.procurement_details.first().procurement
+            next_route_zone_setting = procurement.route.next_route_zone_setting(
                 now_route_zone_setting=self.route_zone_setting
             )
-            if (((not next_route_zone_setting and not next_location) or next_location.zone == next_route_zone_setting.zone) and
-                self.check_to_set_state('free_confirmed',set_state='done')):
-                self.refresh_product_quantity()
-                procurement = self.procurement_detail.procurement
+            if (((
+                     not next_route_zone_setting and not next_location) or next_location.zone == next_route_zone_setting.zone) and
+                    self.check_to_set_state('confirmed', set_state='done')):
+                self.refresh_item_quantity()
                 if not procurement.check_states('cancel'):
                     if next_route_zone_setting:
                         next_move = Move.objects.create(
                             from_location=self.to_location,
                             to_location=next_location,
-                            procurement_detail=self.procurement_detail,
                             route_zone_setting=next_route_zone_setting,
+                            item=self.item,
                             quantity=self.quantity,
                             state='draft'
                         )
-                        self.to_move=next_move
+                        next_move.procurement_details.set(self.procurement_details.all())
+                        self.to_moves.add(next_move)
                         self.save()
-                    elif Move.check_state_queryset('done', Move.objects.filter(procurement_detail__procurement=procurement)):
+                    elif Move.check_state_queryset('done',
+                                                   Move.objects.filter(procurement_details__procurement=procurement)):
                         procurement.set_state('done')
                 return True
             return False
@@ -657,7 +733,7 @@ class Route(BaseModel):
     zones = models.ManyToManyField(
         'stock.Zone',
         through='stock.RouteZoneSetting',
-        through_fields=('route','zone'),
+        through_fields=('route', 'zone'),
         blank=False,
         verbose_name='区域',
         related_name='routes',
@@ -686,16 +762,16 @@ class Route(BaseModel):
     class Meta:
         verbose_name = '路线'
         verbose_name_plural = '路线'
-        unique_together = ('initial_zone','end_zone','sequence')
+        unique_together = ('initial_zone', 'end_zone', 'sequence')
 
     class States(BaseModel.States):
         active = BaseModel.States.active
 
     @property
     def direct_path(self):
-        return (self.initial_zone,self.end_zone)
+        return (self.initial_zone, self.end_zone)
 
-    def next_route_zone_setting(self,now_route_zone_setting=None):
+    def next_route_zone_setting(self, now_route_zone_setting=None):
         if now_route_zone_setting:
             return RouteZoneSetting.objects.filter(
                 route=self,
@@ -737,12 +813,12 @@ class RouteZoneSetting(models.Model):
     )
 
     def __str__(self):
-        return '{}/{}/{}'.format(self.route,self.zone,self.sequence)
+        return '{}/{}/{}'.format(self.route, self.zone, self.sequence)
 
     class Meta:
         verbose_name = '路线的路径区域配置'
         verbose_name_plural = '路线的路径配置'
-        unique_together = ('zone','sequence')
+        unique_together = ('zone', 'sequence')
         ordering = ('sequence',)
 
 
@@ -757,14 +833,14 @@ class PackageType(BaseModel):
         help_text="包裹类型的名称"
     )
 
-    categories = models.ManyToManyField(
-        'product.ProductCategory',
+    items = models.ManyToManyField(
+        'stock.Item',
         blank=False,
-        through='stock.PackageTypeCategorySetting',
-        through_fields=('package_type', 'product_category'),
+        through='stock.PackageTypeItemSetting',
+        through_fields=('package_type', 'item'),
         verbose_name='产品分类',
         related_name='package_types',
-        help_text="包裹可包装的产品分类"
+        help_text="包裹可包装的元素类型"
     )
 
     def __str__(self):
@@ -775,9 +851,9 @@ class PackageType(BaseModel):
         verbose_name_plural = '包裹类型'
 
 
-class PackageTypeCategorySetting(models.Model):
+class PackageTypeItemSetting(models.Model):
     '''包裹类型产品分类设置'''
-    RELATED_NAME = 'type_settings'
+    RELATED_NAME = 'item_settings'
 
     package_type = ActiveLimitForeignKey(
         'stock.PackageType',
@@ -788,44 +864,35 @@ class PackageTypeCategorySetting(models.Model):
         help_text="相关的包裹类型"
     )
 
-    product_category = ActiveLimitForeignKey(
-        'product.ProductCategory',
+    item = ActiveLimitForeignKey(
+        'stock.Item',
         null=False,
         blank=False,
-        verbose_name='产品分类',
+        verbose_name='元素类型',
         related_name=RELATED_NAME,
-        help_text="相关的产品分类"
-    )
-
-    uom = ActiveLimitForeignKey(
-        'product.UOM',
-        null=False,
-        blank=False,
-        verbose_name='单位',
-        related_name='type_settings',
-        help_text="包裹类型的计量单位"
+        help_text="相关的元素的类型"
     )
 
     max_quantity = QuantityField(
         '最大数量',
         null=False,
         blank=False,
-        uom='uom',
+        uom='item.instance.uom',
         help_text="包裹类型能够包含该产品的最大数量"
     )
 
     def __str__(self):
         return '{}-{}({})'.format(
             self.package_type,
-            self.product,
+            self.item,
             str(self.max_quantity)
         )
 
     class Meta:
-        verbose_name = '包裹类型产品类型设置'
-        verbose_name_plural = '包裹类型产品类型设置'
+        verbose_name = '包裹类型设置'
+        verbose_name_plural = '包裹类型设置'
         unique_together = (
-            ('package_type', 'product_category'),
+            ('package_type', 'item'),
         )
 
 
@@ -850,9 +917,9 @@ class PackageTemplate(BaseModel):
     )
 
     type_settings = models.ManyToManyField(
-        'stock.PackageTypeCategorySetting',
+        'stock.PackageTypeItemSetting',
         blank=False,
-        through='stock.PackageTemplateCategorySetting',
+        through='stock.PackageTemplateItemSetting',
         through_fields=('package_template', 'type_setting'),
         verbose_name='产品分类设置',
         related_name='package_templates',
@@ -867,7 +934,7 @@ class PackageTemplate(BaseModel):
         verbose_name_plural = '包裹模板'
 
 
-class PackageTemplateCategorySetting(models.Model):
+class PackageTemplateItemSetting(models.Model):
     '''包裹模板产品设置'''
     RELATED_NAME = 'template_settings'
 
@@ -881,10 +948,10 @@ class PackageTemplateCategorySetting(models.Model):
     )
 
     type_setting = models.ForeignKey(
-        'stock.PackageTypeCategorySetting',
+        'stock.PackageTypeItemSetting',
         null=False,
         blank=False,
-        verbose_name='包裹类型明细',
+        verbose_name='包裹类型设置',
         related_name=RELATED_NAME,
         help_text="包裹模板明细遵循的包裹类型"
     )
@@ -912,7 +979,7 @@ class PackageTemplateCategorySetting(models.Model):
         )
 
 
-class PackageNode(TreeModel,StateMachine):
+class PackageNode(TreeModel, StateMachine):
     '''包裹节点'''
     name = models.CharField(
         '名称',
@@ -948,6 +1015,11 @@ class PackageNode(TreeModel,StateMachine):
         help_text="包裹的数量"
     )
 
+    items = GenericRelation('stock.Item')
+
+    @property
+    def item(self):
+        return self.items.first()
 
     def __str__(self):
         return self.name
@@ -960,25 +1032,8 @@ class PackageNode(TreeModel,StateMachine):
         )
 
 
-class Package(BaseModel):
-    '''包裹记录'''
-    root_node = models.ForeignKey(
-        'stock.PackageNode',
-        null=False,
-        blank=False,
-        verbose_name='包裹树',
-    )
-
-
-
 class Procurement(BaseModel):
     '''需求'''
-    to_location = LocationForeignKey(
-        null=False,
-        blank=False,
-        verbose_name='库位',
-        help_text="需求产生的库位"
-    )
 
     user = PartnerForeignKey(
         null=False,
@@ -1026,7 +1081,7 @@ class Procurement(BaseModel):
     )
 
     def __str__(self):
-        return '{}-{}'.format(str(self.user), str(self.to_location))
+        return '{}-{}'.format(str(self.user), str(self.route))
 
     class Meta:
         verbose_name = '需求'
@@ -1034,28 +1089,25 @@ class Procurement(BaseModel):
 
     class States(BaseModel.States):
         active = BaseModel.States.active
-        draft = Statement(inherits=active,state='draft')
-        confirmed = Statement(inherits=active,state='confirmed')
-        done = Statement(inherits=active,state='done')
-        cancelable = Statement(inherits=confirmed,is_return=False)
-        cancel = Statement(inherits=active,state='cancel')
+        draft = Statement(inherits=active, state='draft')
+        confirmed = Statement(inherits=active, state='confirmed')
+        done = Statement(inherits=active, state='done')
+        cancelable = Statement(inherits=confirmed, is_return=False)
+        cancel = Statement(inherits=active, state='cancel')
 
-
-    def confirm(self,initial_location,next_location):
+    def confirm(self):
         with transaction.atomic():
             next_zone_setting = self.route.next_route_zone_setting()
-            if (self.route.initial_zone == initial_location.zone and
-                next_zone_setting.zone == next_location.zone and
-                self.check_states('draft')):
+            if (not self.details.exclude(
+                        Q(from_location__zone=F('procurement__route__initial_zone')) &
+                        Q(next_location__zone=next_zone_setting.zone)).exists() and
+                    self.check_states('draft')):
+                details = self.details.all()
                 self.set_state('confirmed')
-                Move.objects.bulk_create([
-                    detail.get_first_move(
-                        first_route_zone_setting=next_zone_setting,
-                        initial_location=initial_location,
-                        next_location=next_location
-                    )
-                    for detail in self.details.all()
-                ])
+                for detail in details:
+                    move = detail.get_first_move(first_route_zone_setting=next_zone_setting)
+                    move.save()
+                    move.procurement_details.add(detail)
                 return True
             return False
 
@@ -1063,8 +1115,24 @@ class Procurement(BaseModel):
 class ProcurementDetail(models.Model):
     '''需求明细'''
 
-    product = ActiveLimitForeignKey(
-        'product.Product',
+    from_location = LocationForeignKey(
+        null=False,
+        blank=False,
+        verbose_name='来源库位',
+        related_name='first_move_procurement_details',
+        help_text="产品来源的库位"
+    )
+
+    next_location = LocationForeignKey(
+        null=False,
+        blank=False,
+        verbose_name='下一步库位',
+        related_name='second_move_procurement_details',
+        help_text="产品第一步需要移动至的库位"
+    )
+
+    item = ActiveLimitForeignKey(
+        'stock.Item',
         null=False,
         blank=False,
         verbose_name='产品',
@@ -1079,15 +1147,6 @@ class ProcurementDetail(models.Model):
         help_text="产品的数量"
     )
 
-    lot = ActiveLimitForeignKey(
-        'product.Lot',
-        null=True,
-        blank=True,
-        default=None,
-        verbose_name="批次",
-        help_text="产品所属的批次"
-    )
-
     procurement = ActiveLimitForeignKey(
         'stock.Procurement',
         null=False,
@@ -1097,28 +1156,18 @@ class ProcurementDetail(models.Model):
         help_text="需求明细所属的需求"
     )
 
-    lock = models.ForeignKey(
-        'stock.ProcurementLock',
-        null=True,
-        blank=True,
-        verbose_name='需求锁',
-        related_name='details',
-        help_text="与该需求明细相关的需求锁"
-    )
-
-
     def __str__(self):
-        return '{}/{}'.format(str(self.procurement), str(self.product))
+        return '{}/{}'.format(str(self.procurement), str(self.item))
 
     class Meta:
         verbose_name = "需求明细"
         verbose_name_plural = "需求明细"
-        unique_together = ('procurement', 'product', 'lot')
+        unique_together = ('procurement', 'item')
 
     @property
     def moving(self):
         '''获得当前与需求明细相关的进行中的移动'''
-        moves = Move.get_state_queryset('doing',self.moves.all())
+        moves = Move.get_state_queryset('doing', self.moves.all())
         moves_count = moves.count()
         if moves_count == 1:
             return moves[0]
@@ -1127,58 +1176,61 @@ class ProcurementDetail(models.Model):
         else:
             raise ValueError('同一需求明细下不能存在多个进行中的移动')
 
-    def get_first_move(self,first_route_zone_setting,initial_location,next_location):
+    def get_first_move(self, first_route_zone_setting):
         return Move(
-            from_location=initial_location,
-            to_location=next_location,
-            procurement_detail=self,
+            from_location=self.from_location,
+            to_location=self.next_location,
             route_zone_setting=first_route_zone_setting,
             quantity=self.quantity,
+            item=self.item,
             state='draft'
         )
 
-    def cancel(self):
-        if self.procurement.check_states('cancelable'):
-            pass
 
+class Item(BaseModel, StateMachine):
+    '''移库元素'''
 
-class ProcurementLock(models.Model):
-    '''需求锁'''
-    WAY_TYPE = (
-        ('direct','正向'),
-        ('return','反向'),
-        ('both','双向')
-    )
-
-    way_type = models.CharField(
-        '锁的方向',
+    content_type = models.ForeignKey(
+        ContentType,
         null=False,
         blank=False,
-        choices=WAY_TYPE,
-        default='both',
-        max_length=10,
-        help_text="需求锁的方向"
+        verbose_name='类型',
+        related_name='item',
+        help_text="移库单位的类型"
     )
 
-    procurement = ActiveLimitForeignKey(
-        'stock.Procurement',
+    object_id = models.PositiveIntegerField(
+        '元素ID',
         null=False,
         blank=False,
-        verbose_name='需求',
-        related_name='locks',
-        help_text="锁的相关需求"
+        help_text="移库单位对应对象的id"
     )
+
+    instance = GenericForeignKey('content_type', 'object_id')
 
     def __str__(self):
-        return '{}({})'.format(self.procurement,self.way_type)
+        return str(self.instance)
+
+    class Meta:
+        verbose_name = '移库元素'
+        verbose_name_plural = '移库元素'
+        unique_together = ('content_type', 'object_id')
+
+    class States(BaseModel.States):
+        active = BaseModel.States.active
+        product = Statement(
+            Q(content_type=ContentType.objects.get_for_model(Product)),
+            inherits=active
+        )
+        assembly = Statement(
+            Q(content_type=ContentType.objects.get_for_model(Assembly)),
+            inherits=active
+        )
+        package_node = Statement(
+            Q(content_type=ContentType.objects.get_for_model(PackageNode)),
+            inherits=active
+        )
 
     @property
-    def moves(self):
-        return Move.get_state_queryset('confirmed',Move.objects.filter(procurement_detail__in=self.details.all()))
-
-    def progress(self,):
-        return self.details.all().count() == self.moves.count()
-
-
-
-
+    def cache(self):
+        return CacheItem(self)

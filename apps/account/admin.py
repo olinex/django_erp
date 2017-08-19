@@ -7,17 +7,17 @@ from common.admin import CommonAdmin, CommonTabInLine
 from . import models
 
 
-class CityInline(CommonTabInLine):
+class CityInline(admin.TabularInline):
     model = models.City
     fieldsets = (
-        (None, {'fields': ('name', 'is_active', 'is_delete')}),
+        (None, {'fields': ('name',)}),
     )
 
 
-class RegionInline(CommonTabInLine):
+class RegionInline(admin.TabularInline):
     model = models.Region
     fieldsets = (
-        (None, {'fields': ('name', 'is_active', 'is_delete')}),
+        (None, {'fields': ('name',)}),
     )
 
 
@@ -29,12 +29,12 @@ class AddressInline(CommonTabInLine):
 
 
 @admin.register(models.Province)
-class ProvinceAdmin(CommonAdmin):
+class ProvinceAdmin(admin.ModelAdmin):
     list_display = ('id', 'country', 'name')
     search_fields = ('name',)
     list_editable = ('name',)
     fieldsets = (
-        (None, {'fields': ('country', 'name', 'is_active')}),
+        (None, {'fields': ('country', 'name')}),
     )
     inlines = [
         CityInline
@@ -42,12 +42,12 @@ class ProvinceAdmin(CommonAdmin):
 
 
 @admin.register(models.City)
-class CityAdmin(CommonAdmin):
+class CityAdmin(admin.ModelAdmin):
     list_display = ('id', 'province', 'name')
     search_fields = ('name',)
     list_editable = ('name',)
     fieldsets = (
-        (None, {'fields': ('province', 'name', 'is_active')}),
+        (None, {'fields': ('province', 'name')}),
     )
     inlines = (
         RegionInline,
@@ -55,12 +55,12 @@ class CityAdmin(CommonAdmin):
 
 
 @admin.register(models.Region)
-class RegionAdmin(CommonAdmin):
+class RegionAdmin(admin.ModelAdmin):
     list_display = ('id', 'city', 'name')
     search_fields = ('name',)
     list_editable = ('name',)
     fieldsets = (
-        (None, {'fields': ('city', 'name', 'is_active')}),
+        (None, {'fields': ('city', 'name')}),
     )
     inlines = (
         AddressInline,

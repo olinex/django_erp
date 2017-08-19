@@ -26,7 +26,7 @@ class MoveInline(CommonTabInLine):
     fieldsets = (
         (None, {'fields': (
             'from_location', 'to_location',
-            'to_move', 'procurement_detail',
+            'to_moves', 'procurement_details', 'item',
             'route_zone_setting', 'quantity', 'state'
         )}),
     )
@@ -41,17 +41,17 @@ class RouteZoneSettingInline(CommonTabInLine):
     )
 
 
-class PackageTypeCategorySettingInline(CommonTabInLine):
-    model = models.PackageTypeCategorySetting
+class PackageTypeItemSettingInline(CommonTabInLine):
+    model = models.PackageTypeItemSetting
     fieldsets = (
         (None, {'fields': (
-            'package_type', 'product_category', 'max_quantity'
+            'package_type', 'item', 'max_quantity', 'uom'
         )}),
     )
 
 
-class PackageTemplateCategorySettingInline(CommonTabInLine):
-    model = models.PackageTemplateCategorySetting
+class PackageTemplateItemSettingInline(CommonTabInLine):
+    model = models.PackageTemplateItemSetting
     fieldsets = (
         (None, {'fields': (
             'package_template', 'type_setting', 'quantity'
@@ -96,8 +96,7 @@ class LocationAdmin(CommonAdmin):
 @admin.register(models.Move)
 class MoveAdmin(CommonAdmin):
     list_display = (
-        'from_location', 'to_location',
-        'to_move', 'procurement_detail',
+        'from_location', 'to_location', 'item',
         'route_zone_setting', 'quantity', 'state'
     )
     list_filter = ('state',)
@@ -105,7 +104,7 @@ class MoveAdmin(CommonAdmin):
     fieldsets = (
         (None, {'fields': (
             ('from_location', 'to_location'),
-            'to_move', 'procurement_detail',
+            'to_move', 'item',
             'route_zone_setting', 'quantity', 'state'
         )}),
     )
@@ -134,7 +133,7 @@ class PackageTypeAdmin(CommonAdmin):
         (None, {'fields': ('name',)}),
     )
     inlines = (
-        PackageTypeCategorySettingInline,
+        PackageTypeItemSettingInline,
     )
 
 
@@ -148,7 +147,7 @@ class PackageTemplateAdmin(CommonAdmin):
         (None, {'fields': ('name', 'package_type')}),
     )
     inlines = (
-        PackageTemplateCategorySettingInline,
+        PackageTemplateItemSettingInline,
     )
 
 
@@ -164,17 +163,17 @@ class PackageNodeAdmin(admin.ModelAdmin):
 
 @admin.register(models.Procurement)
 class ProcurementAdmin(CommonAdmin):
-    list_display = ('to_location', 'user', 'is_return', 'return_procurement', 'route', 'state')
+    list_display = ('user', 'is_return', 'return_procurement', 'route', 'state')
     list_filter = ('state', 'is_return')
     list_editable = list_filter
     fieldsets = (
-        (None, {'fields': ('to_location', 'user', 'is_return', 'return_procurement', 'route', 'state')}),
+        (None, {'fields': ('user', 'is_return', 'return_procurement', 'route', 'state')}),
     )
 
 
 @admin.register(models.ProcurementDetail)
 class ProcurementDetailAdmin(CommonAdmin):
-    list_display = ('procurement', 'product', 'quantity', 'lot')
+    list_display = ('procurement', 'from_location', 'next_location', 'item', 'quantity')
     fieldsets = (
-        (None, {'fields': ('procurement', ('product', 'quantity'), 'lot')}),
+        (None, {'fields': ('procurement', ('item', 'quantity'), ('from_location', 'next_location'))}),
     )

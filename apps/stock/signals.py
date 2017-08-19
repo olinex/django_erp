@@ -32,3 +32,8 @@ def sync_initial_and_end_zone(sender, instance, **kwargs):
     if changed:
         route.save(update_fields=('initial_zone','end_zone'))
 
+@receiver(post_save, sender=models.PackageTemplate)
+def create_package_template_item(sender,instance,created,**kwargs):
+    if created:
+        models.Item.objects.create(instance=instance)
+

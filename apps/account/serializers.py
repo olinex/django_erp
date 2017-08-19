@@ -10,26 +10,24 @@ from . import models
 User = get_user_model()
 
 
-class ProvinceSerializer(ActiveModelSerializer):
+class ProvinceSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Province
-        fields = ('id', 'country', 'name', 'is_active')
+        fields = ('id', 'country', 'name')
 
 
-class CitySerializer(ActiveModelSerializer):
-    province = StatePrimaryKeyRelatedField(models.Province, 'active')
+class CitySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.City
-        fields = ('id', 'province', 'name', 'is_active')
+        fields = ('id', 'province', 'name')
 
 
-class RegionSerializer(ActiveModelSerializer):
-    city = StatePrimaryKeyRelatedField(models.City, 'active')
+class RegionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Region
-        fields = ('id', 'city', 'name', 'is_active')
+        fields = ('id', 'city', 'name')
 
 
 class AddressSerializer(ActiveModelSerializer):
@@ -45,7 +43,6 @@ class AddressSerializer(ActiveModelSerializer):
         source='region',
         read_only=True
     )
-    region = StatePrimaryKeyRelatedField(models.Region, 'active')
 
     class Meta:
         model = models.Address

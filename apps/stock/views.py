@@ -33,19 +33,19 @@ class RouteZoneSettingViewSet(PermMethodViewSet):
     allow_actions = ('create','list','retrieve','update','destroy')
     serializer_class = serializers.RouteZoneSettingSerializer
 
-class PackageTypeCategorySettingViewSet(PermMethodViewSet):
-    model=models.PackageTypeCategorySetting
+class PackageTypeItemSettingViewSet(PermMethodViewSet):
+    model=models.PackageTypeItemSetting
     allow_actions = ('create','list','retrieve','update','destroy')
-    serializer_class = serializers.PackageTypeCategorySettingSerializer
+    serializer_class = serializers.PackageTypeItemSettingSerializer
 
 class PackageTypeViewSet(BaseViewSet):
     model=models.PackageType
     serializer_class = serializers.PackageTypeSerializer
 
-class PackageTemplateCategorySettingViewSet(PermMethodViewSet):
-    model = models.PackageTemplateCategorySetting
+class PackageTemplateItemSettingViewSet(PermMethodViewSet):
+    model = models.PackageTemplateItemSetting
     allow_actions = ('create', 'list', 'retrieve', 'update','destroy')
-    serializer_class = serializers.PackageTemplateCategorySettingSerializer
+    serializer_class = serializers.PackageTemplateItemSettingSerializer
 
 class PackageTemplateViewSet(BaseViewSet):
     model=models.PackageTemplate

@@ -97,7 +97,7 @@ class StateMachine(object):
         '''
         query = cls.objects.all() if not queryset else queryset
         statement=getattr(cls.States,state)
-        return query.filter(statement.query)
+        return query.filter(statement.query).distinct()
 
     @classmethod
     def set_state_queryset(cls,state,queryset):

@@ -2,12 +2,10 @@
 # -*- coding:utf-8 -*-
 
 from django.contrib.auth import get_user_model
-from apps.product.models import Product, Lot, ProductCategory
 from rest_framework import serializers
 
 from apps.account.models import Address
 from apps.account.serializers import UserSerializer, AddressSerializer
-from apps.product.serializers import ProductSerializer, LotSerializer, ProductCategorySerializer
 from common.rest.serializers import ActiveModelSerializer, StatePrimaryKeyRelatedField
 from . import models
 
@@ -37,7 +35,6 @@ class ZoneSerializer(ActiveModelSerializer):
 
 
 class LocationSerializer(ActiveModelSerializer):
-    level=serializers.ReadOnlyField()
     index=serializers.ReadOnlyField()
     zone_detail = ZoneSerializer(source='zone', read_only=True)
 
@@ -45,26 +42,7 @@ class LocationSerializer(ActiveModelSerializer):
         model = models.Location
         fields = (
             'zone', 'parent_node', 'is_virtual',
-            'x', 'y', 'z', 'zone_detail','level','index'
-        )
-
-
-class MoveSerializer(ActiveModelSerializer):
-    from_zone_detail = ZoneSerializer(source='from_zone', read_only=True)
-    to_zone_detail = ZoneSerializer(source='to_zone', read_only=True)
-    to_move = serializers.ReadOnlyField()
-    procurement_detail = serializers.ReadOnlyField()
-    route_zone_setting = serializers.ReadOnlyField()
-    quantity = serializers.ReadOnlyField()
-    state = serializers.CharField(read_only=True)
-
-    class Meta:
-        model = models.Move
-        fields = (
-            'from_zone_detail',
-            'to_zone_detail',
-            'to_move', 'procurement_detail',
-            'route_zone_setting','quantity', 'state'
+            'x', 'y', 'z', 'zone_detail','index'
         )
 
 
@@ -95,42 +73,36 @@ class RouteZoneSettingSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('区域所属的仓库必须与路线的仓库相同')
         return attrs
 
-class PackageTypeCategorySettingSerializer(serializers.ModelSerializer):
+class PackageTypeItemSettingSerializer(serializers.ModelSerializer):
     package_type = StatePrimaryKeyRelatedField(models.PackageType, 'active')
-    product_category = StatePrimaryKeyRelatedField(ProductCategory,'active')
-    product_category_detail=ProductCategorySerializer(source='product_category',read_only=True)
+    item = StatePrimaryKeyRelatedField(models.Item, 'active')
     class Meta:
-        model= models.PackageTypeCategorySetting
+        model= models.PackageTypeItemSetting
         fields=(
-            'package_type','product_category','product_category_detail','max_quantity'
+            'package_type','item','max_quantity'
         )
 
 class PackageTypeSerializer(ActiveModelSerializer):
-    categories_detail=PackageTypeCategorySettingSerializer(
-        source='categories',
-        read_only=True,
-        many=True
-    )
     class Meta:
         model= models.PackageType
-        fields=('name','categories_detail')
+        fields=('name','items')
 
-class PackageTemplateCategorySettingSerializer(serializers.ModelSerializer):
+class PackageTemplateItemSettingSerializer(serializers.ModelSerializer):
     package_template = StatePrimaryKeyRelatedField(models.PackageTemplate, 'active')
-    type_setting_detail = PackageTypeCategorySettingSerializer(
+    type_setting_detail = PackageTypeItemSettingSerializer(
         source='type_setting',
         read_only=True,
         many=True
     )
     class Meta:
-        model= models.PackageTemplateCategorySetting
+        model= models.PackageTemplateItemSetting
         fields=(
             'package_template','type_setting','quantity','type_setting_detail'
         )
 
 class PackageTemplateSerializer(ActiveModelSerializer):
     package_type = StatePrimaryKeyRelatedField(models.PackageType, 'active')
-    type_settings_detail=PackageTemplateCategorySettingSerializer(
+    type_settings_detail=PackageTemplateItemSettingSerializer(
         source='type_settings',
         read_only=True,
         many=True
@@ -142,7 +114,6 @@ class PackageTemplateSerializer(ActiveModelSerializer):
         )
 
 class PackageNodeSerializer(serializers.ModelSerializer):
-    level=serializers.ReadOnlyField()
     index=serializers.ReadOnlyField()
     template = StatePrimaryKeyRelatedField(models.PackageTemplate, 'active')
     template_detail=PackageTemplateSerializer(
@@ -153,25 +124,22 @@ class PackageNodeSerializer(serializers.ModelSerializer):
         model= models.PackageNode
         fields=(
             'name','parent_node','template','template_detail',
-            'quantity','level','index'
+            'quantity','index'
         )
 
 class ProcurementDetailSerializer(ActiveModelSerializer):
-    product = StatePrimaryKeyRelatedField(Product,'active')
-    product_detail=ProductSerializer(source='product',read_only=True)
-    lot = StatePrimaryKeyRelatedField(Lot,'active')
-    lot_detail=LotSerializer(source='lot',read_only=True)
+    from_location_detail = LocationSerializer(source='from_location',read_only=True)
+    next_location_detail = LocationSerializer(source='next_location',read_only=True)
+    item = StatePrimaryKeyRelatedField(models.Item,'active')
     class Meta:
         model= models.ProcurementDetail
         fields=(
-            'product','product_detail','quantity',
-            'lot','lot_detail','procurement'
+            'from_location','next_location',
+            'from_location_detail','next_location_detail',
+            'item','quantity','procurement'
         )
 
-
 class ProcurementSerializer(ActiveModelSerializer):
-    to_location = StatePrimaryKeyRelatedField(models.Location, 'active')
-    to_location_detail=LocationSerializer(source='to_location',read_only=True)
     user = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(is_active=True,profile__is_partner=True)
     )
@@ -181,6 +149,23 @@ class ProcurementSerializer(ActiveModelSerializer):
     class Meta:
         model= models.Procurement
         fields=(
-            'to_location','to_location_detail',
             'user','user_detail','state','route','route_detail'
+        )
+
+class MoveSerializer(ActiveModelSerializer):
+    from_zone_detail = ZoneSerializer(source='from_zone', read_only=True)
+    to_zone_detail = ZoneSerializer(source='to_zone', read_only=True)
+    to_moves = serializers.ReadOnlyField()
+    procurement_details = ProcurementDetailSerializer(source='procurement_details',read_only=True,many=True)
+    route_zone_setting = serializers.ReadOnlyField()
+    quantity = serializers.ReadOnlyField()
+    state = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = models.Move
+        fields = (
+            'from_zone_detail',
+            'to_zone_detail','item',
+            'to_moves', 'procurement_details',
+            'route_zone_setting','quantity', 'state'
         )

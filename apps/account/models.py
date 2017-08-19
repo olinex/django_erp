@@ -13,7 +13,7 @@ COUNTRIES = (
 )
 
 
-class Province(BaseModel):
+class Province(models.Model):
     '''省份'''
 
     class KeyManager(Manager):
@@ -51,7 +51,7 @@ class Province(BaseModel):
         return (self.country, self.name)
 
 
-class City(BaseModel):
+class City(models.Model):
     '''城市'''
     class KeyManager(Manager):
         def get_by_natural_key(self,country,province,name):
@@ -63,7 +63,7 @@ class City(BaseModel):
 
     objects = KeyManager()
 
-    province = ActiveLimitForeignKey(
+    province = models.ForeignKey(
         'account.Province',
         null=False,
         blank=False,
@@ -93,9 +93,9 @@ class City(BaseModel):
     natural_key.dependencies = ['account.Province']
 
 
-class Region(BaseModel):
+class Region(models.Model):
     '''地区'''
-    city = ActiveLimitForeignKey(
+    city = models.ForeignKey(
         'account.City',
         null=False,
         blank=False,
@@ -123,7 +123,7 @@ class Region(BaseModel):
 
 class Address(BaseModel):
     '''顾客或公司的地址'''
-    region = ActiveLimitForeignKey(
+    region = models.ForeignKey(
         'account.Region',
         null=False,
         blank=False,

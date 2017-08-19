@@ -4,83 +4,14 @@
 from decimal import Decimal as D
 
 from django.db import transaction
-
+from django.contrib.contenttypes.fields import GenericRelation
 from apps.djangoperm import models
-from common import Redis
 from common import state
 from common.abstractModel import BaseModel
 from common.fields import (
     ActiveLimitForeignKey, ActiveLimitManyToManyField, ActiveLimitOneToOneField
 )
 from apps.product.utils import QuantityField
-
-class CacheProduct(object):
-    '''产品的缓存对象'''
-    ALL = ['stock','pick','check','pack','wait','deliver','midway']
-    SETTLED = ['customer','repair']
-    TRANSPORTING = ['pick','check','pack','wait','deliver','midway']
-
-    def __init__(self, product):
-        self.product = product
-
-    @property
-    def cache_name(self):
-        return 'template_{}_product_{}'.format(
-            self.product.template.pk,
-            self.product.pk
-        )
-
-    @property
-    def lock_name(self):
-        return '{}_lock'.format(self.cache_name)
-
-    def get_quantity(self,usages):
-        from apps.stock.models import Zone
-        redis = Redis()
-        usage_list = list(Zone.States.USAGE_STATES.keys())
-        if usages in usage_list:
-            return D(redis.zscore(self.cache_name,usages))
-        elif isinstance(usages,(list,tuple)) and all(usage in usage_list for usage in usages):
-            return sum(
-                D(redis.zscore(self.cache_name,usage)) for usage in usages
-            )
-
-    @property
-    def all(self):
-        return self.get_quantity(self.ALL)
-
-    @property
-    def settled(self):
-        return self.get_quantity(self.SETTLED)
-
-    @property
-    def transporting(self):
-        return self.get_quantity(self.TRANSPORTING)
-
-    def refresh(self, field, quantity, pipe=None):
-        '''更新字段数量'''
-        from apps.stock.models import Zone
-        if field in Zone.States.USAGE_STATES.keys():
-            redis = pipe or Redis()
-            return redis.zincrby(self.cache_name, field, quantity)
-        raise AttributeError('错误的字段类型名称')
-
-    def sync(self):
-        '''同步所有的仓库的产品数量'''
-        from apps.stock.models import Warehouse, Zone
-        redis = Redis()
-        pipe = redis.pipeline()
-        watch_keys = Warehouse.leaf_child_locations_cache_name
-        pipe.watch(watch_keys)
-        pipe.delete(self.cache_name)
-        for warehouse in Warehouse.get_state_queryset('active'):
-            for usage in Zone.States.USAGE_STATES.keys():
-                quantity = warehouse.get_product_quantity(
-                    product=self.product,
-                    usage=usage,
-                )
-                pipe.zincrby(self.cache_name, usage, quantity)
-        pipe.execute()
 
 
 class ProductCategory(BaseModel, state.StateMachine):
@@ -208,6 +139,13 @@ class Product(BaseModel):
         help_text="商品的租借状态,如果为False则不能通过被租借"
     )
 
+
+    items = GenericRelation('stock.Item')
+
+    @property
+    def item(self):
+        return self.items.first()
+
     def __str__(self):
         return (
             self.template.name +
@@ -227,10 +165,6 @@ class Product(BaseModel):
                 for key, value in self.attributes.items()
             ]
         )
-
-    @property
-    def cache(self):
-        return CacheProduct(self)
 
 
 class Validation(BaseModel):

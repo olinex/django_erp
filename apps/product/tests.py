@@ -87,3 +87,5 @@ class ProductTemplateTestCase(TestCase):
         )
         self.template.attributes.set([self.attribute1,self.attribute2])
 
+
+
