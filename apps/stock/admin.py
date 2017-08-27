@@ -26,8 +26,8 @@ class MoveInline(CommonTabInLine):
     fieldsets = (
         (None, {'fields': (
             'from_location', 'to_location',
-            'to_moves', 'procurement_details', 'item',
-            'route_zone_setting', 'quantity', 'state'
+            'to_move', 'procurement_detail',
+            'zone_setting', 'quantity', 'state'
         )}),
     )
 
@@ -45,7 +45,7 @@ class PackageTypeItemSettingInline(CommonTabInLine):
     model = models.PackageTypeItemSetting
     fieldsets = (
         (None, {'fields': (
-            'package_type', 'item', 'max_quantity', 'uom'
+            'package_type', 'item', 'max_quantity'
         )}),
     )
 
@@ -96,29 +96,29 @@ class LocationAdmin(CommonAdmin):
 @admin.register(models.Move)
 class MoveAdmin(CommonAdmin):
     list_display = (
-        'from_location', 'to_location', 'item',
-        'route_zone_setting', 'quantity', 'state'
+        'from_location', 'to_location',
+        'quantity', 'state'
     )
     list_filter = ('state',)
     list_editable = list_filter
     fieldsets = (
         (None, {'fields': (
             ('from_location', 'to_location'),
-            'to_move', 'item',
-            'route_zone_setting', 'quantity', 'state'
+            'to_move',
+            'quantity', 'state'
         )}),
     )
 
 
 @admin.register(models.Route)
 class RouteAdmin(CommonAdmin):
-    list_display = ('name', 'warehouse', 'sequence')
+    list_display = ('name', 'warehouse', 'route_type', 'sequence')
     list_filter = ('warehouse',)
     list_editable = ('name', 'sequence')
     search_fields = ('name',)
     fieldsets = (
         (None, {'fields': (
-            'name', 'warehouse', 'sequence'
+            'name', 'warehouse', 'route_type', 'sequence'
         )}),
     )
     inlines = (
@@ -153,27 +153,26 @@ class PackageTemplateAdmin(CommonAdmin):
 
 @admin.register(models.PackageNode)
 class PackageNodeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'parent_node', 'template', 'quantity')
-    list_editable = ('name', 'quantity')
-    search_fields = ('name',)
+    list_display = ('id', 'parent_node', 'template')
     fieldsets = (
-        (None, {'fields': ('name', 'quantity', ('parent_node', 'template'))}),
+        (None, {'fields': ('parent_node', 'template')}),
     )
 
 
 @admin.register(models.Procurement)
 class ProcurementAdmin(CommonAdmin):
-    list_display = ('user', 'is_return', 'return_procurement', 'route', 'state')
-    list_filter = ('state', 'is_return')
+    list_display = ('user', 'address', 'state')
+    list_filter = ('state',)
     list_editable = list_filter
     fieldsets = (
-        (None, {'fields': ('user', 'is_return', 'return_procurement', 'route', 'state')}),
+        (None, {'fields': ('user', 'state')}),
     )
 
 
 @admin.register(models.ProcurementDetail)
 class ProcurementDetailAdmin(CommonAdmin):
-    list_display = ('procurement', 'from_location', 'next_location', 'item', 'quantity')
+    list_display = ('procurement', 'item', 'quantity', 'direct_return', 'route')
+    list_filter = ('direct_return',)
     fieldsets = (
-        (None, {'fields': ('procurement', ('item', 'quantity'), ('from_location', 'next_location'))}),
+        (None, {'fields': ('procurement', 'direct_return', 'route', ('item', 'quantity'))}),
     )

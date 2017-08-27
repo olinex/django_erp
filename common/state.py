@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-from collections import Iterable
+from .exceptions import NotInStates
+
 from django.db import transaction
 from django.db.models import Q
 
@@ -13,17 +14,27 @@ class StateMachine(object):
     class States:
         pass
 
-    def check_states(self,*states):
+    @classmethod
+    def raise_state_exceptions(cls,*states):
+        if len(states) > 1:
+            error_dict = {state:cls.get_statement(state).error_message for state in states}
+            return NotInStates('multi',"不处于状态{}".format(','.join(states)))
+        return NotInStates(states[0],cls.get_statement(states[0]).error_message)
+
+    def check_states(self,*states,raise_exception=False):
         '''
         check whether the instance's state is in states list
         :param states: list of state symbol string
         :return: True/False
         '''
 
-        return self.__class__.objects.select_for_update().filter(
+        result = self.__class__.objects.select_for_update().filter(
             Q(pk=self.pk) &
             self.__get_states_query(*states)
         ).exists()
+        if not result and raise_exception:
+            raise self.raise_state_exceptions(*states)
+        return result
 
     def set_state(self, state):
         '''
@@ -37,7 +48,7 @@ class StateMachine(object):
         )
         self.refresh_from_db()
 
-    def check_to_set_state(self, *check_states,set_state):
+    def check_to_set_state(self, *check_states,set_state,raise_exception=False):
         '''
         check whether the instance's state in check_states and set it to set_state
         :param check_states: list of state symbol string
@@ -54,11 +65,14 @@ class StateMachine(object):
                 instance.update(**set_statement.kwargs)
                 self.refresh_from_db()
                 return True
+            if raise_exception:
+                raise self.raise_state_exceptions(*check_states)
             return False
 
-    def get_statement(self, state):
+    @classmethod
+    def get_statement(cls, state):
         '''get statement instance'''
-        return getattr(self.States, state)
+        return getattr(cls.States, state)
 
     def __get_states_query(self,*states):
         '''get statement instances by list'''
@@ -72,7 +86,7 @@ class StateMachine(object):
         return statement.query
 
     @classmethod
-    def check_state_queryset(cls,state,queryset):
+    def check_state_queryset(cls,state,queryset,raise_exception=False):
         '''
         check the queryset is that all in state
         :param state: state symbol
@@ -80,7 +94,10 @@ class StateMachine(object):
         :return: True/False
         '''
         statement=getattr(cls.States,state)
-        return not queryset.exclude(statement.query).exists()
+        result = not queryset.exclude(statement.query).exists()
+        if raise_exception:
+            raise cls.raise_state_exceptions(state)
+        return result
 
     @classmethod
     def get_state_instance(cls,state,queryset=None):
@@ -111,7 +128,7 @@ class StateMachine(object):
         queryset.update(**statement.kwargs)
 
     @classmethod
-    def check_to_set_state_queryset(cls,check_state,end_state,queryset):
+    def check_to_set_state_queryset(cls,check_state,end_state,queryset,raise_exception=False):
         '''
         check queryset is check_state then set them to end_state
         :param check_state: state symbol
@@ -124,6 +141,8 @@ class StateMachine(object):
             if cls.check_state_queryset(check_state,filter_queryset):
                 cls.set_state_queryset(end_state,filter_queryset)
                 return True
+            if raise_exception:
+                raise cls.raise_state_exceptions(check_state)
             return False
 
     @classmethod
@@ -144,7 +163,7 @@ class StateMachine(object):
 class Statement(object):
     '''model's statement define in States inner class'''
 
-    def __init__(self, *args, inherits=None,error_message='', **kwargs):
+    def __init__(self, *args, inherits=None,error_message='state error', **kwargs):
         self.kwargs = kwargs
         self.args = args
         self.error_message = error_message
@@ -164,7 +183,3 @@ class Statement(object):
         query = self.args
         query += tuple(Q(**{key: value}) for key, value in self.kwargs.items())
         return reduce(lambda Q1,Q2:Q1 & Q2,query)
-
-
-class StateSet(object):
-    '''状态集'''

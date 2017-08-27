@@ -1,169 +1,175 @@
-- model: account.Province
-  fields:
-    country: China
-    name: 北京市
 
 - model: account.Province
   fields:
     country: China
-    name: 天津市
+    name: 北京
 
 - model: account.Province
   fields:
     country: China
-    name: 上海市
+    name: 天津
 
 - model: account.Province
   fields:
     country: China
-    name: 重庆市
+    name: 河北
 
 - model: account.Province
   fields:
     country: China
-    name: 河北省
+    name: 山西
 
 - model: account.Province
   fields:
     country: China
-    name: 山西省
+    name: 内蒙古
 
 - model: account.Province
   fields:
     country: China
-    name: 辽宁省
+    name: 辽宁
 
 - model: account.Province
   fields:
     country: China
-    name: 吉林省
+    name: 吉林
 
 - model: account.Province
   fields:
     country: China
-    name: 黑龙江省
+    name: 黑龙江
 
 - model: account.Province
   fields:
     country: China
-    name: 江苏省
+    name: 上海
 
 - model: account.Province
   fields:
     country: China
-    name: 浙江省
+    name: 江苏
 
 - model: account.Province
   fields:
     country: China
-    name: 安徽省
+    name: 浙江
 
 - model: account.Province
   fields:
     country: China
-    name: 福建省
+    name: 安徽
 
 - model: account.Province
   fields:
     country: China
-    name: 江西省
+    name: 福建
 
 - model: account.Province
   fields:
     country: China
-    name: 山东省
+    name: 江西
 
 - model: account.Province
   fields:
     country: China
-    name: 河南省
+    name: 山东
 
 - model: account.Province
   fields:
     country: China
-    name: 湖北省
+    name: 河南
 
 - model: account.Province
   fields:
     country: China
-    name: 湖南省
+    name: 湖北
 
 - model: account.Province
   fields:
     country: China
-    name: 广东省
+    name: 湖南
 
 - model: account.Province
   fields:
     country: China
-    name: 海南省
+    name: 广东
 
 - model: account.Province
   fields:
     country: China
-    name: 四川省
+    name: 广西
 
 - model: account.Province
   fields:
     country: China
-    name: 贵州省
+    name: 海南
 
 - model: account.Province
   fields:
     country: China
-    name: 云南省
+    name: 重庆
 
 - model: account.Province
   fields:
     country: China
-    name: 陕西省
+    name: 四川
 
 - model: account.Province
   fields:
     country: China
-    name: 甘肃省
+    name: 贵州
 
 - model: account.Province
   fields:
     country: China
-    name: 青海省
+    name: 云南
 
 - model: account.Province
   fields:
     country: China
-    name: 台湾省
+    name: 西藏
 
 - model: account.Province
   fields:
     country: China
-    name: 内蒙古自治区
+    name: 陕西
 
 - model: account.Province
   fields:
     country: China
-    name: 广西壮族自治区
+    name: 甘肃
 
 - model: account.Province
   fields:
     country: China
-    name: 西藏自治区
+    name: 青海
 
 - model: account.Province
   fields:
     country: China
-    name: 宁夏回族自治区
+    name: 宁夏
 
 - model: account.Province
   fields:
     country: China
-    name: 新疆维吾尔自治区
+    name: 新疆
 
 - model: account.Province
   fields:
     country: China
-    name: 香港特别行政区
+    name: 台湾
 
 - model: account.Province
   fields:
     country: China
-    name: 澳门特别行政区
+    name: 澳门
+
+- model: account.Province
+  fields:
+    country: China
+    name: 香港
+
+- model: account.Province
+  fields:
+    country: China
+    name: 钓鱼岛

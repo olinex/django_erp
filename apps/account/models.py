@@ -95,6 +95,16 @@ class City(models.Model):
 
 class Region(models.Model):
     '''地区'''
+
+    class KeyManager(Manager):
+        def get_by_natural_key(self,country,province,city,name):
+            return self.get(
+                city__province__country=country,
+                city__province__name=province,
+                city__name=city,
+                name=name
+            )
+
     city = models.ForeignKey(
         'account.City',
         null=False,
@@ -119,6 +129,10 @@ class Region(models.Model):
 
     def __str__(self):
         return str(self.city) + '/' + self.name
+
+    def natural_key(self):
+        return self.city.natural_key() + (self.name,)
+    natural_key.dependencies = ['account.City']
 
 
 class Address(BaseModel):

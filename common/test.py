@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 from apps.stock.models import (
-    Warehouse, Location, Move, Route, Procurement, ProcurementDetail, RouteZoneSetting
+    Warehouse, Location, Route, Procurement, ProcurementDetail,RouteZoneSetting
 )
 
 from apps.account.models import Province, City, Region, Address, Company
@@ -152,21 +152,9 @@ class EnvSetUpTestCase(TestCase):
             is_virtual=False,
             x='0',y='0',z='0'
         )
-        self.location_scrap = Location.objects.create(
-            zone=self.zone_scrap,
-            is_virtual=False,
-            x='0',y='0',z='0'
-        )
-        self.location_closeout = Location.objects.create(
-            zone=self.zone_closeout,
-            is_virtual=False,
-            x='0',y='0',z='0'
-        )
-        self.location_initial = Location.objects.create(
-            zone=self.zone_initial,
-            is_virtual=False,
-            x='0',y='0',z='0'
-        )
+        self.location_scrap = self.zone_scrap.root_location
+        self.location_closeout = self.zone_closeout.root_location
+        self.location_initial = self.zone_initial.root_location
         self.location_midway = Location.objects.create(
             zone=self.zone_midway,
             is_virtual=False,
@@ -182,9 +170,6 @@ class EnvSetUpTestCase(TestCase):
         self.location_supplier.change_parent_node(self.zone_supplier.root_location)
         self.location_produce.change_parent_node(self.zone_produce.root_location)
         self.location_repair.change_parent_node(self.zone_repair.root_location)
-        self.location_scrap.change_parent_node(self.zone_scrap.root_location)
-        self.location_closeout.change_parent_node(self.zone_closeout.root_location)
-        self.location_initial.change_parent_node(self.zone_initial.root_location)
         self.location_midway.change_parent_node(self.zone_midway.root_location)
 
         self.location_stock.cache.sync()
@@ -206,36 +191,28 @@ class EnvSetUpTestCase(TestCase):
 
         self.route = Route.objects.create(
             name='route_test',
-            warehouse=self.warehouse
-        )
-        self.zone_setting1 = RouteZoneSetting.objects.create(
-            route=self.route,
-            zone=self.zone_initial,
+            warehouse=self.warehouse,
+            route_type='produce-stock',
             sequence=1
         )
-        self.zone_setting2 = RouteZoneSetting.objects.create(
-            route=self.route,
-            zone=self.zone_pick,
-            sequence=2
-        )
-        self.zone_setting3 = RouteZoneSetting.objects.create(
-            route=self.route,
-            zone=self.zone_stock,
-            sequence=3
-        )
+        RouteZoneSetting.objects.bulk_create([
+            RouteZoneSetting(
+                route=self.route,
+                zone=getattr(self,zone),
+                sequence=index + 1
+            ) for index,zone in enumerate(['zone_pack','zone_check','zone_pick'])
+        ])
         self.procurement = Procurement.objects.create(
-            user=self.superuser,
-            address=self.address,
-            route=self.route
+            user=self.superuser
         )
         self.procurement_detail = ProcurementDetail.objects.create(
-            from_location=self.location_initial,
-            next_location=self.location_pick,
             item=self.item,
             procurement=self.procurement,
-            quantity=D('5')
+            quantity=D('5'),
+            route=self.route
         )
         self.procurement.confirm()
+        self.procurement_detail.start(self.location_produce,self.location_pack)
         self.move = self.procurement_detail.moves.first()
 
 

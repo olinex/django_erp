@@ -4,6 +4,7 @@
 from decimal import Decimal as D
 
 from django.db import transaction
+from django.db.models import Manager
 from django.contrib.contenttypes.fields import GenericRelation
 from apps.djangoperm import models
 from common import state
@@ -14,7 +15,7 @@ from common.fields import (
 from apps.product.utils import QuantityField
 
 
-class ProductCategory(BaseModel, state.StateMachine):
+class ProductCategory(BaseModel):
     '''产品分类'''
     name = models.CharField(
         '种类名称',
@@ -145,6 +146,10 @@ class Product(BaseModel):
     @property
     def item(self):
         return self.items.first()
+
+    @property
+    def uom(self):
+        return self.template.uom
 
     def __str__(self):
         return (
@@ -373,18 +378,14 @@ class ProductTemplate(BaseModel):
             yield dict(zip(key_list, value_tuple))
 
     def sync_create_products(self):
-        import json
-        from hashlib import md5
-        from django.core.serializers.json import DjangoJSONEncoder
+        from common.utils import md5_hexdigest
         with transaction.atomic():
             for attributes in self.attribute_combination:
-                m = md5()
                 value_dict = {attr: value[0] for attr, value in attributes.items()}
                 price_dict = {attr: value[1] for attr, value in attributes.items()}
-                m.update(json.dumps(value_dict, cls=DjangoJSONEncoder).encode('utf8'))
                 Product.objects.get_or_create(
                     template=self,
-                    attributes_md5=m.hexdigest(),
+                    attributes_md5=md5_hexdigest(value_dict),
                     defaults={
                         'attributes': value_dict,
                         'prices': price_dict,
@@ -437,6 +438,13 @@ class Attribute(BaseModel):
 
 class UOM(BaseModel):
     '''计量单位'''
+    class KeyManager(Manager):
+        def get_by_natural_key(self, symbol):
+            return self.get(symbol=symbol)
+
+    objects = KeyManager()
+
+
     UOM_CATEGORY = (
         ('m', '米'),
         ('kg', '千克'),
@@ -444,8 +452,8 @@ class UOM(BaseModel):
         ('A', '安培'),
         ('K', '开尔文'),
         ('J', '焦耳'),
-        ('m²', '平方米'),
-        ('m³', '立方米'),
+        ('m2', '平方米'),
+        ('m3', '立方米'),
         ('unit', '个'),
         ('yuan', '元')
     )
@@ -497,20 +505,6 @@ class UOM(BaseModel):
         help_text='根据单位做精度转换时单位的默认舍入方法'
     )
 
-    ratio_type = models.CharField(
-        '比率类型',
-        null=False,
-        blank=False,
-        default='greater',
-        choices=[
-            ('greater', '大于'),
-            ('smaller', '小于'),
-            ('equal', '等于')
-        ],
-        max_length=10,
-        help_text="单位与主单位的比较方式"
-    )
-
     ratio = models.DecimalField(
         '比率',
         max_digits=24,
@@ -529,12 +523,24 @@ class UOM(BaseModel):
         help_text="单位所属的单位类型,仅当单位属于同一类型时,方可互相转换"
     )
 
+    @property
+    def ratio_type(self):
+        if self.ratio > 1:
+            return 'bigger'
+        if self.ratio == 1:
+            return 'equal'
+        if 0 < self.ratio < 1:
+            return 'smaller'
+
     class Meta:
         verbose_name = '单位'
         verbose_name_plural = '单位'
 
     def __str__(self):
         return self.name + '(' + self.symbol + ')'
+
+    def natural_key(self):
+        return (self.symbol,)
 
     def accuracy_convert(self, value):
         '''
@@ -558,16 +564,7 @@ class UOM(BaseModel):
         :return: decimal
         '''
         if self.category == to_uom.category:
-            if self.ratio_type == 'smaller':
-                new_value = value * self.ratio
-            elif self.ratio_type == 'greater':
-                new_value = value / self.ratio
-            else:
-                new_value = value
-            if to_uom.ratio_type == 'smaller':
-                new_value = new_value * to_uom.ratio
-            elif self.ratio_type == 'greater':
-                new_value = new_value / self.ratio
+            new_value = value * self.ratio / to_uom.ratio
             return to_uom.accuracy_convert(new_value)
         raise AttributeError('转换与被转换的单位必须属于相同的单位类型')
 
@@ -647,166 +644,3 @@ class Barcode(BaseModel):
         default=False,
         help_text="条形码是否检查合计"
     )
-
-class Assembly(BaseModel):
-    '''组装品'''
-    name = models.CharField(
-        '名称',
-        null=False,
-        blank=False,
-        unique=True,
-        max_length=64,
-        help_text="组装品的名称"
-    )
-
-    template = ActiveLimitForeignKey(
-        'product.AssemblyTemplateSetting',
-        null=False,
-        blank=False,
-        verbose_name='组装品模板',
-        related_name='assemblies',
-        help_text="组装品所属的模板"
-    )
-
-    products = models.ManyToManyField(
-        'product.Product',
-        blank=True,
-        verbose_name='产品',
-        related_name='assemblies',
-        through='product.AssemblySetting',
-        through_fields=('assembly','product'),
-        help_text="所属产品"
-    )
-
-    def __str__(self):
-        return '{}/{}'.format(self.template,self.name)
-
-    class Meta:
-        verbose_name = '组装品'
-        verbose_name_plural = '组装品'
-
-
-class AssemblySetting(models.Model):
-    '''组装品明细'''
-    RELATED_NAME = 'assembly_settings'
-
-    assembly = ActiveLimitForeignKey(
-        'product.Assembly',
-        null=False,
-        blank=False,
-        verbose_name='组装品',
-        related_name=RELATED_NAME,
-        help_text="组装品明细所属的组装品"
-    )
-
-    product = ActiveLimitForeignKey(
-        'product.Product',
-        null=False,
-        blank=False,
-        verbose_name='产品',
-        related_name=RELATED_NAME,
-        help_text="组装品明细指定的产品"
-    )
-
-    quantity = QuantityField(
-        '数量',
-        null=False,
-        blank=False,
-        uom='template_setting.uom',
-        help_text="所含指定产品类型的数量"
-    )
-
-    template_setting = models.ForeignKey(
-        'product.AssemblyTemplateSetting',
-        null=False,
-        blank=False,
-        verbose_name='组装品模板明细',
-        related_name=RELATED_NAME,
-        help_text="组装品明细相关的模板明细"
-    )
-
-    def __str__(self):
-        return '{}({})'.format(self.product,self.assembly)
-
-    class Meta:
-        verbose_name = '组装品明细',
-        verbose_name_plural = '组装品明细'
-        unique_together = ('assembly','product')
-
-class AssemblyTemplate(BaseModel):
-    '''组装品模板'''
-    name = models.CharField(
-        '名称',
-        null=False,
-        blank=False,
-        max_length=190,
-        unique=True,
-        help_text="组装品模板的名称"
-    )
-
-    detail = models.TextField(
-        '说明',
-        null=False,
-        blank=True,
-        help_text="组装品模板的说明"
-    )
-
-    product_category = models.ManyToManyField(
-        'product.ProductCategory',
-        blank=False,
-        verbose_name='产品类别',
-        related_name='assembly_templates',
-        through='product.AssemblyTemplateSetting',
-        through_fields=('assembly_template','product_category'),
-        help_text="组装品可包含的产品类别"
-    )
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = '组装品模板'
-        verbose_name_plural = '组装品模板'
-
-class AssemblyTemplateSetting(models.Model):
-    '''组装品模板明细'''
-    RELATED_NAME = 'assembly_template_settings'
-
-    assembly_template = ActiveLimitForeignKey(
-        'product.AssemblyTemplate',
-        null=False,
-        blank=False,
-        verbose_name='组装品模板',
-        related_name=RELATED_NAME,
-        help_text="模板明细所属的组装品模板"
-    )
-
-    product_category = ActiveLimitForeignKey(
-        'product.ProductCategory',
-        null=False,
-        blank=False,
-        verbose_name='产品类型',
-        related_name=RELATED_NAME,
-        help_text="模板明细的产品类型"
-    )
-
-    uom = ActiveLimitForeignKey(
-        'product.UOM',
-        null=False,
-        blank=False,
-        verbose_name='单位',
-        related_name=RELATED_NAME,
-        help_text="组装品产品类型的单位,所选产品必须为指定产品类型且为指定单位"
-    )
-
-    def __str__(self):
-        return '{}:{}({})'.format(self.product_category,self.uom,self.assembly_template)
-
-    class Meta:
-        verbose_name = '组装品模板明细'
-        verbose_name_plural = '组装品模板明细'
-        unique_together = ('assembly_template','product_category','uom')
-
-# class SingleProduct(BaseModel):
-#     '''单品'''
-#     pass

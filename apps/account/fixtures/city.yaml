@@ -1,9 +1,1935 @@
-- model: account.City
-  fields:
-    province: [China,广东省]
-    name: 深圳市
 
 - model: account.City
   fields:
-    province: [China,广西壮族自治区]
-    name: 桂林市
+    province: [China,北京]
+    name: 北京
+
+- model: account.City
+  fields:
+    province: [China,天津]
+    name: 天津
+
+- model: account.City
+  fields:
+    province: [China,河北]
+    name: 石家庄
+
+- model: account.City
+  fields:
+    province: [China,河北]
+    name: 唐山
+
+- model: account.City
+  fields:
+    province: [China,河北]
+    name: 秦皇岛
+
+- model: account.City
+  fields:
+    province: [China,河北]
+    name: 邯郸
+
+- model: account.City
+  fields:
+    province: [China,河北]
+    name: 邢台
+
+- model: account.City
+  fields:
+    province: [China,河北]
+    name: 保定
+
+- model: account.City
+  fields:
+    province: [China,河北]
+    name: 张家口
+
+- model: account.City
+  fields:
+    province: [China,河北]
+    name: 承德
+
+- model: account.City
+  fields:
+    province: [China,河北]
+    name: 沧州
+
+- model: account.City
+  fields:
+    province: [China,河北]
+    name: 廊坊
+
+- model: account.City
+  fields:
+    province: [China,河北]
+    name: 衡水
+
+- model: account.City
+  fields:
+    province: [China,山西]
+    name: 太原
+
+- model: account.City
+  fields:
+    province: [China,山西]
+    name: 大同
+
+- model: account.City
+  fields:
+    province: [China,山西]
+    name: 阳泉
+
+- model: account.City
+  fields:
+    province: [China,山西]
+    name: 长治
+
+- model: account.City
+  fields:
+    province: [China,山西]
+    name: 晋城
+
+- model: account.City
+  fields:
+    province: [China,山西]
+    name: 朔州
+
+- model: account.City
+  fields:
+    province: [China,山西]
+    name: 忻州
+
+- model: account.City
+  fields:
+    province: [China,山西]
+    name: 吕梁
+
+- model: account.City
+  fields:
+    province: [China,山西]
+    name: 晋中
+
+- model: account.City
+  fields:
+    province: [China,山西]
+    name: 临汾
+
+- model: account.City
+  fields:
+    province: [China,山西]
+    name: 运城
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 呼和浩特
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 包头
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 乌海
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 赤峰
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 呼伦贝尔
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 兴安盟
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 通辽
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 锡林郭勒盟
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 乌兰察布盟
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 伊克昭盟
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 巴彦淖尔盟
+
+- model: account.City
+  fields:
+    province: [China,内蒙古]
+    name: 阿拉善盟
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 沈阳
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 大连
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 鞍山
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 抚顺
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 本溪
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 丹东
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 锦州
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 营口
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 阜新
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 辽阳
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 盘锦
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 铁岭
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 朝阳
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 葫芦岛
+
+- model: account.City
+  fields:
+    province: [China,辽宁]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,吉林]
+    name: 长春
+
+- model: account.City
+  fields:
+    province: [China,吉林]
+    name: 吉林
+
+- model: account.City
+  fields:
+    province: [China,吉林]
+    name: 四平
+
+- model: account.City
+  fields:
+    province: [China,吉林]
+    name: 辽源
+
+- model: account.City
+  fields:
+    province: [China,吉林]
+    name: 通化
+
+- model: account.City
+  fields:
+    province: [China,吉林]
+    name: 白山
+
+- model: account.City
+  fields:
+    province: [China,吉林]
+    name: 松原
+
+- model: account.City
+  fields:
+    province: [China,吉林]
+    name: 白城
+
+- model: account.City
+  fields:
+    province: [China,吉林]
+    name: 延边朝鲜族自治州
+
+- model: account.City
+  fields:
+    province: [China,吉林]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 哈尔滨
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 齐齐哈尔
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 鹤岗
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 双鸭山
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 鸡西
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 大庆
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 伊春
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 牡丹江
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 佳木斯
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 七台河
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 黑河
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 绥化
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 大兴安岭地区
+
+- model: account.City
+  fields:
+    province: [China,黑龙江]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,上海]
+    name: 上海
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 南京
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 苏州
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 无锡
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 常州
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 镇江
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 南通
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 泰州
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 扬州
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 盐城
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 连云港
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 徐州
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 淮安
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 宿迁
+
+- model: account.City
+  fields:
+    province: [China,江苏]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 杭州
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 宁波
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 温州
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 嘉兴
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 湖州
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 绍兴
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 金华
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 衢州
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 舟山
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 台州
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 丽水
+
+- model: account.City
+  fields:
+    province: [China,浙江]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 合肥
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 芜湖
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 蚌埠
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 淮南
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 马鞍山
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 淮北
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 铜陵
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 安庆
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 黄山
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 滁州
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 阜阳
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 宿州
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 巢湖
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 六安
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 亳州
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 池州
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 宣城
+
+- model: account.City
+  fields:
+    province: [China,安徽]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,福建]
+    name: 福州
+
+- model: account.City
+  fields:
+    province: [China,福建]
+    name: 厦门
+
+- model: account.City
+  fields:
+    province: [China,福建]
+    name: 莆田
+
+- model: account.City
+  fields:
+    province: [China,福建]
+    name: 三明
+
+- model: account.City
+  fields:
+    province: [China,福建]
+    name: 泉州
+
+- model: account.City
+  fields:
+    province: [China,福建]
+    name: 漳州
+
+- model: account.City
+  fields:
+    province: [China,福建]
+    name: 南平
+
+- model: account.City
+  fields:
+    province: [China,福建]
+    name: 龙岩
+
+- model: account.City
+  fields:
+    province: [China,福建]
+    name: 宁德
+
+- model: account.City
+  fields:
+    province: [China,福建]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 南昌
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 景德镇
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 萍乡
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 九江
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 新余
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 鹰潭
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 赣州
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 吉安
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 宜春
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 抚州
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 上饶
+
+- model: account.City
+  fields:
+    province: [China,江西]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 济南
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 青岛
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 淄博
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 枣庄
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 东营
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 烟台
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 潍坊
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 济宁
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 泰安
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 威海
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 日照
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 莱芜
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 临沂
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 德州
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 聊城
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 滨州
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 菏泽
+
+- model: account.City
+  fields:
+    province: [China,山东]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 郑州
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 开封
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 洛阳
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 平顶山
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 安阳
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 鹤壁
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 新乡
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 焦作
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 濮阳
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 许昌
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 漯河
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 三门峡
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 南阳
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 商丘
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 信阳
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 周口
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 驻马店
+
+- model: account.City
+  fields:
+    province: [China,河南]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 武汉
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 黄石
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 十堰
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 荆州
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 宜昌
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 襄樊
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 鄂州
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 荆门
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 孝感
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 黄冈
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 咸宁
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 随州
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 恩施土家族苗族自治州
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 仙桃
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 天门
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 潜江
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 神农架林区
+
+- model: account.City
+  fields:
+    province: [China,湖北]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 长沙
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 株洲
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 湘潭
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 衡阳
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 邵阳
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 岳阳
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 常德
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 张家界
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 益阳
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 郴州
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 永州
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 怀化
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 娄底
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 湘西土家族苗族自治州
+
+- model: account.City
+  fields:
+    province: [China,湖南]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 广州
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 深圳
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 东莞
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 中山
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 潮州
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 揭阳
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 云浮
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 珠海
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 汕头
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 韶关
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 佛山
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 江门
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 湛江
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 茂名
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 肇庆
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 惠州
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 梅州
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 汕尾
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 河源
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 阳江
+
+- model: account.City
+  fields:
+    province: [China,广东]
+    name: 清远
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 南宁
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 柳州
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 桂林
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 梧州
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 北海
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 防城港
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 钦州
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 贵港
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 玉林
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 百色
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 贺州
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 河池
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 来宾
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 崇左
+
+- model: account.City
+  fields:
+    province: [China,广西]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 海口
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 三亚
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 五指山
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 琼海
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 儋州
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 文昌
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 万宁
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 东方
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 澄迈县
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 定安县
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 屯昌县
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 临高县
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 白沙黎族自治县
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 昌江黎族自治县
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 乐东黎族自治县
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 陵水黎族自治县
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 保亭黎族苗族自治县
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 琼中黎族苗族自治县
+
+- model: account.City
+  fields:
+    province: [China,海南]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,重庆]
+    name: 重庆
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 成都
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 自贡
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 攀枝花
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 泸州
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 德阳
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 绵阳
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 广元
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 遂宁
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 内江
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 乐山
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 南充
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 眉山
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 宜宾
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 广安
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 达州
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 雅安
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 巴中
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 资阳
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 阿坝藏族羌族自治州
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 甘孜藏族自治州
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 凉山彝族自治州
+
+- model: account.City
+  fields:
+    province: [China,四川]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,贵州]
+    name: 贵阳
+
+- model: account.City
+  fields:
+    province: [China,贵州]
+    name: 六盘水
+
+- model: account.City
+  fields:
+    province: [China,贵州]
+    name: 遵义
+
+- model: account.City
+  fields:
+    province: [China,贵州]
+    name: 安顺
+
+- model: account.City
+  fields:
+    province: [China,贵州]
+    name: 铜仁地区
+
+- model: account.City
+  fields:
+    province: [China,贵州]
+    name: 毕节地区
+
+- model: account.City
+  fields:
+    province: [China,贵州]
+    name: 黔西南布依族苗族自治州
+
+- model: account.City
+  fields:
+    province: [China,贵州]
+    name: 黔东南苗族侗族自治州
+
+- model: account.City
+  fields:
+    province: [China,贵州]
+    name: 黔南布依族苗族自治州
+
+- model: account.City
+  fields:
+    province: [China,贵州]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 昆明
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 曲靖
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 玉溪
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 保山
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 昭通
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 丽江
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 普洱
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 临沧
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 德宏傣族景颇族自治州
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 怒江傈僳族自治州
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 迪庆藏族自治州
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 大理白族自治州
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 楚雄彝族自治州
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 红河哈尼族彝族自治州
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 文山壮族苗族自治州
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 西双版纳傣族自治州
+
+- model: account.City
+  fields:
+    province: [China,云南]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,西藏]
+    name: 拉萨
+
+- model: account.City
+  fields:
+    province: [China,西藏]
+    name: 那曲地区
+
+- model: account.City
+  fields:
+    province: [China,西藏]
+    name: 昌都地区
+
+- model: account.City
+  fields:
+    province: [China,西藏]
+    name: 林芝地区
+
+- model: account.City
+  fields:
+    province: [China,西藏]
+    name: 山南地区
+
+- model: account.City
+  fields:
+    province: [China,西藏]
+    name: 日喀则地区
+
+- model: account.City
+  fields:
+    province: [China,西藏]
+    name: 阿里地区
+
+- model: account.City
+  fields:
+    province: [China,西藏]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,陕西]
+    name: 西安
+
+- model: account.City
+  fields:
+    province: [China,陕西]
+    name: 铜川
+
+- model: account.City
+  fields:
+    province: [China,陕西]
+    name: 宝鸡
+
+- model: account.City
+  fields:
+    province: [China,陕西]
+    name: 咸阳
+
+- model: account.City
+  fields:
+    province: [China,陕西]
+    name: 渭南
+
+- model: account.City
+  fields:
+    province: [China,陕西]
+    name: 延安
+
+- model: account.City
+  fields:
+    province: [China,陕西]
+    name: 汉中
+
+- model: account.City
+  fields:
+    province: [China,陕西]
+    name: 榆林
+
+- model: account.City
+  fields:
+    province: [China,陕西]
+    name: 安康
+
+- model: account.City
+  fields:
+    province: [China,陕西]
+    name: 商洛
+
+- model: account.City
+  fields:
+    province: [China,陕西]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 兰州
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 嘉峪关
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 金昌
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 白银
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 天水
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 武威
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 酒泉
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 张掖
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 庆阳
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 平凉
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 定西
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 陇南
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 临夏回族自治州
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 甘南藏族自治州
+
+- model: account.City
+  fields:
+    province: [China,甘肃]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,青海]
+    name: 西宁
+
+- model: account.City
+  fields:
+    province: [China,青海]
+    name: 海东地区
+
+- model: account.City
+  fields:
+    province: [China,青海]
+    name: 海北藏族自治州
+
+- model: account.City
+  fields:
+    province: [China,青海]
+    name: 海南藏族自治州
+
+- model: account.City
+  fields:
+    province: [China,青海]
+    name: 黄南藏族自治州
+
+- model: account.City
+  fields:
+    province: [China,青海]
+    name: 果洛藏族自治州
+
+- model: account.City
+  fields:
+    province: [China,青海]
+    name: 玉树藏族自治州
+
+- model: account.City
+  fields:
+    province: [China,青海]
+    name: 海西蒙古族藏族自治州
+
+- model: account.City
+  fields:
+    province: [China,青海]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,宁夏]
+    name: 银川
+
+- model: account.City
+  fields:
+    province: [China,宁夏]
+    name: 石嘴山
+
+- model: account.City
+  fields:
+    province: [China,宁夏]
+    name: 吴忠
+
+- model: account.City
+  fields:
+    province: [China,宁夏]
+    name: 固原
+
+- model: account.City
+  fields:
+    province: [China,宁夏]
+    name: 中卫
+
+- model: account.City
+  fields:
+    province: [China,宁夏]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 乌鲁木齐
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 克拉玛依
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 吐鲁番地区
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 哈密地区
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 和田地区
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 阿克苏地区
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 喀什地区
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 克孜勒苏柯尔克孜自治州
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 巴音郭楞蒙古自治州
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 昌吉回族自治州
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 博尔塔拉蒙古自治州
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 石河子
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 阿拉尔
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 图木舒克
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 五家渠
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 伊犁哈萨克自治州
+
+- model: account.City
+  fields:
+    province: [China,新疆]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,台湾]
+    name: 台湾
+
+- model: account.City
+  fields:
+    province: [China,台湾]
+    name: 其他
+
+- model: account.City
+  fields:
+    province: [China,澳门]
+    name: 澳门
+
+- model: account.City
+  fields:
+    province: [China,香港]
+    name: 香港
+
+- model: account.City
+  fields:
+    province: [China,钓鱼岛]
+    name: 钓鱼岛

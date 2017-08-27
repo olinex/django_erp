@@ -6,38 +6,81 @@ from decimal import Decimal as D
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q, F
+from django.utils.translation import ugettext_lazy as _
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 
 from apps.djangoperm import models
 from .utils import LocationForeignKey
-from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
-from django.contrib.contenttypes.models import ContentType
-from apps.product.models import Assembly, Product
+from apps.product.models import Product
 from apps.account.utils import PartnerForeignKey
 from apps.product.utils import QuantityField
 from common import Redis
 from common.abstractModel import BaseModel, TreeModel
+from common.exceptions import NotInStates
 from common.fields import (
     ActiveLimitForeignKey,
     ActiveLimitOneToOneField,
-    SimpleStateCharField, CancelableSimpleStateCharField
+    SimpleStateCharField,
+    CancelableSimpleStateCharField
 )
 from common.state import Statement, StateMachine
 
 
 class CacheItem(object):
-    '''产品的缓存对象'''
+    '''
+    object reflect to stock item.
+    as a manager which have all methods to control the quantity of item
+    '''
     ALL = {'stock', 'pick', 'check', 'pack', 'wait', 'deliver', 'midway'}
     SETTLED = {'customer', 'repair'}
     TRANSPORTING = {'pick', 'check', 'pack', 'wait', 'deliver', 'midway'}
 
-    def __init__(self, item):
+    ITEM_NAME_TEMPLATE = 'zone_{}_item_{}'
+    ITEM_LOCK_NAME_TEMPLATE = 'lock_zone_{}_item_{}'
+
+    def __init__(self, zone, item):
+        '''
+        :param zone: stock.Zone instance
+        :param item: stock.Item instance
+        '''
+        self.zone = zone
         self.item = item
+
+    @classmethod
+    def item_name(cls, zone, item):
+        '''
+        class method will return the key of item of zone
+        :param zone: stock.Zone instance
+        :param item: stock.Item instance
+        :return: string
+        '''
+        return cls.ITEM_NAME_TEMPLATE.format(zone.pk, item.pk)
+
+    @classmethod
+    def item_lock_name(cls, zone, item):
+        '''
+        class method will return the lock key of item of zone
+        :param zone: stock.Zone instance
+        :param item: stock.Item instance
+        :return: string
+        '''
+        return cls.ITEM_LOCK_NAME_TEMPLATE.format(zone.pk, item.pk)
 
     @property
     def cache_name(self):
-        return 'item_{}'.format(self.item.pk)
+        '''
+        the name for redis as the key,each warehouse has it own cache name
+        :return: string
+        '''
+        return self.item_name(self.zone,self.item)
 
     def get_quantity(self, usages):
+        '''
+        sum of item quantities figure out by set of usage
+        :param usages: set or string
+        :return: decimal
+        '''
         redis = Redis()
         usage_list = set(Zone.States.USAGE_STATES.keys())
         if isinstance(usages, (set,)) and not usages.difference(usage_list):
@@ -49,25 +92,46 @@ class CacheItem(object):
 
     @property
     def all(self):
+        '''
+        sum of item in all zones
+        :return: decimal
+        '''
         return self.get_quantity(self.ALL)
 
     @property
     def settled(self):
+        '''
+        sum of item in settled zones
+        :return: decimal
+        '''
         return self.get_quantity(self.SETTLED)
 
     @property
     def transporting(self):
+        '''
+        sum of item in transporting zones
+        :return: decimal
+        '''
         return self.get_quantity(self.TRANSPORTING)
 
-    def refresh(self, field, quantity, pipe=None):
-        '''更新字段数量'''
-        if field in Zone.States.USAGE_STATES.keys():
+    def refresh(self, usage, quantity, pipe=None):
+        '''
+        increase of decrease the quantity of item in the zone of usage
+        :param usage: string
+        :param quantity: decimal
+        :param pipe: pipeline of redis
+        :return: 0 or 1
+        '''
+        if usage in Zone.States.USAGE_STATES.keys():
             redis = pipe or Redis()
-            return redis.zincrby(self.cache_name, field, quantity)
-        raise AttributeError('错误的字段类型名称')
+            return redis.zincrby(self.cache_name, usage, quantity)
+        raise AttributeError(usage + _(' is unknown usage of zone.'))
 
     def sync(self):
-        '''同步所有的仓库的产品数量'''
+        '''
+        refresh all zones item quantity in the warehouse
+        :return: None
+        '''
         redis = Redis()
         pipe = redis.pipeline()
         watch_keys = Warehouse.leaf_child_locations_cache_name
@@ -84,121 +148,374 @@ class CacheItem(object):
 
 
 class CacheLocation(object):
-    '''库位的缓存类'''
+    '''
+    object reflect to stock location.
+    as a manager which have all methods to control the quantity of item in the location
+    '''
+    LOCATION_NAME_TEMPLATE = 'location_{}'
 
     def __init__(self, location):
+        '''
+        :param location: stock.Location instance
+        '''
         self.location = location
 
     @property
     def cache_name(self):
-        return 'warehouse_{}_zone_{}_location_{}'.format(
-            self.location.zone.warehouse.pk,
-            self.location.zone.pk,
-            self.location.pk
-        )
-
-    @staticmethod
-    def item_name(item):
-        return 'item_{}'.format(item.pk)
-
-    @staticmethod
-    def item_lock_name(item):
-        return 'item_lock_{}'.format(item.pk)
+        '''
+        the name of location in redis as key
+        :return: string
+        '''
+        return self.LOCATION_NAME_TEMPLATE.format(self.location.pk)
 
     def refresh(self, item, quantity, pipe=None):
+        '''
+        increase of decrease the quantity of item in the location
+        :param item: stock.Item instance
+        :param quantity: decimal
+        :param pipe: redis pipeline
+        :return: 0 or 1
+        '''
         redis = pipe or Redis()
-        redis.zincrby(self.cache_name, self.item_name(item), quantity)
+        return redis.zincrby(
+            self.cache_name,
+            CacheItem.item_name(self.location.zone,item),
+            quantity
+        )
 
     def lock(self, item, quantity, pipe=None):
+        '''
+        increase of decrease the lock quantity of item in the location
+        :param item: stock.Item instance
+        :param quantity: decimal
+        :param pipe: redis pipline
+        :return: 0 or 1
+        '''
         redis = pipe or Redis()
-        redis.zincrby(self.cache_name, self.item_lock_name(item), -quantity)
+        return redis.zincrby(
+            self.cache_name,
+            CacheItem.item_lock_name(self.location.zone, item),
+            -quantity
+        )
 
     def free_all(self, item, pipe=None):
+        '''
+        delete the item score from location
+        :param item: stock.Item instance
+        :param pipe: redis pipeline
+        :return: 0 or 1
+        '''
         redis = pipe or Redis()
-        redis.zrem(self.cache_name, self.item_lock_name(item))
+        return redis.zrem(
+            self.cache_name,
+            CacheItem.item_lock_name(self.location.zone, item)
+        )
 
     def sync(self):
-        '''同步库存的产品数量'''
-        if self.location.check_states('no_virtual'):
-            redis = Redis()
-            pipe = redis.pipeline()
-            pipe.delete(self.cache_name)
-            for item in set(move.item for move in Move.get_state_queryset('done')):
-                self.refresh(
-                    item,
-                    self.location.in_sum(item) - self.location.out_sum(item),
-                    pipe=pipe
-                )
-            pipe.execute()
-            return True
-        return False
+        '''
+        refresh all item quantity in the location
+        :return: None
+        '''
+        self.location.check_states('no_virtual', raise_exception=True)
+        redis = Redis()
+        pipe = redis.pipeline()
+        pipe.delete(self.cache_name)
+        for item in set(move.item for move in Move.get_state_queryset('done')):
+            self.refresh(
+                item,
+                self.location.in_sum(item) - self.location.out_sum(item),
+                pipe=pipe
+            )
+        pipe.execute()
 
 
-class StockOrder(BaseModel):
-    '''单据相关的虚拟类'''
+class PackageType(BaseModel):
+    '''
+    the type of package which define it name,the name must be unique
+    '''
+
+    name = models.CharField(
+        _('name'),
+        null=False,
+        blank=False,
+        unique=True,
+        max_length=90,
+        help_text=_("the type name of package")
+    )
+
+    items = models.ManyToManyField(
+        'stock.Item',
+        blank=False,
+        through='stock.PackageTypeItemSetting',
+        through_fields=('package_type', 'item'),
+        verbose_name=_('items'),
+        related_name='package_types',
+        help_text=_('the packable items of package')
+    )
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = _('package type')
+        verbose_name_plural = _('package types')
+
+
+class PackageTypeItemSetting(models.Model, StateMachine):
+    '''
+    Constraint sets the maximum number of packages
+    '''
+    RELATED_NAME = 'item_settings'
+
+    package_type = ActiveLimitForeignKey(
+        'stock.PackageType',
+        null=False,
+        blank=False,
+        verbose_name=_('package type'),
+        related_name=RELATED_NAME,
+        help_text=_('the type of package which settings belongs to')
+    )
+
+    item = ActiveLimitForeignKey(
+        'stock.Item',
+        null=False,
+        blank=False,
+        verbose_name=_('item'),
+        related_name=RELATED_NAME,
+        help_text=_('the item which can be packed in this type of package')
+    )
+
+    max_quantity = QuantityField(
+        _('max quantity'),
+        null=False,
+        blank=False,
+        uom='item.instance.uom',
+        help_text=_('the max quantity of item can be packed into package')
+    )
+
+    def __str__(self):
+        return '{}-{}({})'.format(
+            self.package_type,
+            self.item,
+            str(self.max_quantity)
+        )
+
+    class Meta:
+        verbose_name = _('item setting of package type')
+        verbose_name_plural = _('item settings of package type')
+        unique_together = (
+            ('package_type', 'item'),
+        )
+
+    class States:
+        product_setting = Statement(
+            Q(item__content_type__app_label='product') &
+            Q(item__content_type__model='Product')
+        )
+
+
+class PackageTemplate(BaseModel):
+    '''
+    the template of package type
+    '''
+    name = models.CharField(
+        _('name'),
+        null=False,
+        blank=False,
+        unique=True,
+        max_length=90,
+        help_text=_('the name of package template')
+    )
+
+    package_type = ActiveLimitForeignKey(
+        'stock.PackageType',
+        null=False,
+        blank=False,
+        verbose_name=_('package type'),
+        help_text=_('the package type of this template,constraint max number of item')
+    )
+
+    type_settings = models.ManyToManyField(
+        'stock.PackageTypeItemSetting',
+        blank=False,
+        through='stock.PackageTemplateItemSetting',
+        through_fields=('package_template', 'type_setting'),
+        verbose_name=_('the type settings of package'),
+        related_name='package_templates',
+        help_text=_('the type settings of package which constraint max number of item')
+    )
+
+    def __str__(self):
+        return str(self.package_type)
+
+    class Meta:
+        verbose_name = _('package template')
+        verbose_name_plural = _('package tempaltes')
+
+
+class PackageTemplateItemSetting(models.Model):
+    '''
+    the setting which set the number of item in the package
+    '''
+    RELATED_NAME = 'template_settings'
+
+    package_template = ActiveLimitForeignKey(
+        'stock.PackageTemplate',
+        null=False,
+        blank=False,
+        verbose_name=_('package template'),
+        related_name=RELATED_NAME,
+        help_text=_('the package template which setting belongs to')
+    )
+
+    type_setting = models.ForeignKey(
+        'stock.PackageTypeItemSetting',
+        null=False,
+        blank=False,
+        verbose_name=_('package type setting'),
+        related_name=RELATED_NAME,
+        help_text=_('the package type setting will constraint the max number of item of this template setting')
+    )
+
+    quantity = QuantityField(
+        _('quantity'),
+        null=False,
+        blank=False,
+        uom='type_setting.uom',
+        help_text=_('the quantity of item in package tempalte')
+    )
+
+    def __str__(self):
+        return '{}-{}({})'.format(
+            self.package_template,
+            self.type_setting,
+            str(self.quantity)
+        )
+
+    class Meta:
+        verbose_name = _('package template setting')
+        verbose_name_plural = _('package template settings')
+        unique_together = (
+            ('package_template', 'type_setting'),
+        )
+
+
+class PackageNode(TreeModel):
+    '''
+    package node,every node contain an package template
+    '''
+
+    template = ActiveLimitForeignKey(
+        'stock.PackageTemplate',
+        null=False,
+        blank=False,
+        verbose_name=_('package template'),
+        help_text=_('package template in the package tree')
+    )
+
+    items = GenericRelation('stock.Item')
+
+    @property
+    def item(self):
+        '''
+        get the relate item about itself,in the stock.Item,it constraint the ccontent type and instance id,
+        so it must have the only one item
+        :return: stock.Item instance
+        '''
+        return self.items.first()
+
+    def __str__(self):
+        return self.template.name
+
+    class Meta:
+        verbose_name = _('package node')
+        verbose_name_plural = _('package nodes')
+        unique_together = (
+            ('parent_node', 'template'),
+        )
+
+
+class ProcurementOrder(BaseModel):
+    '''abstract order about procurement'''
 
     procurement = ActiveLimitOneToOneField(
         'stock.Procurement',
         null=False,
         blank=False,
-        verbose_name='相关需求',
-        help_text="订单相关的需求"
+        verbose_name=_('procurement'),
+        help_text=_('the procurement about this order')
     )
 
     class Meta:
         abstract = True
 
-    @property
-    def moves(self):
-        return Move.objects.filter(
-            procurement_detail_setting__detail__procurement=self.procurement
-        )
 
-
-class StockOrderDetail(BaseModel):
-    '''单据相关的明细虚拟类'''
+class ProcurementOrderDetail(BaseModel):
+    '''abstract order detail about procurement detail'''
     procurement_detail = ActiveLimitForeignKey(
         'stock.ProcurementDetail',
         null=False,
         blank=False,
-        verbose_name='相关需求明细',
-        help_text="订单相关的需求明细"
+        verbose_name=_('procurement detail'),
+        help_text=_('the procurementdetail baout this order line')
     )
 
     class Meta:
         abstract = True
 
-    @property
-    def moves(self):
-        return Move.objects.filter(
-            procurement_detail_setting__detail=self.procurement_detail
-        )
-
 
 class Warehouse(BaseModel):
-    '''仓库'''
+    '''
+    warehouse have different zones
+    '''
     name = models.CharField(
-        '名称',
+        _('name'),
         null=False,
         blank=False,
         max_length=90,
-        help_text="仓库的名称"
+        help_text=_('the name of warehouse')
     )
 
-    user = PartnerForeignKey(
+    manager = PartnerForeignKey(
         null=False,
         blank=False,
-        verbose_name='联系人',
-        help_text="仓库的相关合作伙伴或联系人"
+        verbose_name=_('partner manage user'),
+        help_text=_('partner user can manage this warehouse')
     )
 
     address = ActiveLimitForeignKey(
         'account.Address',
         null=False,
         blank=False,
-        verbose_name='地址',
-        help_text="仓库的地理位置"
+        verbose_name=_('address'),
+        help_text=_('the real address of warehouse')
     )
+
+    def get_default_location(self,usage):
+        '''
+
+        :param usage:
+        :return:
+        '''
+        return Location.get_state_instance(
+            'no_virtual',
+            Location.objects.filter(
+                parent_node=None,
+                zone__warehouse=self,
+                zone__usage=usage
+            )
+        )
+
+    @property
+    def initial_location(self):
+        return self.get_default_location('initial')
+
+    @property
+    def scrap_location(self):
+        return self.get_default_location('scrap')
+    @property
+    def closeout_location(self):
+        return self.get_default_location('closeout')
 
     def __str__(self):
         return self.name
@@ -210,7 +527,7 @@ class Warehouse(BaseModel):
     def create_zones(self):
         '''
         创建仓库下的各个区域
-        :return:dict
+        :return:None
         '''
         with transaction.atomic():
             for usage in Zone.LAYOUT_USAGE:
@@ -221,11 +538,25 @@ class Warehouse(BaseModel):
                 location = Location.objects.create(
                     zone=zone,
                     parent_node=None,
-                    is_virtual=True,
+                    is_virtual=usage[0] not in Zone.INDIVISIBLE_USAGE,
                     x='', y='', z=''
                 )
                 zone.root_location = location
                 zone.save()
+
+    def create_default_routes(self):
+        '''
+        创建仓库下的默认路线
+        :return: None
+        '''
+        with transaction.atomic():
+            for route_type, explain in Route.ROUTE_TYPE:
+                Route.objects.create(
+                    warehouse=self,
+                    name='default/{}/{}'.format(self, route_type),
+                    route_type=route_type,
+                    sequence=0
+                )
 
     @property
     def leaf_child_locations(self):
@@ -246,15 +577,14 @@ class Warehouse(BaseModel):
 
     def get_item_quantity(self, item, usage='all'):
         if usage in Zone.States.USAGE_STATES.keys():
-            zone = Zone.get_state_queryset(usage, self.zones.all())[0]
+            zone = Zone.get_state_queryset(usage, self.zones.all()).first()
             return zone.get_item_quantity(item)
         elif usage == 'all':
             redis = Redis()
             return D(redis.zinterstore(
                 dest=('item_{}'.format(item.pk),),
                 keys=[location.cache.cache_name for location in self.leaf_child_locations]
-            )
-            )
+            ))
         else:
             return D('0')
 
@@ -277,6 +607,8 @@ class Zone(BaseModel):
         ('initial', '初始区域'),
         ('midway', '中途岛区域')
     )
+
+    INDIVISIBLE_USAGE = ('scrap', 'closeout', 'initial',)
 
     warehouse = ActiveLimitForeignKey(
         'stock.Warehouse',
@@ -439,9 +771,11 @@ class Location(BaseModel, TreeModel):
 
     def change_parent_node(self, node):
         '''判断上级库位是否为虚拟库位'''
-        if node.check_states('virtual') and self.check_states('active') and self.zone == node.zone:
+        node.check_states('virtual', raise_exception=True)
+        self.check_states('active', raise_exception=True)
+        if self.zone == node.zone:
             return super(Location, self).change_parent_node(node)
-        raise ValueError('上级库位必须为虚拟库位,且当前库位和新的上级库位必须在同一个区域内')
+        raise ValueError('当前库位和新的上级库位必须在同一个区域内')
 
     @property
     def leaf_child_nodes(self):
@@ -497,16 +831,6 @@ class Location(BaseModel, TreeModel):
             return D('0')
 
 
-class Package(BaseModel):
-    '''包裹记录'''
-    root_node = models.ForeignKey(
-        'stock.PackageNode',
-        null=False,
-        blank=False,
-        verbose_name='包裹树',
-    )
-
-
 class Move(BaseModel):
     '''移动'''
 
@@ -526,15 +850,16 @@ class Move(BaseModel):
         help_text="移动的结束库位"
     )
 
-    to_moves = models.ManyToManyField(
+    to_move = ActiveLimitOneToOneField(
         'self',
+        null=True,
         blank=True,
         verbose_name='后续移动',
         related_name='from_moves',
         help_text="计划移动链的后续移动"
     )
 
-    procurement_details = models.ManyToManyField(
+    procurement_detail = models.ForeignKey(
         'stock.ProcurementDetail',
         blank=False,
         verbose_name='需求明细',
@@ -542,16 +867,7 @@ class Move(BaseModel):
         help_text="生成该移动的需求明细"
     )
 
-    item = ActiveLimitForeignKey(
-        'stock.Item',
-        null=False,
-        blank=False,
-        verbose_name='移库元素',
-        related_name='moves',
-        help_text="进行移库的元素"
-    )
-
-    route_zone_setting = models.ForeignKey(
+    zone_setting = models.ForeignKey(
         'stock.RouteZoneSetting',
         null=False,
         blank=False,
@@ -568,6 +884,12 @@ class Move(BaseModel):
         help_text="产品的数量"
     )
 
+    is_return = models.BooleanField(
+        '退货状态',
+        default=False,
+        help_text="移动的状态,False为退货状态"
+    )
+
     state = SimpleStateCharField(
         '状态',
         help_text="移动单的状态"
@@ -582,7 +904,7 @@ class Move(BaseModel):
     class Meta:
         verbose_name = '移动'
         verbose_name_plural = '移动'
-        unique_together = ('item', 'route_zone_setting')
+        unique_together = ('procurement_detail', 'zone_setting', 'is_return')
 
     class States(BaseModel.States):
         active = BaseModel.States.active
@@ -590,10 +912,12 @@ class Move(BaseModel):
         confirmed = Statement(inherits=active, state='confirmed')
         doing = Statement(Q(state='draft') | Q(state='confirmed'), inherits=active)
         done = Statement(inherits=active, state='done')
+        is_return = Statement(inherits=active, is_return=True)
+        no_return = Statement(inherits=active, is_return=False)
 
     def refresh_lock_item_quantity(self):
         return self.from_location.cache.lock(
-            item=self.item,
+            item=self.procurement_detail.item,
             quantity=self.quantity
         )
 
@@ -601,55 +925,76 @@ class Move(BaseModel):
         redis = Redis()
         pipe = redis.pipeline()
         self.from_location.cache.refresh(
-            item=self.item,
+            item=self.procurement_detail.item,
             quantity=(-self.quantity),
             pipe=pipe
         )
         self.to_location.cache.refresh(
-            item=self.item,
+            item=self.procurement_detail.item,
             quantity=self.quantity,
             pipe=pipe
         )
-        self.from_location.cache.lock(self.item, -self.quantity, pipe=pipe)
+        self.from_location.cache.lock(self.procurement_detail.item, -self.quantity, pipe=pipe)
         if self.from_location.zone.usage != self.to_location.zone.usage:
-            self.item.cache.refresh(self.from_location.zone.usage, -self.quantity, pipe=pipe)
-            self.item.cache.refresh(self.to_location.zone.usage, self.quantity, pipe=pipe)
+            self.procurement_detail.item.cache.refresh(self.from_location.zone.usage, -self.quantity, pipe=pipe)
+            self.procurement_detail.item.cache.refresh(self.to_location.zone.usage, self.quantity, pipe=pipe)
         pipe.execute()
 
     def confirm(self):
-        if self.check_to_set_state('draft', set_state='confirmed'):
+        with transaction.atomic():
+            self.check_to_set_state('draft', set_state='confirmed', raise_exception=True)
             self.refresh_lock_item_quantity()
-            return True
-        return False
+            return self
 
     def done(self, next_location=None):
+        '''
+        完成库存移动的动作,并自动根据需求状态和路线指定下一个库存移动
+        1 需求尚未完成时,根据当前移动的路线区域获取下一个路线区域,若存在下一个路线区域且传入库位的区域与之相同,则完成移动并创建移动
+        2 需求尚未完成时,根据当前移动的路线区域获取下一个路线区域,若存在下一个路线区域且传入库位的区域与之不同,则抛出错误
+        3 需求尚未完成时,根据当前移动的路线区域获取下一个路线区域,若不存在下一个路线区域且传入了库位,则抛出错误
+        4 需求尚未完成时,根据当前移动的路线区域获取下一个路线区域,若不存在下一个路线区域且未传入库位,
+          则完成移动并检查需求下的所有移动是否均已完成,若完成则将需求置于完成状态
+        :param next_location:Location instance
+        :return: self
+        '''
         with transaction.atomic():
-            procurement = self.procurement_details.first().procurement
-            next_route_zone_setting = procurement.route.next_route_zone_setting(
-                now_route_zone_setting=self.route_zone_setting
-            )
-            if (((
-                     not next_route_zone_setting and not next_location) or next_location.zone == next_route_zone_setting.zone) and
-                    self.check_to_set_state('confirmed', set_state='done')):
-                self.refresh_item_quantity()
-                if not procurement.check_states('cancel'):
-                    if next_route_zone_setting:
-                        next_move = Move.objects.create(
-                            from_location=self.to_location,
-                            to_location=next_location,
-                            route_zone_setting=next_route_zone_setting,
-                            item=self.item,
-                            quantity=self.quantity,
-                            state='draft'
-                        )
-                        next_move.procurement_details.set(self.procurement_details.all())
-                        self.to_moves.add(next_move)
-                        self.save()
-                    elif Move.check_state_queryset('done',
-                                                   Move.objects.filter(procurement_details__procurement=procurement)):
-                        procurement.set_state('done')
-                return True
-            return False
+            self.check_to_set_state('confirmed', set_state='done', raise_exception=True)
+            procurement = self.procurement_detail.procurement
+            route = self.procurement_detail.route
+            cancel_state = procurement.check_states('cancel')
+            if cancel_state and self.procurement_detail.direct_return:
+                initial_setting = route.initial_setting
+                next_zone_setting = None if (self.zone_setting == initial_setting) else initial_setting
+            else:
+                next_zone_setting = route.next_zone_setting(
+                    now_zone_setting=self.zone_setting,
+                    reverse=cancel_state
+                )
+            if next_zone_setting and not next_location:
+                raise NotInStates('other', '存在下一个路线区域,但未传入相关的库位')
+            if not next_zone_setting and next_location:
+                raise NotInStates('other', '传入了相关的库位但不存在下一个路线区域')
+            if next_location and next_zone_setting and next_location.zone != next_zone_setting.zone:
+                raise NotInStates('other', '目标库位的区域与该移动的后续区域不同')
+            self.refresh_item_quantity()
+            if next_zone_setting:
+                next_move = Move.objects.create(
+                    from_location=self.to_location,
+                    to_location=next_location,
+                    zone_setting=next_zone_setting,
+                    procurement_detail=self.procurement_detail,
+                    quantity=self.quantity,
+                    is_return=cancel_state,
+                    state='draft'
+                )
+                self.to_move = next_move
+                self.save()
+            elif Move.check_state_queryset(
+                    'done',
+                    Move.objects.filter(procurement_detail__procurement=procurement)
+            ) and not cancel_state:
+                procurement.set_state('done')
+            return self
 
 
 # class PickOrder(StockOrder):
@@ -660,13 +1005,6 @@ class Move(BaseModel):
 #     '''送检表单'''
 #     pass
 #
-# class PackOrder(StockOrder):
-#     '''打包表单'''
-#     pass
-#
-# class UnPackOrder(StockOrder):
-#     '''拆包表单'''
-#     pass
 #
 # class OutPutOrder(StockOrder):
 #     '''出库表单'''
@@ -692,9 +1030,442 @@ class Move(BaseModel):
 #     '''报废表单'''
 #     pass
 
+class PackOrder(StockOrder):
+    '''包裹表单'''
+
+    pack_location = ActiveLimitForeignKey(
+        'stock.Location',
+        null=False,
+        blank=False,
+        verbose_name='包裹库位',
+        related_name='pack_orders',
+        help_text="进行打包或拆包动作的库位"
+    )
+
+    is_pack = models.BooleanField(
+        '是否打包',
+        default=True,
+        help_text="是否进行打包操作的状态,True时打包,False时拆包"
+    )
+
+    package_nodes = models.ManyToManyField(
+        'stock.PackageNode',
+        through='stock.PackOrderLine',
+        through_fields=('order','package_node'),
+        verbose_name='包裹节点',
+        related_name='pack_orders',
+        help_text="包裹表单需要进行打包/拆包的包裹"
+    )
+
+    @property
+    def state(self):
+        return self.procurement.state
+
+    def __str__(self):
+        return 'pack-order-{}'.format(self.pack_location)
+
+    class Meta:
+        verbose_name = '包裹表单'
+        verbose_name_plural = '包裹表单'
+
+    @classmethod
+    def create(cls, user, location):
+        with transaction.atomic():
+            procurement = Procurement.objects.create(user=user)
+            return cls.objects.create(
+                procurement=procurement,
+                pack_location=location
+            )
+
+    def confirm(self):
+        with transaction.atomic():
+            self.procurement.check_states('draft', raise_exception=True)
+            self.procurement.confirm()
+            for line in self.lines.all():
+                line.create_line_procurement_details()
+            return self
+
+
+class PackOrderLine(models.Model, StateMachine):
+    '''打包表单的明细'''
+
+    order = ActiveLimitForeignKey(
+        'stock.PackOrder',
+        null=False,
+        blank=False,
+        verbose_name='包裹表单',
+        related_name='lines',
+        help_text="明细归属的包裹表单"
+    )
+
+    package_node = models.ForeignKey(
+        'stock.PackageNode',
+        null=False,
+        blank=False,
+        verbose_name='包裹类型',
+        related_name='pack_order_lines',
+        limit_choices_to=PackageNode.States.root.query,
+        help_text="需要进行打包的包裹类型"
+    )
+
+    quantity = models.PositiveSmallIntegerField(
+        '数量',
+        null=False,
+        blank=False,
+        help_text="包裹的所属数量"
+    )
+
+    procurement_details = models.ManyToManyField(
+        'stock.ProcurementDetail',
+        through='stock.PackOrderLineProcurementDetailSetting',
+        through_fields=('line', 'detail'),
+        verbose_name='需求明细',
+        related_name='pack_order_lines',
+        help_text="与打包明细相关的需求明细"
+    )
+
+    @property
+    def package_detail(self):
+        return self.procurement_details.get(item=self.package_node.item)
+
+    @property
+    def item_details(self):
+        return self.procurement_details.exclude(item=self.package_node.item)
+
+    def __str__(self):
+        return '{}/{}'.format(self.order, self.package_node)
+
+    class Meta:
+        verbose_name = '包裹明细'
+        verbose_name_plural = '包裹明细'
+        unique_together = ('order', 'package_node')
+
+    def _create_item_detail_settings(self):
+        warehouse = self.order.pack_location.warehouse
+        route = Route.get_default_route(warehouse, 'pack_closeout' if self.order.is_pack else 'closeout_pack')
+        for setting in self.package_node.template.template_settings:
+            detail = ProcurementDetail.objects.create(
+                procurement=self.order.procurement,
+                item=setting.type_setting.item,
+                quantity=setting.quantiy * self.quantity,
+                route=route
+            )
+            PackOrderLineProcurementDetailSetting.objects.create(
+                line=self,
+                node=self.package_node,
+                template_setting=setting,
+                procurement_detail=detail
+            )
+        for node in self.package_node.all_child_nodes:
+            for setting in node.template.template_settings:
+                detail = ProcurementDetail.objects.create(
+                    procurement=self.order.procurement,
+                    item=setting.type_setting.item,
+                    quantity=setting.quantiy * self.quantity,
+                    route=route
+                )
+                PackOrderLineProcurementDetailSetting.objects.create(
+                    line=self,
+                    node=node,
+                    template_setting=setting,
+                    procurement_detail=detail
+                )
+
+    def _create_package_detail_setting(self):
+        warehouse = self.order.pack_location.zone.warehouse
+        route = Route.get_default_route(warehouse, 'closeout_pack' if self.order.is_pack else 'pack_closeout')
+        detail = ProcurementDetail.objects.create(
+            procurement=self.order.procurement,
+            item=self.package_node.item,
+            quantity=self.quantity,
+            route=route
+        )
+        PackOrderLineProcurementDetailSetting.objects.create(
+            line=self,
+            node=self.package_node,
+            template_setting=None,
+            procurement_detail=detail
+        )
+
+    def create_line_procurement_details(self):
+        with transaction.atomic():
+            self._create_item_detail_settings()
+            self._create_package_detail_setting()
+
+    def start(self):
+        with transaction.atomic():
+            pack_location = self.order.pack_location
+            closeout_location = pack_location.zone.warehouse.closeout_location
+            if not self.order.is_pack:
+                pack_location, closeout_location = closeout_location, pack_location
+            for detail in self.item_details:
+                detail.start(pack_location, closeout_location)
+            self.package_detail.start(closeout_location, pack_location)
+            return self
+
+
+class PackOrderLineProcurementDetailSetting(models.Model):
+    '''打包表单的明细与需求明细关系表'''
+    RELATED_NAME = 'pack_detail_settings'
+    SIGNAL_RELATED_NAME = 'pack_detail_setting'
+
+    line = models.ForeignKey(
+        'stock.PackOrderLine',
+        null=False,
+        blank=False,
+        verbose_name='包裹表单明细',
+        related_name=RELATED_NAME,
+        help_text="与需求明细相关的包裹表单明细"
+    )
+
+    detail = models.OneToOneField(
+        'stock.ProcurementDetail',
+        null=False,
+        blank=False,
+        verbose_name='需求明细',
+        related_name=SIGNAL_RELATED_NAME,
+        help_text="与打包表单明细相关的需求明细"
+    )
+
+    node = ActiveLimitForeignKey(
+        'stock.PackageNode',
+        null=False,
+        blank=False,
+        verbose_name='包裹节点',
+        related_name=RELATED_NAME,
+        help_text="生成该关系的包裹节点"
+    )
+
+    template_setting = models.ForeignKey(
+        'stock.PackageTemplateItemSetting',
+        null=True,
+        blank=True,
+        verbose_name='包裹模板设置',
+        related_name=RELATED_NAME,
+        help_text="生成该关系的包裹模板设置"
+    )
+
+    def __str__(self):
+        return '{}/{}'.format(self.line, self.detail)
+
+    class Meta:
+        verbose_name = '包裹需求明细关系表'
+        verbose_name_plural = '包裹需求明细关系表'
+
+
+class ScrapOrder(StockOrder):
+    '''报废单'''
+
+    scrap_location = ActiveLimitForeignKey(
+        'stock.Location',
+        null=False,
+        blank=False,
+        verbose_name='退货地点',
+        related_name='scrap_orders',
+        help_text="发起报废需求的库位"
+    )
+
+    procurement_details = models.ManyToManyField(
+        'stock.ProcurementDetail',
+        through='stock.ScrapOrderLine',
+        through_fields=('order','procurement_detail'),
+        verbose_name='需求明细',
+        related_name='scrap_orders',
+        help_text="报废单的需求明细"
+    )
+
+    def __str__(self):
+        return 'scrap-order-{}'.format(self.scrap_location)
+
+    class Meta:
+        verbose_name = '报废单'
+        verbose_name_plural = '报废单'
+
+    @classmethod
+    def create(cls, user, location):
+        with transaction.atomic():
+            procurement = Procurement.objects.create(user=user)
+            return cls.objects.create(procurement=procurement)
+
+    def confirm(self):
+        with transaction.atomic():
+            self.procurement.check_states('draft',raise_exception=True)
+            self.procurement.confirm()
+            return self
+
+    def create_detail(self,item,quantity):
+        with transaction.atomic():
+            zone = self.scrap_location.zone
+            route = Route.get_default_route(zone.warehouse,'{}_scrap'.format(zone.usage))
+            detail = ProcurementDetail.objects.create(
+                procurement=self.procurement,
+                item=item,
+                quantity=quantity,
+                route=route
+            )
+            ScrapOrderLine.objects.create(
+                order=self,
+                procurement_detail=detail
+            )
+
+
+class ScrapOrderLine(models.Model,StateMachine):
+    '''报废单明细'''
+
+    order = models.ForeignKey(
+        'stock.ScrapOrder',
+        null=False,
+        blank=False,
+        verbose_name='报废单',
+        related_name='lines',
+        help_text="报废单"
+    )
+
+    procurement_detail = models.OneToOneField(
+        'stock.ProcurementDetail',
+        null=False,
+        blank=False,
+        verbose_name='需求明细',
+        related_name='scrap_order_lines',
+        help_text="报废单的需求明细"
+    )
+
+    def __str__(self):
+        return '{}/{}'.format(self.order,self.procurement_detail)
+
+    class Meta:
+        verbose_name = '报废单明细',
+        verbose_name_plural = '报废单明细'
+
+    def start(self):
+        with transaction.atomic():
+            from_location = self.order.scrap_location
+            to_location = from_location.zone.warehouse.scrap_location
+            self.procurement_detail.start(from_location,to_location)
+            return self
+
+
+class CloseoutOrder(StockOrder):
+    '''平仓表单'''
+    closeout_location = ActiveLimitForeignKey(
+        'stock.Location',
+        null=False,
+        blank=False,
+        verbose_name='平仓地点',
+        related_name='closeout_orders',
+        help_text="发起平仓需求的库位"
+    )
+
+    procurement_details = models.ManyToManyField(
+        'stock.ProcurementDetail',
+        through='stock.CloseoutOrderLine',
+        through_fields=('order','procurement_detail'),
+        verbose_name='需求明细',
+        related_name='closeout_orders',
+        help_text="平仓单的需求明细"
+    )
+
+    def __str__(self):
+        return 'closeout-order-{}'.format(self.closeout_location)
+
+    class Meta:
+        verbose_name = '平仓表单'
+        verbose_name_plural = '平仓表单'
+
+    @classmethod
+    def create(cls, user, location):
+        with transaction.atomic():
+            procurement = Procurement.objects.create(user=user)
+            return cls.objects.create(procurement=procurement)
+
+    def confirm(self):
+        with transaction.atomic():
+            self.procurement.check_states('draft', raise_exception=True)
+            self.procurement.confirm()
+            return self
+
+    def create_detail(self, item, quantity):
+        with transaction.atomic():
+            zone = self.closeout_location.zone
+            route = Route.get_default_route(zone.warehouse, '{}_scrap'.format(zone.usage))
+            detail = ProcurementDetail.objects.create(
+                procurement=self.procurement,
+                item=item,
+                quantity=quantity,
+                route=route
+            )
+            CloseoutOrderLine.objects.create(
+                order=self,
+                procurement_detail=detail
+            )
+
+
+class CloseoutOrderLine(models.Model):
+    '''平仓明细'''
+    order = models.ForeignKey(
+        'stock.CloseoutOrder',
+        null=False,
+        blank=False,
+        verbose_name='平仓单',
+        related_name='lines',
+        help_text="平仓单"
+    )
+
+    procurement_detail = models.OneToOneField(
+        'stock.ProcurementDetail',
+        null=False,
+        blank=False,
+        verbose_name='需求明细',
+        related_name='closeout_order_lines',
+        help_text="平仓单的需求明细"
+    )
+
+    def __str__(self):
+        return '{}/{}'.format(self.order,self.procurement_detail)
+
+    class Meta:
+        verbose_name = '平仓明细'
+        verbose_name_plural = '平仓明细'
+
+    def start(self):
+        with transaction.atomic():
+            from_location = self.order.closeout_location
+            to_location = from_location.zone.warehouse.closeout_location
+            self.procurement_detail.start(from_location,to_location)
+            return self
+
 
 class Route(BaseModel):
     '''路线'''
+    ROUTE_TYPE = (
+        ('produce-stock', '生产-库存路线'),
+        ('produce-customer', '生产-销售路线'),
+        ('produce-pack', '生产-包裹路线'),
+        ('produce-produce', '生产调拨路线'),
+        ('produce-closeout', '生产消耗路线'),
+
+        ('stock-produce', '库存-生产路线'),
+        ('stock-customer', '库存-销售路线'),
+        ('stock-pack', '库存-包裹路线'),
+        ('stock-stock', '库内调拨路线'),
+        ('stock-closeout', '盘亏路线'),
+
+        ('pack-stock', '包裹-库存路线'),
+        ('pack-customer', '包裹-销售路线'),
+        ('pack-produce', '包裹-生产路线'),
+        ('pack-pack', '包裹调拨路线'),
+        ('pack-closeout', '包裹消耗路线'),
+
+        ('closeout-produce', '生产生成路线'),
+        ('closeout-stock', '盘盈路线'),
+        ('closeout-pack', '包裹生成路线'),
+
+        ('supplier-stock', '采购-库存路线'),
+        ('supplier-pack', '采购-打包路线'),
+        ('supplier-customer', '采购-销售路线'),
+        ('supplier-produce', '采购-生产路线'),
+
+    )
 
     name = models.CharField(
         '名称',
@@ -712,22 +1483,13 @@ class Route(BaseModel):
         help_text="路线所属的仓库"
     )
 
-    initial_zone = ActiveLimitForeignKey(
-        'stock.Zone',
-        null=True,
-        blank=True,
-        verbose_name='起始区域',
-        related_name='initial_routes',
-        help_text="路线的起始区域"
-    )
-
-    end_zone = ActiveLimitForeignKey(
-        'stock.Zone',
-        null=True,
-        blank=True,
-        verbose_name='终点区域',
-        related_name='end_routes',
-        help_text="路线的终点区域"
+    route_type = models.CharField(
+        '路线类型',
+        null=False,
+        blank=False,
+        choices=ROUTE_TYPE,
+        max_length=20,
+        help_text="路线的业务类型"
     )
 
     zones = models.ManyToManyField(
@@ -759,27 +1521,75 @@ class Route(BaseModel):
     def __str__(self):
         return self.name
 
+    @property
+    def length(self):
+        return RouteZoneSetting.objects.filter(route=self).count()
+
+    @property
+    def initial_zone(self):
+        return Zone.objects.get(warehouse=self.warehouse, usage=self.route_type.split('-')[0])
+
+    @property
+    def end_zone(self):
+        return Zone.objects.get(warehouse=self.warehouse, usage=self.route_type.split('-')[1])
+
+    @property
+    def initial_setting(self):
+        return RouteZoneSetting.objects.filter(route=self).first()
+
+    @property
+    def end_setting(self):
+        return RouteZoneSetting.objects.filter(route=self).last()
+
     class Meta:
         verbose_name = '路线'
         verbose_name_plural = '路线'
-        unique_together = ('initial_zone', 'end_zone', 'sequence')
+        unique_together = ('warehouse', 'route_type', 'sequence')
 
     class States(BaseModel.States):
         active = BaseModel.States.active
+        produce_stock = Statement(inherits=active, return_type='produce-stock')
+        produce_customer = Statement(inherits=active, return_type='produce-customer')
+        produce_pack = Statement(inherits=active, return_type='produce-pack')
+        produce_produce = Statement(inherits=active, return_type='produce-produce')
+        produce_closeout = Statement(inherits=active, return_type='produce-closeout')
 
-    @property
-    def direct_path(self):
-        return (self.initial_zone, self.end_zone)
+        stock_produce = Statement(inherits=active, return_type='stock-produce')
+        stock_customer = Statement(inherits=active, return_type='stock-customer')
+        stock_pack = Statement(inherits=active, return_type='stock-pack')
+        stock_stock = Statement(inherits=active, reutrn_type='stock-stock')
+        stock_closeout = Statement(inherits=active, return_type='stock-closeout')
 
-    def next_route_zone_setting(self, now_route_zone_setting=None):
-        if now_route_zone_setting:
+        pack_stock = Statement(inherits=active, return_type='pack-stock')
+        pack_customer = Statement(inherits=active, return_type='pack-customer')
+        pack_produce = Statement(inherits=active, return_type='pack-produce')
+        pack_pack = Statement(inherits=active, return_type='pack-pack')
+        pack_closeout = Statement(inherits=active, return_type='pack-closeout')
+
+        closeout_produce = Statement(inherits=active, return_type='closeout-produce')
+        closeout_stock = Statement(inherits=active, return_type='closeout-stock')
+        closeout_pack = Statement(inherits=active, return_type='closeout-pack')
+
+        supplier_stock = Statement(inherits=active, return_type='supplier-stock')
+        supplier_pack = Statement(inherits=active, return_type='supplier-pack')
+        supplier_customer = Statement(inherits=active, return_type='supplier-customer')
+        supplier_produce = Statement(inherits=active, return_type='supplier-produce')
+
+    @classmethod
+    def get_default_route(cls, warehouse, route_type):
+        return cls.get_state_instance(route_type, cls.objects.filter(warehouse=warehouse, sequence=0))
+
+    def next_zone_setting(self, now_zone_setting, reverse=False):
+        if not reverse:
             return RouteZoneSetting.objects.filter(
                 route=self,
-                sequence__gt=now_route_zone_setting.sequence
+                sequence__gt=now_zone_setting.sequence
             ).first()
-        return RouteZoneSetting.objects.filter(
-            route=self
-        )[1]
+        else:
+            return RouteZoneSetting.objects.filter(
+                route=self,
+                sequence__lt=now_zone_setting.sequence
+            ).last()
 
 
 class RouteZoneSetting(models.Model):
@@ -818,218 +1628,8 @@ class RouteZoneSetting(models.Model):
     class Meta:
         verbose_name = '路线的路径区域配置'
         verbose_name_plural = '路线的路径配置'
-        unique_together = ('zone', 'sequence')
+        unique_together = ('route', 'sequence')
         ordering = ('sequence',)
-
-
-class PackageType(BaseModel):
-    '''包裹类型'''
-    name = models.CharField(
-        '名称',
-        null=False,
-        blank=False,
-        unique=True,
-        max_length=90,
-        help_text="包裹类型的名称"
-    )
-
-    items = models.ManyToManyField(
-        'stock.Item',
-        blank=False,
-        through='stock.PackageTypeItemSetting',
-        through_fields=('package_type', 'item'),
-        verbose_name='产品分类',
-        related_name='package_types',
-        help_text="包裹可包装的元素类型"
-    )
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = '包裹类型'
-        verbose_name_plural = '包裹类型'
-
-
-class PackageTypeItemSetting(models.Model):
-    '''包裹类型产品分类设置'''
-    RELATED_NAME = 'item_settings'
-
-    package_type = ActiveLimitForeignKey(
-        'stock.PackageType',
-        null=False,
-        blank=False,
-        verbose_name='包裹类型',
-        related_name=RELATED_NAME,
-        help_text="相关的包裹类型"
-    )
-
-    item = ActiveLimitForeignKey(
-        'stock.Item',
-        null=False,
-        blank=False,
-        verbose_name='元素类型',
-        related_name=RELATED_NAME,
-        help_text="相关的元素的类型"
-    )
-
-    max_quantity = QuantityField(
-        '最大数量',
-        null=False,
-        blank=False,
-        uom='item.instance.uom',
-        help_text="包裹类型能够包含该产品的最大数量"
-    )
-
-    def __str__(self):
-        return '{}-{}({})'.format(
-            self.package_type,
-            self.item,
-            str(self.max_quantity)
-        )
-
-    class Meta:
-        verbose_name = '包裹类型设置'
-        verbose_name_plural = '包裹类型设置'
-        unique_together = (
-            ('package_type', 'item'),
-        )
-
-
-class PackageTemplate(BaseModel):
-    '''包裹模板'''
-    name = models.CharField(
-        '名称',
-        null=False,
-        blank=False,
-        unique=True,
-        max_length=90,
-        help_text="包裹模板的名称"
-    )
-
-    package_type = ActiveLimitForeignKey(
-        'stock.PackageType',
-        null=False,
-        blank=False,
-        editable=False,
-        verbose_name='包裹类型',
-        help_text="包裹模板的类型"
-    )
-
-    type_settings = models.ManyToManyField(
-        'stock.PackageTypeItemSetting',
-        blank=False,
-        through='stock.PackageTemplateItemSetting',
-        through_fields=('package_template', 'type_setting'),
-        verbose_name='产品分类设置',
-        related_name='package_templates',
-        help_text="包裹可包装的产品分类"
-    )
-
-    def __str__(self):
-        return str(self.package_type)
-
-    class Meta:
-        verbose_name = '包裹模板'
-        verbose_name_plural = '包裹模板'
-
-
-class PackageTemplateItemSetting(models.Model):
-    '''包裹模板产品设置'''
-    RELATED_NAME = 'template_settings'
-
-    package_template = ActiveLimitForeignKey(
-        'stock.PackageTemplate',
-        null=False,
-        blank=False,
-        verbose_name='包裹模板',
-        related_name=RELATED_NAME,
-        help_text="相关的包裹模板"
-    )
-
-    type_setting = models.ForeignKey(
-        'stock.PackageTypeItemSetting',
-        null=False,
-        blank=False,
-        verbose_name='包裹类型设置',
-        related_name=RELATED_NAME,
-        help_text="包裹模板明细遵循的包裹类型"
-    )
-
-    quantity = QuantityField(
-        '最大数量',
-        null=False,
-        blank=False,
-        uom='type_setting.uom',
-        help_text="包裹模板包含该产品的数量"
-    )
-
-    def __str__(self):
-        return '{}-{}({})'.format(
-            self.package_template,
-            self.type_setting,
-            str(self.quantity)
-        )
-
-    class Meta:
-        verbose_name = '包裹模板产品设置'
-        verbose_name_plural = '包裹模板产品设置'
-        unique_together = (
-            ('package_template', 'type_setting'),
-        )
-
-
-class PackageNode(TreeModel, StateMachine):
-    '''包裹节点'''
-    name = models.CharField(
-        '名称',
-        null=False,
-        blank=False,
-        unique=True,
-        max_length=90,
-        help_text="打包方法的名称"
-    )
-
-    parent_node = models.ForeignKey(
-        'self',
-        null=True,
-        default=None,
-        verbose_name='父节点',
-        related_name='child_nodes',
-        help_text="该节点的父节点"
-    )
-
-    template = ActiveLimitForeignKey(
-        'stock.PackageTemplate',
-        null=False,
-        blank=False,
-        verbose_name='包裹类型',
-        help_text="打包方法相关的包裹类型"
-    )
-
-    quantity = models.PositiveSmallIntegerField(
-        '数量',
-        null=False,
-        blank=False,
-        default=1,
-        help_text="包裹的数量"
-    )
-
-    items = GenericRelation('stock.Item')
-
-    @property
-    def item(self):
-        return self.items.first()
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = '包裹节点'
-        verbose_name_plural = '包裹节点'
-        unique_together = (
-            ('parent_node', 'template'),
-        )
 
 
 class Procurement(BaseModel):
@@ -1042,37 +1642,11 @@ class Procurement(BaseModel):
         help_text="提出需求的相关合作伙伴"
     )
 
-    address = ActiveLimitForeignKey(
-        'account.Address',
-        null=False,
-        blank=False,
-        verbose_name='送货地址',
-        related_name='procurements',
-        help_text="客户要求到达的送货地址"
-    )
-
-    is_return = models.BooleanField(
-        '退货状态',
-        default=False,
-        help_text="需求的退货状态,若改需求为退货需求,则为True"
-    )
-
-    return_procurement = ActiveLimitOneToOneField(
+    require_procurements = models.ManyToManyField(
         'self',
-        null=True,
-        blank=True,
-        verbose_name='退货需求',
-        related_name='origin_procurement',
-        help_text="产生退货时,需求对应的退货需求"
-    )
-
-    route = ActiveLimitForeignKey(
-        'stock.Route',
-        null=False,
-        blank=False,
-        verbose_name='路线',
-        related_name='procurements',
-        help_text="根据需求产生的位置以及指定的产品来源库位自动匹配的移动路线"
+        verbose_name='前置需求',
+        related_name='support_procurements',
+        help_text="该需求的前置需求,只有当所有的前置需求都完成时,该需求的明细才能开始"
     )
 
     state = CancelableSimpleStateCharField(
@@ -1083,6 +1657,10 @@ class Procurement(BaseModel):
     def __str__(self):
         return '{}-{}'.format(str(self.user), str(self.route))
 
+    @property
+    def doing_moves(self):
+        return Move.get_state_queryset('doing', Move.objects.filter(procurement_detail__procurement=self))
+
     class Meta:
         verbose_name = '需求'
         verbose_name_plural = '需求'
@@ -1092,44 +1670,19 @@ class Procurement(BaseModel):
         draft = Statement(inherits=active, state='draft')
         confirmed = Statement(inherits=active, state='confirmed')
         done = Statement(inherits=active, state='done')
-        cancelable = Statement(inherits=confirmed, is_return=False)
         cancel = Statement(inherits=active, state='cancel')
 
     def confirm(self):
-        with transaction.atomic():
-            next_zone_setting = self.route.next_route_zone_setting()
-            if (not self.details.exclude(
-                        Q(from_location__zone=F('procurement__route__initial_zone')) &
-                        Q(next_location__zone=next_zone_setting.zone)).exists() and
-                    self.check_states('draft')):
-                details = self.details.all()
-                self.set_state('confirmed')
-                for detail in details:
-                    move = detail.get_first_move(first_route_zone_setting=next_zone_setting)
-                    move.save()
-                    move.procurement_details.add(detail)
-                return True
-            return False
+        self.check_to_set_state('draft', set_state='confirmed', raise_exception=True)
+        return self
+
+    def cancel(self):
+        self.check_to_set_state('draft', 'confirmed', set_state='cancel', raise_exception=True)
+        return self
 
 
-class ProcurementDetail(models.Model):
+class ProcurementDetail(models.Model, StateMachine):
     '''需求明细'''
-
-    from_location = LocationForeignKey(
-        null=False,
-        blank=False,
-        verbose_name='来源库位',
-        related_name='first_move_procurement_details',
-        help_text="产品来源的库位"
-    )
-
-    next_location = LocationForeignKey(
-        null=False,
-        blank=False,
-        verbose_name='下一步库位',
-        related_name='second_move_procurement_details',
-        help_text="产品第一步需要移动至的库位"
-    )
 
     item = ActiveLimitForeignKey(
         'stock.Item',
@@ -1156,38 +1709,56 @@ class ProcurementDetail(models.Model):
         help_text="需求明细所属的需求"
     )
 
+    route = ActiveLimitForeignKey(
+        'stock.Route',
+        null=False,
+        blank=False,
+        verbose_name='路线',
+        related_name='details',
+        help_text="根据需求产生的位置以及指定的产品来源库位自动匹配的移动路线"
+    )
+
+    direct_return = models.BooleanField(
+        '直接退货',
+        default=False,
+        help_text="回退方式,为True时直接返回,为False时按原路线返回"
+    )
+
     def __str__(self):
         return '{}/{}'.format(str(self.procurement), str(self.item))
 
     class Meta:
         verbose_name = "需求明细"
         verbose_name_plural = "需求明细"
-        unique_together = ('procurement', 'item')
+
+    class States:
+        start_able = Statement(
+            Q(moves__isnull=True) &
+            (Q(procurement__require_procurements__isnull=True) | Q(procurement__require_procurements__state='done'))
+        )
+        started = Statement(Q(moves__isnull=False))
 
     @property
-    def moving(self):
-        '''获得当前与需求明细相关的进行中的移动'''
-        moves = Move.get_state_queryset('doing', self.moves.all())
-        moves_count = moves.count()
-        if moves_count == 1:
-            return moves[0]
-        elif moves_count == 0:
-            return None
-        else:
-            raise ValueError('同一需求明细下不能存在多个进行中的移动')
+    def doing_move(self):
+        return Move.get_state_queryset('doing').get(procurement_detail=self)
 
-    def get_first_move(self, first_route_zone_setting):
-        return Move(
-            from_location=self.from_location,
-            to_location=self.next_location,
-            route_zone_setting=first_route_zone_setting,
-            quantity=self.quantity,
-            item=self.item,
-            state='draft'
-        )
+    def start(self, initial_location, next_location):
+        with transaction.atomic():
+            self.check_states('start_able', raise_exception=True)
+            self.procurement.check_states('confirmed', raise_exception=True)
+            Move.objects.create(
+                from_location=initial_location,
+                to_location=next_location,
+                procurement_detail=self,
+                zone_setting=RouteZoneSetting.objects.filter(route=self.route)[1],
+                quantity=self.quantity,
+                state='draft',
+                is_return=False
+            )
+            return self
 
 
-class Item(BaseModel, StateMachine):
+class Item(BaseModel):
     '''移库元素'''
 
     content_type = models.ForeignKey(
@@ -1219,15 +1790,11 @@ class Item(BaseModel, StateMachine):
     class States(BaseModel.States):
         active = BaseModel.States.active
         product = Statement(
-            Q(content_type=ContentType.objects.get_for_model(Product)),
-            inherits=active
-        )
-        assembly = Statement(
-            Q(content_type=ContentType.objects.get_for_model(Assembly)),
+            Q(content_type__app_label='product') & Q(content_type__model='Product'),
             inherits=active
         )
         package_node = Statement(
-            Q(content_type=ContentType.objects.get_for_model(PackageNode)),
+            Q(content_type__app_label='stock') & Q(content_type__model='PackageNode'),
             inherits=active
         )
 

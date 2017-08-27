@@ -27,8 +27,7 @@ class UOMSerializer(ActiveModelSerializer):
         model = models.UOM
         fields = (
             'name', 'symbol', 'decimal_places',
-            'round_method', 'ratio_type',
-            'ratio', 'category'
+            'round_method', 'ratio', 'category'
         )
 
 

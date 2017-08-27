@@ -17,14 +17,12 @@ class ProvinceSerializer(serializers.ModelSerializer):
 
 
 class CitySerializer(serializers.ModelSerializer):
-
     class Meta:
         model = models.City
         fields = ('id', 'province', 'name')
 
 
 class RegionSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = models.Region
         fields = ('id', 'city', 'name')
@@ -178,7 +176,7 @@ class CompanySerializer(ActiveModelSerializer):
     default_send_address = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
     usual_send_addresses = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
     belong_users = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(is_active=True,is_superuser=False,is_staff=False),
+        queryset=User.objects.filter(is_active=True, is_superuser=False, is_staff=False),
         many=True
     )
 

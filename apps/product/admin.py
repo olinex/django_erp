@@ -42,21 +42,19 @@ class AttributeAdmin(CommonAdmin):
 class UOMAdmin(CommonAdmin):
     list_display = (
         'id','name','symbol','decimal_places',
-        'round_method','ratio_type','ratio',
-        'category'
+        'round_method','ratio','category'
     )
-    list_filter = ('round_method','ratio_type','category')
+    list_filter = ('round_method','category')
     list_display_links = ('name',)
     search_fields = ('name','symbol')
     list_editable = (
-        'decimal_places','round_method',
-        'ratio_type','ratio','category'
+        'decimal_places','round_method','ratio','category'
     )
     fieldsets = (
         (None,{'fields':(
             'name','symbol',
             ('decimal_places','ratio'),
-            'round_method','ratio_type','category'
+            'round_method','category'
         )}),
     )
 

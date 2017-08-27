@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#-*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 
 from rest_framework import routers
 
@@ -11,7 +11,7 @@ router.register(r'zone', views.ZoneViewSet, 'zone')
 router.register(r'location', views.LocationViewSet, 'location')
 router.register(r'move', views.MoveViewSet, 'move')
 router.register(r'route', views.RouteViewSet, 'route')
-router.register(r'route-zone-setting', views.RouteZoneSettingViewSet, 'route_zone_setting')
+router.register(r'route-zone-setting', views.RouteZoneSettingViewSet, 'route-zone-setting')
 router.register(r'package-type/item-setting', views.PackageTypeItemSettingViewSet, 'package_type_item_setting')
 router.register(r'package-type', views.PackageTypeViewSet, 'package_type')
 router.register(r'package-template/item-setting', views.PackageTemplateItemSettingViewSet, 'package_template_item_setting')
