@@ -61,7 +61,7 @@ class PackageTemplateItemSettingInline(CommonTabInLine):
 
 @admin.register(models.Warehouse)
 class WarehouseAdmin(CommonAdmin):
-    list_display = ('name', 'user', 'address')
+    list_display = ('name', 'manager', 'address')
     search_fields = ('name',)
     list_editable = ('name',)
     inlines = (
@@ -161,7 +161,7 @@ class PackageNodeAdmin(admin.ModelAdmin):
 
 @admin.register(models.Procurement)
 class ProcurementAdmin(CommonAdmin):
-    list_display = ('user', 'address', 'state')
+    list_display = ('user', 'state')
     list_filter = ('state',)
     list_editable = list_filter
     fieldsets = (

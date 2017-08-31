@@ -1,9 +1,13 @@
+#!/usr/bin/env python3
+#-*- coding:utf-8 -*-
+
 from django.apps import AppConfig
+from django.utils.translation import ugettext_lazy as _
 
 
 class StockConfig(AppConfig):
     name = 'apps.stock'
-    verbose_name = '库存管理'
+    verbose_name = _('stock config')
 
     def ready(self):
         from . import signals

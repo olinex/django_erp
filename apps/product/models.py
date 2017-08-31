@@ -145,7 +145,9 @@ class Product(BaseModel):
 
     @property
     def item(self):
-        return self.items.first()
+        if not hasattr(self,'__item'):
+            self.__item = self.items.first()
+        return self.__item
 
     @property
     def uom(self):

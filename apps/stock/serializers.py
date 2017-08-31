@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 from django.contrib.auth import get_user_model
+from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
 from apps.account.models import Address
@@ -59,7 +60,7 @@ class RouteZoneSettingSerializer(serializers.ModelSerializer):
         route = data['route']
         zone = data['zone']
         if route.warehouse != zone.warehouse:
-            raise serializers.ValidationError('区域所属的仓库必须与路线的仓库相同')
+            raise serializers.ValidationError(_("the route's warehouse must equal to the zone's warehouse"))
         return data
 
 

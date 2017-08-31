@@ -14,6 +14,8 @@ User = get_user_model()
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
-    '''每次保存时,检查或创建profile和partner'''
+    '''
+    when user instance created,automatically create the profile instance of the user
+    '''
     if created:
         models.Profile.objects.create(user=instance)
