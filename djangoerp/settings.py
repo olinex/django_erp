@@ -12,7 +12,8 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 
 import os
 import random, string
-from common.utils import get_environ
+from . import get_environ
+from . import privates
 from django.core.urlresolvers import reverse_lazy
 
 
