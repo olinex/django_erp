@@ -1489,7 +1489,7 @@ class ScrapOrder(StockOrder):
     procurement_details = models.ManyToManyField(
         'stock.ProcurementDetail',
         through='stock.ScrapOrderLine',
-        through_fields=('order', 'procurement_detail'),
+        through_fields=('order', 'detail'),
         verbose_name=_('procurement details'),
         related_name=RELATED_NAME,
         help_text=_('scrap procurement details makes by this order')
@@ -1535,7 +1535,7 @@ class ScrapOrderLine(models.Model, StateMachine):
         help_text=_('the quantity of item')
     )
 
-    procurement_detail = models.OneToOneField(
+    detail = models.OneToOneField(
         'stock.ProcurementDetail',
         null=True,
         blank=True,
@@ -1545,7 +1545,7 @@ class ScrapOrderLine(models.Model, StateMachine):
     )
 
     def __str__(self):
-        return '{}/{}'.format(self.order, self.procurement_detail)
+        return '{}/{}'.format(self.order, self.detail)
 
     class Meta:
         verbose_name = _('scrap order line'),
@@ -1559,7 +1559,7 @@ class ScrapOrderLine(models.Model, StateMachine):
         with transaction.atomic():
             zone = self.order.location.zone
             route = Route.get_default_route(zone.warehouse, '{}_scrap'.format(zone.usage))
-            self.procurement_detail = ProcurementDetail.objects.create(
+            self.detail = ProcurementDetail.objects.create(
                 procurement=self.order.procurement,
                 item=self.item,
                 quantity=self.quantity,
@@ -1576,7 +1576,7 @@ class ScrapOrderLine(models.Model, StateMachine):
         with transaction.atomic():
             from_location = self.order.location
             to_location = from_location.zone.warehouse.scrap_location
-            self.procurement_detail.start(from_location, to_location)
+            self.detail.start(from_location, to_location)
             return self
 
 
@@ -1617,7 +1617,7 @@ class CloseoutOrder(StockOrder):
     procurement_details = models.ManyToManyField(
         'stock.ProcurementDetail',
         through='stock.CloseoutOrderLine',
-        through_fields=('order', 'procurement_detail'),
+        through_fields=('order', 'detail'),
         verbose_name=_('procurement details'),
         related_name=RELATED_NAME,
         help_text=_('procurement details about closeout operation')
@@ -1631,7 +1631,7 @@ class CloseoutOrder(StockOrder):
         verbose_name_plural = _('closeout orders')
 
 
-class CloseoutOrderLine(models.Model):
+class CloseoutOrderLine(models.Model,StateMachine):
     '''
     order line of closeout
     '''
@@ -1644,7 +1644,7 @@ class CloseoutOrderLine(models.Model):
         help_text=_('closeout order')
     )
 
-    procurement_detail = models.OneToOneField(
+    detail = models.OneToOneField(
         'stock.ProcurementDetail',
         null=True,
         blank=True,
@@ -1672,7 +1672,7 @@ class CloseoutOrderLine(models.Model):
     )
 
     def __str__(self):
-        return '{}/{}'.format(self.order, self.procurement_detail)
+        return '{}/{}'.format(self.order, self.detail)
 
     class Meta:
         verbose_name = _('closeout order line')
@@ -1687,7 +1687,7 @@ class CloseoutOrderLine(models.Model):
             zone = self.order.location.zone
             route_label ='closeout_{}' if self.quantity > 0 else '{}_closeout'
             route = Route.get_default_route(zone.warehouse, route_label.format(zone.usage))
-            self.procurement_detail = ProcurementDetail.objects.create(
+            self.detail = ProcurementDetail.objects.create(
                 procurement=self.order.procurement,
                 item=self.item,
                 quantity=abs(self.quantity),
@@ -1705,9 +1705,124 @@ class CloseoutOrderLine(models.Model):
             from_location = self.order.location
             to_location = from_location.zone.warehouse.closeout_location
             if self.quantity > 0:
-                self.procurement_detail.start(to_location, from_location)
+                self.detail.start(to_location, from_location)
             else:
-                self.procurement_detail.start(from_location, to_location)
+                self.detail.start(from_location, to_location)
+            return self
+
+class RepairOrder(StockOrder):
+    '''
+    the order of make repair operation of item
+    '''
+    RELATED_NAME = 'repair_orders'
+    SINGLE_RELATED_NAME = 'repair_order'
+
+    procurement = ActiveLimitOneToOneField(
+        'stock.Procurement',
+        null=True,
+        blank=True,
+        verbose_name=_('procurement'),
+        related_name=SINGLE_RELATED_NAME,
+        help_text=_('the procurement about this order')
+    )
+
+    location = ActiveLimitForeignKey(
+        'stock.Location',
+        null=False,
+        blank=False,
+        verbose_name=_('location'),
+        related_name=RELATED_NAME,
+        help_text=_('the location to make operation')
+    )
+
+    create_user = models.ForeignKey(
+        User,
+        null=False,
+        blank=False,
+        verbose_name=_('create user'),
+        related_name=RELATED_NAME,
+        help_text=_('the user who create this pack order')
+    )
+
+    procurement_details = models.ManyToManyField(
+        'stock.ProcurementDetail',
+        through='stock.RepairOrderLine',
+        through_fields=('order', 'detail'),
+        verbose_name=_('procurement details'),
+        related_name=RELATED_NAME,
+        help_text=_('procurement details about repair operation')
+    )
+
+    def __str__(self):
+        return 'repair-order-{}'.format(self.location, self.pk)
+
+    class Meta:
+        verbose_name = _('repair order')
+        verbose_name_plural = _('repair orders')
+
+class RepairOrderLine(models.Model,StateMachine):
+    '''
+    order line of repair
+    '''
+    order = models.ForeignKey(
+        'stock.RepairOrder',
+        null=False,
+        blank=False,
+        verbose_name=_('repair order'),
+        related_name='lines',
+        help_text=_('repair order')
+    )
+
+    detail = models.OneToOneField(
+        'stock.ProcurementDetail',
+        null=True,
+        blank=True,
+        verbose_name=_('procurement detail'),
+        related_name='repair_order_lines',
+        help_text=_('procurement detail of repair')
+    )
+
+    item = ActiveLimitForeignKey(
+        'stock.Item',
+        null=False,
+        blank=False,
+        verbose_name=_('item'),
+        related_name='repair_order_lines',
+        help_text=_('the item which will be repair')
+    )
+
+    quantity = QuantityField(
+        _('quantity'),
+        null=False,
+        blank=False,
+        uom='item.instance.uom',
+        validators=[NotZeroValidator],
+        help_text=_('the quantity of item')
+    )
+
+    def __str__(self):
+        return '{}/{}'.format(self.order, self.detail)
+
+    class Meta:
+        verbose_name = _('closeout order line')
+        verbose_name_plural = _('closeout order lines')
+
+    def create_procurement_detail(self):
+        '''
+        create closeout order line and procurement detail
+        :return: stock.CloseoutOrderLine instance
+        '''
+        with transaction.atomic():
+            zone = self.order.location.zone
+            route_label ='repair_{}' if self.quantity > 0 else '{}_repair'
+            route = Route.get_default_route(zone.warehouse, route_label.format(zone.usage))
+            self.detail = ProcurementDetail.objects.create(
+                procurement=self.order.procurement,
+                item=self.item,
+                quantity=abs(self.quantity),
+                route=route
+            )
+            self.save()
             return self
 
 class InnerOrder(BaseModel):
