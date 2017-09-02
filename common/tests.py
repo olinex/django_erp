@@ -14,10 +14,10 @@ from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 from apps.stock.models import (
     Warehouse, Location, Route, Procurement, ProcurementDetail,
-    RouteZoneSetting,PackageType,PackageTypeItemSetting,
-    PackageTemplate, PackageTemplateItemSetting,PackageNode
+    RouteSetting,PackageType,PackageTypeSetting,
+    PackageTemplate, PackageTemplateSetting,PackageNode
 )
-from apps.account.models import Province, City, Region, Address, Company
+from apps.account.models import Province, City, Region, Address, Partner
 from apps.product.models import ProductCategory, ProductTemplate, UOM, Attribute, Lot
 
 User=get_user_model()
@@ -35,8 +35,6 @@ class EnvSetUpTestCase(TestCase):
             email='demouser@163.com',
             password=self.password)
         self.anon_user = AnonymousUser()
-        self.super_user.profile.is_partner = True
-        self.super_user.profile.save()
         self.province = Province.objects.create(
             country='China',
             name='province_test'
@@ -53,9 +51,9 @@ class EnvSetUpTestCase(TestCase):
             region=self.region,
             name='address_test'
         )
-        self.company = Company.objects.create(
-            name='company_test',
-            tel='12342342342'
+        self.partner = Partner.objects.create(
+            name='partner_test',
+            phone='12342342342'
         )
 
     def productSetUp(self):
@@ -80,7 +78,7 @@ class EnvSetUpTestCase(TestCase):
             category=self.category
         )
         self.template.attributes.add(self.attr)
-        self.product = self.template.products.first()
+        self.product = self.template.product_set.first()
         self.item = self.product.item
         self.lot = Lot.objects.create(
             name='lot_test',
@@ -93,19 +91,19 @@ class EnvSetUpTestCase(TestCase):
             manager=self.super_user,
             address=self.address
         )
-        self.zone_stock = self.warehouse.zones.get(usage='stock')
-        self.zone_check = self.warehouse.zones.get(usage='check')
-        self.zone_pack = self.warehouse.zones.get(usage='pack')
-        self.zone_wait = self.warehouse.zones.get(usage='wait')
-        self.zone_deliver = self.warehouse.zones.get(usage='deliver')
-        self.zone_customer = self.warehouse.zones.get(usage='customer')
-        self.zone_supplier = self.warehouse.zones.get(usage='supplier')
-        self.zone_produce = self.warehouse.zones.get(usage='produce')
-        self.zone_repair = self.warehouse.zones.get(usage='repair')
-        self.zone_scrap = self.warehouse.zones.get(usage='scrap')
-        self.zone_closeout = self.warehouse.zones.get(usage='closeout')
-        self.zone_initial = self.warehouse.zones.get(usage='initial')
-        self.zone_midway = self.warehouse.zones.get(usage='midway')
+        self.zone_stock = self.warehouse.zone_set.get(usage='stock')
+        self.zone_check = self.warehouse.zone_set.get(usage='check')
+        self.zone_pack = self.warehouse.zone_set.get(usage='pack')
+        self.zone_wait = self.warehouse.zone_set.get(usage='wait')
+        self.zone_deliver = self.warehouse.zone_set.get(usage='deliver')
+        self.zone_customer = self.warehouse.zone_set.get(usage='customer')
+        self.zone_supplier = self.warehouse.zone_set.get(usage='supplier')
+        self.zone_produce = self.warehouse.zone_set.get(usage='produce')
+        self.zone_repair = self.warehouse.zone_set.get(usage='repair')
+        self.zone_scrap = self.warehouse.zone_set.get(usage='scrap')
+        self.zone_closeout = self.warehouse.zone_set.get(usage='closeout')
+        self.zone_initial = self.warehouse.zone_set.get(usage='initial')
+        self.zone_midway = self.warehouse.zone_set.get(usage='midway')
         self.location_stock = Location.objects.create(
             zone=self.zone_stock,
             is_virtual=False,
@@ -198,34 +196,34 @@ class EnvSetUpTestCase(TestCase):
             route_type='produce_stock',
             sequence=1
         )
-        RouteZoneSetting.objects.bulk_create([
-            RouteZoneSetting(
+        RouteSetting.objects.bulk_create([
+            RouteSetting(
                 name=str(index),
                 route=self.route,
-                zone=getattr(self, zone),
+                zone=getattr(self, location),
                 sequence=index + 1
-            ) for index, zone in enumerate(['zone_pack', 'zone_check', 'zone_wait'])
+            ) for index, location in enumerate(['location_pack', 'location_pack', 'location_pack'])
         ])
         self.package_type = PackageType.objects.create(
             name='package_type_test'
         )
-        PackageTypeItemSetting.objects.bulk_create([
-            PackageTypeItemSetting(
+        PackageTypeSetting.objects.bulk_create([
+            PackageTypeSetting(
                 package_type=self.package_type,
                 item=product.item,
                 max_quantity=10
-            ) for product in self.template.products.all()
+            ) for product in self.template.product_set.all()
         ])
         self.package_template = PackageTemplate.objects.create(
             name='package_template_test',
             package_type=self.package_type
         )
-        PackageTemplateItemSetting.objects.bulk_create([
-            PackageTemplateItemSetting(
+        PackageTemplateSetting.objects.bulk_create([
+            PackageTemplateSetting(
                 package_template=self.package_template,
                 type_setting=setting,
                 quantity=9
-            ) for setting in self.package_type.item_settings.all()
+            ) for setting in self.package_type.packagetypesetting_set.all()
         ])
         self.package_node = PackageNode.objects.create(
             template=self.package_template

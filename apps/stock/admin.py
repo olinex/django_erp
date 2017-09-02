@@ -27,22 +27,22 @@ class MoveInline(CommonTabInLine):
         (None, {'fields': (
             'from_location', 'to_location',
             'to_move', 'procurement_detail',
-            'zone_setting', 'quantity', 'state'
+            'route_setting', 'quantity', 'state'
         )}),
     )
 
 
-class RouteZoneSettingInline(CommonTabInLine):
-    model = models.RouteZoneSetting
+class RouteSettingInline(CommonTabInLine):
+    model = models.RouteSetting
     fieldsets = (
         (None, {'fields': (
-            'route', 'zone', 'sequence'
+            'route', 'location', 'sequence'
         )}),
     )
 
 
-class PackageTypeItemSettingInline(CommonTabInLine):
-    model = models.PackageTypeItemSetting
+class PackageTypeSettingInline(CommonTabInLine):
+    model = models.PackageTypeSetting
     fieldsets = (
         (None, {'fields': (
             'package_type', 'item', 'max_quantity'
@@ -50,8 +50,8 @@ class PackageTypeItemSettingInline(CommonTabInLine):
     )
 
 
-class PackageTemplateItemSettingInline(CommonTabInLine):
-    model = models.PackageTemplateItemSetting
+class PackageTemplateSettingInline(CommonTabInLine):
+    model = models.PackageTemplateSetting
     fieldsets = (
         (None, {'fields': (
             'package_template', 'type_setting', 'quantity'
@@ -122,7 +122,7 @@ class RouteAdmin(CommonAdmin):
         )}),
     )
     inlines = (
-        RouteZoneSettingInline,
+        RouteSettingInline,
     )
 
 
@@ -133,7 +133,7 @@ class PackageTypeAdmin(CommonAdmin):
         (None, {'fields': ('name',)}),
     )
     inlines = (
-        PackageTypeItemSettingInline,
+        PackageTypeSettingInline,
     )
 
 
@@ -147,7 +147,7 @@ class PackageTemplateAdmin(CommonAdmin):
         (None, {'fields': ('name', 'package_type')}),
     )
     inlines = (
-        PackageTemplateItemSettingInline,
+        PackageTemplateSettingInline,
     )
 
 

@@ -3,18 +3,22 @@
 
 from django.conf import settings
 from django.db.models import Manager
+from django.utils.translation import ugettext_lazy as _
+from django.contrib.auth import get_user_model
 
 from apps.djangoperm import models
-from common.abstractModel import BaseModel
+from common.abstractModel import BaseModel, TreeModel
 from common.fields import ActiveLimitForeignKey, ActiveLimitOneToOneField, ActiveLimitManyToManyField
 
+User = get_user_model()
+
 COUNTRIES = (
-    ('China', '中国'),
+    ('China', _('China')),
 )
 
 
 class Province(models.Model):
-    '''省份'''
+    '''province'''
 
     class KeyManager(Manager):
         def get_by_natural_key(self, country, name):
@@ -23,25 +27,25 @@ class Province(models.Model):
     objects = KeyManager()
 
     country = models.CharField(
-        '国家',
+        _('country'),
         null=False,
         blank=False,
         choices=COUNTRIES,
         max_length=90,
-        help_text="省份的所属国家"
+        help_text=_("province's country")
     )
 
     name = models.CharField(
-        '名称',
+        _('name'),
         null=False,
         blank=False,
         max_length=90,
-        help_text="省份的名称"
+        help_text=_("the name of province")
     )
 
     class Meta:
-        verbose_name = '省份'
-        verbose_name_plural = '省份'
+        verbose_name = _('province')
+        verbose_name_plural = _('provinces')
         unique_together = ('country', 'name')
 
     def __str__(self):
@@ -52,7 +56,7 @@ class Province(models.Model):
 
 
 class City(models.Model):
-    '''城市'''
+    '''city'''
     class KeyManager(Manager):
         def get_by_natural_key(self,country,province,name):
             return self.get(
@@ -67,22 +71,21 @@ class City(models.Model):
         'account.Province',
         null=False,
         blank=False,
-        related_name='cities',
-        verbose_name='省份',
-        help_text="城市的所属省份"
+        verbose_name=_('province'),
+        help_text=_("the province of the city")
     )
 
     name = models.CharField(
-        '名称',
+        _('name'),
         null=False,
         blank=False,
         max_length=90,
-        help_text="城市的名称"
+        help_text=_("the name of city")
     )
 
     class Meta:
-        verbose_name = '城市'
-        verbose_name_plural = '城市'
+        verbose_name = _('city')
+        verbose_name_plural = _('cities')
         unique_together = ('province', 'name')
 
     def __str__(self):
@@ -94,7 +97,7 @@ class City(models.Model):
 
 
 class Region(models.Model):
-    '''地区'''
+    '''region'''
 
     class KeyManager(Manager):
         def get_by_natural_key(self,country,province,city,name):
@@ -109,22 +112,21 @@ class Region(models.Model):
         'account.City',
         null=False,
         blank=False,
-        related_name='regions',
-        verbose_name='城市',
-        help_text="地区的所属城市"
+        verbose_name=_('city'),
+        help_text=_("the city of the region")
     )
 
     name = models.CharField(
-        '名称',
+        _('name'),
         null=False,
         blank=False,
         max_length=90,
-        help_text="地区的名称"
+        help_text=_("the name of region")
     )
 
     class Meta:
-        verbose_name = '地区'
-        verbose_name_plural = '地区'
+        verbose_name = _('region')
+        verbose_name_plural = _('region')
         unique_together = ('city', 'name')
 
     def __str__(self):
@@ -136,27 +138,26 @@ class Region(models.Model):
 
 
 class Address(BaseModel):
-    '''顾客或公司的地址'''
+    '''the real address'''
     region = models.ForeignKey(
         'account.Region',
         null=False,
         blank=False,
-        related_name='addresses',
-        verbose_name='地区',
-        help_text="地址的所属地区"
+        verbose_name=_('region'),
+        help_text=_("the region of the address")
     )
 
     name = models.CharField(
-        '地址名称',
+        _('name'),
         null=False,
         blank=False,
         max_length=190,
-        help_text="特定地址的名称"
+        help_text=_("the name of the address")
     )
 
     class Meta:
-        verbose_name = '地址'
-        verbose_name_plural = '地址'
+        verbose_name = _('address')
+        verbose_name_plural = _('addresses')
         unique_together = ('region', 'name')
 
     def __str__(self):
@@ -166,172 +167,171 @@ class Address(BaseModel):
 class Profile(models.Model):
     '''用户的其他信息'''
     SEX_CHOICES = (
-        ('unknown', '未知'),
-        ('male', '男'),
-        ('female', '女'),
+        ('unknown', _('unknown')),
+        ('male', _('male')),
+        ('female', _('female')),
     )
 
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
+        User,
         primary_key=True,
-        verbose_name='绑定用户',
-        help_text='一对一绑定的相关django内置用户')
+        verbose_name=_('user'),
+        help_text=_('the unique user bind with profile')
+    )
 
     sex = models.CharField(
-        '性别',
+        _('sex'),
         null=False,
         default='unknown',
         max_length=10,
         choices=SEX_CHOICES,
-        help_text="用户的性别"
+        help_text=_("the sex of the user")
     )
 
     phone = models.CharField(
-        "移动电话",
+        _('phone'),
         max_length=11,
         null=True,
         blank=False,
         unique=True,
         default=None,
-        help_text="用户唯一的移动电话"
+        help_text=_("the user's phone number")
     )
 
     language = models.CharField(
-        '语言',
+        _('language'),
         null=True,
         blank=False,
         default='zh-han',
         max_length=20,
         choices=settings.LANGUAGES,
-        help_text="用户设置的默认语言"
+        help_text=_("user's mother language")
     )
 
     address = ActiveLimitOneToOneField(
         'account.Address',
         null=True,
         blank=True,
-        help_text='合作伙伴的所在地址'
+        verbose_name=_("address"),
+        related_name='locale_profiles',
+        help_text=_("use's locale address")
     )
 
     default_send_address = ActiveLimitForeignKey(
         'account.Address',
         null=True,
         blank=True,
+        verbose_name=_('default send address'),
         related_name='default_profiles',
-        verbose_name='默认地址',
-        help_text="合作伙伴设置的默认送货地址"
+        help_text=_("the default address which user wanted to reach the product")
     )
 
     usual_send_addresses = ActiveLimitManyToManyField(
         'account.Address',
         blank=True,
+        verbose_name=_('usual send address'),
         related_name='usual_profiles',
-        verbose_name='常用地址',
-        help_text="合作伙伴的常用送货地址"
+        help_text=_("addresses that will be usually use by user")
     )
 
     mail_notice = models.BooleanField(
-        '邮件提醒',
+        _('nail notice'),
         default=True,
-        help_text="站内邮件提醒状态,为True时,实时提醒用户有未读的新邮件"
+        help_text=_("True means that user will receive mail on the web")
     )
 
     online_notice = models.BooleanField(
-        '在线提醒',
+        _('online notice'),
         default=False,
-        help_text="在线提醒状态,为True时,其他用户可以接收该用户的在线状态,并告知其下线"
-    )
-
-    salable = models.BooleanField(
-        '可销售状态',
-        default=True,
-        help_text="合作伙伴是否可被销售货物"
-    )
-
-    purchasable = models.BooleanField(
-        '可采购状态',
-        default=False,
-        help_text="是否可向合作伙伴采购"
-    )
-
-    is_partner = models.BooleanField(
-        '是否为合作伙伴',
-        default=False,
-        help_text="表示用户是否为合作伙伴"
+        help_text=_("True means that user will tell others user's online status")
     )
 
     class Meta:
-        verbose_name = '用户其他资料'
-        verbose_name_plural = '用户其他资料'
+        verbose_name = _('user profile')
+        verbose_name_plural = _('user profiles')
 
     def __str__(self):
         return '{}-{}'.format(self.user.id, self.user.get_full_name() or self.user.get_username())
 
 
-class Company(BaseModel):
-    '''公司'''
+class Partner(BaseModel,TreeModel):
+    '''partner'''
     name = models.CharField(
-        '名称',
+        _('name'),
         null=False,
         blank=False,
         max_length=90,
-        help_text="公司的名称",
+        help_text=_("partner's name"),
     )
 
-    tel = models.CharField(
-        '电话',
+    phone = models.CharField(
+        _('phone'),
         null=False,
         blank=False,
         default='',
         max_length=32,
-        help_text='公司电话')
+        help_text=_('the phone of the partner')
+    )
 
     address = ActiveLimitOneToOneField(
         'account.Address',
-        verbose_name='公司地址',
         null=True,
         blank=True,
-        help_text='公司的所在地址,必须为公司对应合作伙伴的常用送货地址')
+        verbose_name=_('partner address'),
+        related_name='locale_partners',
+        help_text=_('the location address of the partner')
+    )
 
     default_send_address = ActiveLimitForeignKey(
         'account.Address',
         null=True,
         blank=True,
-        related_name='default_companies',
-        verbose_name='默认送货地址',
-        help_text="公司设置的默认送货地址"
+        verbose_name=_('default send address'),
+        related_name='default_partners',
+        help_text=_('the default address for partner to receive product')
     )
 
     usual_send_addresses = ActiveLimitManyToManyField(
         'account.Address',
-        related_name='usual_companies',
-        verbose_name='常用送货地址',
-        help_text="公司的常用送货地址"
+        verbose_name=_('usual send addresses'),
+        related_name='usual_partners',
+        help_text=_("addresses that will be usually use by user")
     )
 
-    belong_users = ActiveLimitManyToManyField(
-        settings.AUTH_USER_MODEL,
-        verbose_name='公司管理员',
-        related_name='belong_companies',
-        limit_choices_to={'is_active': True, 'is_superuser': False, 'is_staff': False},
-        help_text='管理公司的人员')
-
-    salable = models.BooleanField(
-        '可销售状态',
-        default=True,
-        help_text="公司是否可被销售货物"
+    managers = models.ManyToManyField(
+        User,
+        verbose_name=_('managers'),
+        help_text=_('users who are manager of this partner')
     )
 
-    purchasable = models.BooleanField(
-        '可采购状态',
+    is_company = models.BooleanField(
+        _('is company'),
         default=False,
-        help_text="是否可向公司采购"
+        help_text=_('the status of partner is a company')
+    )
+
+    sale_able = models.BooleanField(
+        _('sale status'),
+        default=True,
+        help_text=_('the status of partner whether can buy product')
+    )
+
+    purchase_able = models.BooleanField(
+        _('purchase status'),
+        default=False,
+        help_text=_('the status of partner whether can purchase product')
     )
 
     class Meta:
-        verbose_name = '公司'
-        verbose_name_plural = '公司'
+        verbose_name = _('partner')
+        verbose_name_plural = _('partners')
         unique_together = ('name', 'address')
 
     def __str__(self):
         return self.name
+
+
+
+
+
+

@@ -196,7 +196,7 @@ class PackOrderTestCase(EnvSetUpTestCase):
         self.assertTrue(self.pack_order.check_states('draft'))
         self.assertFalse(self.pack_order.check_states('confirmed'))
         self.assertFalse(self.pack_order.check_states('done'))
-        for product in self.template.products.all():
+        for product in self.template.product_set.all():
             self.assertEqual(self.location_pack.get_item_quantity(product.item), 0)
             self.assertEqual(self.location_closeout.get_item_quantity(product.item), 0)
         self.assertEqual(self.location_pack.get_item_quantity(self.package_node.item), 0)
@@ -207,7 +207,7 @@ class PackOrderTestCase(EnvSetUpTestCase):
         self.assertFalse(self.pack_order.check_states('draft'))
         self.assertTrue(self.pack_order.check_states('confirmed'))
         self.assertFalse(self.pack_order.check_states('done'))
-        for product in self.template.products.all():
+        for product in self.template.product_set.all():
             self.assertEqual(self.location_pack.get_item_quantity(product.item), 0)
             self.assertEqual(self.location_closeout.get_item_quantity(product.item), 0)
         self.assertEqual(self.location_pack.get_item_quantity(self.package_node.item), 0)
@@ -218,13 +218,195 @@ class PackOrderTestCase(EnvSetUpTestCase):
         self.assertFalse(self.pack_order.check_states('draft'))
         self.assertFalse(self.pack_order.check_states('confirmed'))
         self.assertTrue(self.pack_order.check_states('done'))
-        for product in self.template.products.all():
+        for product in self.template.product_set.all():
             self.assertEqual(self.location_pack.get_item_quantity(product.item), -9)
             self.assertEqual(self.location_closeout.get_item_quantity(product.item), 9)
         self.assertEqual(self.location_pack.get_item_quantity(self.package_node.item), 1)
         self.assertEqual(self.location_closeout.get_item_quantity(self.package_node.item), -1)
         self.assertTrue(self.pack_order.procurement.check_states('done'))
 
+
+class ScrapOrderTestCase(EnvSetUpTestCase):
+
+    def setUp(self):
+        self.accountSetUp()
+        self.productSetUp()
+        self.stockSetUp()
+        self.scrap_order_produce = models.ScrapOrder.objects.create(
+            location=self.location_produce,
+            create_user=self.super_user
+
+        )
+        models.ScrapOrderLine.objects.create(
+            order=self.scrap_order_produce,
+            item=self.item,
+            quantity=1
+        )
+        self.scrap_order_stock = models.ScrapOrder.objects.create(
+            location=self.location_stock,
+            create_user=self.super_user
+        )
+        models.ScrapOrderLine.objects.create(
+            order=self.scrap_order_stock,
+            item=self.item,
+            quantity=1
+        )
+        self.scrap_order_pack= models.ScrapOrder.objects.create(
+            location=self.location_pack,
+            create_user=self.super_user
+
+        )
+        models.ScrapOrderLine.objects.create(
+            order=self.scrap_order_pack,
+            item=self.item,
+            quantity=1
+        )
+        self.scrap_order_repair= models.ScrapOrder.objects.create(
+            location=self.location_repair,
+            create_user=self.super_user
+
+        )
+        models.ScrapOrderLine.objects.create(
+            order=self.scrap_order_repair,
+            item=self.item,
+            quantity=1
+        )
+        self.scrap_order_check= models.ScrapOrder.objects.create(
+            location=self.location_check,
+            create_user=self.super_user
+
+        )
+        models.ScrapOrderLine.objects.create(
+            order=self.scrap_order_check,
+            item=self.item,
+            quantity=1
+        )
+
+    def test_produce_confirm_to_done(self):
+        self.assertTrue(self.scrap_order_produce.check_states('draft'))
+        self.assertFalse(self.scrap_order_produce.check_states('confirmed'))
+        self.assertFalse(self.scrap_order_produce.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 0)
+        self.assertEqual(self.location_produce.get_item_quantity(self.item), 0)
+        self.assertEqual(self.scrap_order_produce.state,'draft')
+
+        self.assertEqual(self.scrap_order_produce.confirm(),self.scrap_order_produce)
+        self.scrap_produce_move = self.scrap_order_produce.scraporderline_set.first().detail.doing_move
+        self.assertFalse(self.scrap_order_produce.check_states('draft'))
+        self.assertTrue(self.scrap_order_produce.check_states('confirmed'))
+        self.assertFalse(self.scrap_order_produce.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 0)
+        self.assertEqual(self.location_produce.get_item_quantity(self.item), -1)
+        self.assertFalse(self.scrap_order_produce.procurement.check_states('done'))
+
+        self.scrap_produce_move.to_location = self.location_scrap
+        self.scrap_produce_move.save()
+        self.scrap_produce_move.done()
+        self.assertFalse(self.scrap_order_produce.check_states('draft'))
+        self.assertFalse(self.scrap_order_produce.check_states('confirmed'))
+        self.assertTrue(self.scrap_order_produce.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 1)
+        self.assertEqual(self.location_produce.get_item_quantity(self.item), -1)
+        self.assertTrue(self.scrap_order_produce.procurement.check_states('done'))
+        
+    def test_stock_confirm_to_done(self):
+        self.assertTrue(self.scrap_order_stock.check_states('draft'))
+        self.assertFalse(self.scrap_order_stock.check_states('confirmed'))
+        self.assertFalse(self.scrap_order_stock.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 0)
+        self.assertEqual(self.location_stock.get_item_quantity(self.item), 0)
+        self.assertEqual(self.scrap_order_stock.state, 'draft')
+
+        self.assertEqual(self.scrap_order_stock.confirm(), self.scrap_order_stock)
+        self.scrap_produce_move = self.scrap_order_stock.scraporderline_set.first().detail.doing_move
+        self.assertFalse(self.scrap_order_stock.check_states('draft'))
+        self.assertTrue(self.scrap_order_stock.check_states('confirmed'))
+        self.assertFalse(self.scrap_order_stock.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 0)
+        self.assertEqual(self.location_stock.get_item_quantity(self.item), -1)
+        self.assertFalse(self.scrap_order_stock.procurement.check_states('done'))
+
+        self.scrap_produce_move.to_location = self.location_scrap
+        self.scrap_produce_move.save()
+        self.scrap_produce_move.done()
+        self.assertFalse(self.scrap_order_stock.check_states('draft'))
+        self.assertFalse(self.scrap_order_stock.check_states('confirmed'))
+        self.assertTrue(self.scrap_order_stock.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 1)
+        self.assertEqual(self.location_stock.get_item_quantity(self.item), -1)
+        self.assertTrue(self.scrap_order_stock.procurement.check_states('done'))
+
+    def test_pack_confirm_to_done(self):
+        self.assertTrue(self.scrap_order_pack.check_states('draft'))
+        self.assertFalse(self.scrap_order_pack.check_states('confirmed'))
+        self.assertFalse(self.scrap_order_pack.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 0)
+        self.assertEqual(self.location_pack.get_item_quantity(self.item), 0)
+        self.assertEqual(self.scrap_order_pack.state, 'draft')
+
+        self.assertEqual(self.scrap_order_pack.confirm(), self.scrap_order_pack)
+        self.scrap_produce_move = self.scrap_order_pack.scraporderline_set.first().detail.doing_move
+        self.assertFalse(self.scrap_order_pack.check_states('draft'))
+        self.assertTrue(self.scrap_order_pack.check_states('confirmed'))
+        self.assertFalse(self.scrap_order_pack.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 0)
+        self.assertEqual(self.location_pack.get_item_quantity(self.item), -1)
+        self.assertFalse(self.scrap_order_pack.procurement.check_states('done'))
+
+        self.scrap_produce_move.to_location = self.location_scrap
+        self.scrap_produce_move.save()
+        self.scrap_produce_move.done()
+        self.assertFalse(self.scrap_order_pack.check_states('draft'))
+        self.assertFalse(self.scrap_order_pack.check_states('confirmed'))
+        self.assertTrue(self.scrap_order_pack.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 1)
+        self.assertEqual(self.location_pack.get_item_quantity(self.item), -1)
+        self.assertTrue(self.scrap_order_pack.procurement.check_states('done'))
+        
+    def test_repair_confirm_to_done(self):
+        self.assertTrue(self.scrap_order_check.check_states('draft'))
+        self.assertFalse(self.scrap_order_check.check_states('confirmed'))
+        self.assertFalse(self.scrap_order_check.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 0)
+        self.assertEqual(self.location_check.get_item_quantity(self.item), 0)
+        self.assertEqual(self.scrap_order_check.state, 'draft')
+
+        self.assertEqual(self.scrap_order_check.confirm(), self.scrap_order_check)
+        self.scrap_produce_move = self.scrap_order_check.scraporderline_set.first().detail.doing_move
+        self.assertFalse(self.scrap_order_check.check_states('draft'))
+        self.assertTrue(self.scrap_order_check.check_states('confirmed'))
+        self.assertFalse(self.scrap_order_check.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 0)
+        self.assertEqual(self.location_check.get_item_quantity(self.item), -1)
+        self.assertFalse(self.scrap_order_check.procurement.check_states('done'))
+
+        self.scrap_produce_move.to_location = self.location_scrap
+        self.scrap_produce_move.save()
+        self.scrap_produce_move.done()
+        self.assertFalse(self.scrap_order_check.check_states('draft'))
+        self.assertFalse(self.scrap_order_check.check_states('confirmed'))
+        self.assertTrue(self.scrap_order_check.check_states('done'))
+        self.assertEqual(self.location_scrap.get_item_quantity(self.item), 1)
+        self.assertEqual(self.location_check.get_item_quantity(self.item), -1)
+        self.assertTrue(self.scrap_order_check.procurement.check_states('done'))
+        self.assertFalse(self.scrap_order_pack.check_states('confirmed'))
+
+
+class CloseoutOrderTestCase(EnvSetUpTestCase):
+
+    def setUp(self):
+        self.accountSetUp()
+        self.productSetUp()
+        self.stockSetUp()
+        self.closeout_order = models.CloseoutOrder.objects.create(
+            location=self.location_stock,
+            create_user=self.super_user
+        )
+        models.CloseoutOrderLine.objects.create(
+            order=self.closeout_order,
+            item=self.item,
+            quantity=1
+        )
 
 class WarehouseTestCase(EnvSetUpTestCase):
 
@@ -241,7 +423,7 @@ class WarehouseTestCase(EnvSetUpTestCase):
         )
         self.procurement.confirm()
         self.procurement_detail.start(self.location_produce)
-        self.move = self.procurement_detail.moves.first()
+        self.move = self.procurement_detail.move_set.first()
 
     def test_get_default_location(self):
         for usage in models.Zone.INDIVISIBLE_USAGE:

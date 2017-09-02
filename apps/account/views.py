@@ -3,6 +3,7 @@
 
 from django.contrib.auth import get_user_model
 from django.shortcuts import render
+from django.utils.translation import ugettext_lazy as _
 from rest_framework import status, permissions
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
@@ -30,7 +31,7 @@ class UserViewSet(PermMethodViewSet):
     @list_route(['get'])
     def myself(self, request):
         '''
-        获取用户当前自身的数据
+        get user's self information
         '''
         return Response(self.get_serializer(instance=request.user).data)
 
@@ -41,7 +42,7 @@ class UserViewSet(PermMethodViewSet):
     )
     def login(self, request):
         '''
-        通过ajax登录
+        ajax login api
         '''
         from django.contrib.auth import login
         from django.contrib.auth.forms import AuthenticationForm
@@ -51,7 +52,7 @@ class UserViewSet(PermMethodViewSet):
             login(request, user)
             return Response(serializers.UserSerializer(instance=user).data)
         return Response(
-            {'detail': '认证未通过'},
+            {'detail': _('authentication failed')},
             status=status.HTTP_401_UNAUTHORIZED
         )
 
@@ -64,7 +65,7 @@ class UserViewSet(PermMethodViewSet):
         '''
         from django.contrib.auth import logout
         logout(request)
-        return Response({'detail': '成功登出'})
+        return Response({'detail': _('logout successfully')})
 
     @detail_route(
         ['post'],
@@ -76,15 +77,11 @@ class UserViewSet(PermMethodViewSet):
             instance=instance,
             data=request.data
         )
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(
-                {'detail': '密码修改成功'},
-                status=status.HTTP_202_ACCEPTED
-            )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(
-            {'detail': '验证错误'},
-            status=status.HTTP_403_FORBIDDEN
+            {'detail': _('password changed successfully')},
+            status=status.HTTP_202_ACCEPTED
         )
 
 
@@ -111,9 +108,9 @@ class AddressViewSet(BaseViewSet):
     serializer_class = serializers.AddressSerializer
 
 
-class CompanyViewSet(BaseViewSet):
-    model = models.Company
-    serializer_class = serializers.CompanySerializer
+class PartnerViewSet(BaseViewSet):
+    model = models.Partner
+    serializer_class = serializers.PartnerSerializer
 
 
 class ProfileViewSet(PermMethodViewSet):

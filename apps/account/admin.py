@@ -66,21 +66,20 @@ class RegionAdmin(admin.ModelAdmin):
         AddressInline,
     )
 
-@admin.register(models.Company)
-class CompanyAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'tel', 'address', 'salable', 'purchasable')
+@admin.register(models.Partner)
+class PartnerAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'phone', 'address','is_company','sale_able','purchase_able')
     list_display_links = ('id',)
-    list_filter = ('salable', 'purchasable')
-    search_fields = ('name', 'tel', 'address__name')
-    list_editable = ('name', 'tel', 'salable', 'purchasable')
+    list_filter = ('is_company','sale_able','purchase_able')
+    search_fields = ('name', 'phone', 'address__name')
+    list_editable = ('name', 'phone')
     fieldsets = (
         (None, {'fields': (
-            'name', 'tel', 'address',
+            'name', 'phone', 'address',
             'default_send_address',
             'usual_send_addresses',
-            'is_active',
-            'belong_users',
-            ('salable', 'purchasable'),
+            'is_active','managers',
+            ('is_company','sale_able','purchase_able')
         )}),
     )
 
@@ -88,21 +87,19 @@ class CompanyAdmin(admin.ModelAdmin):
 class ProfileAdmin(admin.ModelAdmin):
     list_display = (
         'user', 'sex', 'phone', 'online_notice', 'mail_notice', 'language',
-        'address', 'default_send_address', 'is_partner', 'purchasable', 'salable'
+        'address', 'default_send_address',
     )
     list_filter = (
-        'sex', 'online_notice', 'mail_notice', 'is_partner', 'purchasable', 'salable'
+        'sex', 'online_notice', 'mail_notice'
     )
     search_fields = ('phone', 'user__username')
     list_per_page = 20
     list_editable = (
-        'phone', 'sex', 'online_notice', 'mail_notice',
-        'language', 'is_partner', 'purchasable', 'salable'
+        'phone', 'sex', 'online_notice', 'mail_notice','language'
     )
     fieldsets = (
         (None, {'fields': (
             'user', 'sex', 'phone', 'language', ('online_notice', 'mail_notice'),
             'address','default_send_address','usual_send_addresses',
-            ('salable','purchasable','is_partner')
         )}),
     )

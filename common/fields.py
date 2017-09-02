@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 from apps.djangoperm import models
+from common.validators import ActiveStateValidator
 
 
 class ActiveLimitForeignKey(models.ForeignKey):
@@ -10,6 +11,7 @@ class ActiveLimitForeignKey(models.ForeignKey):
     def __init__(self, *args, **kwargs):
         kwargs['limit_choices_to'] = kwargs.get('limit_choices_to', {'is_delete': False, 'is_active': True})
         kwargs['on_delete'] = kwargs.get('on_delete', models.PROTECT)
+        kwargs['validators'] = kwargs.get('validators', [ActiveStateValidator])
         super(ActiveLimitForeignKey, self).__init__(*args, **kwargs)
 
 
@@ -18,6 +20,8 @@ class ActiveLimitOneToOneField(models.OneToOneField):
 
     def __init__(self, *args, **kwargs):
         kwargs['limit_choices_to'] = kwargs.get('limit_choices_to', {'is_delete': False, 'is_active': True})
+        kwargs['on_delete'] = kwargs.get('on_delete', models.PROTECT)
+        kwargs['validators'] = kwargs.get('validators', [ActiveStateValidator])
         super(ActiveLimitOneToOneField, self).__init__(*args, **kwargs)
 
 

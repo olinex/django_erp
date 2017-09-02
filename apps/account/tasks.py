@@ -17,7 +17,7 @@ def send_email(
         auth_password=settings.EMAIL_HOST_PASSWORD,
         fail_silently=False,context=None
 ):
-    '''通过celery异步队列调用的邮件发送器'''
+    '''send email by using celery with broken'''
     from django.core.mail import send_mail
     from django.template import loader
     default = {'title':title,'message':message,'username':username}

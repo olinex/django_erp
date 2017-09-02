@@ -5,7 +5,8 @@ from decimal import Decimal as D
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q, F
+from django.db.models import Q, F, Value
+from django.db.models.functions import Concat
 from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
@@ -13,9 +14,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.core.validators import MinValueValidator
 
 from apps.djangoperm import models
-from .utils import LocationForeignKey
+from .utils import LocationForeignKey,INITIAL_ROUTE_SEQUENCE,END_ROUTE_SEQUENCE
 from apps.product.models import Product
-from apps.account.utils import PartnerForeignKey
 from apps.product.utils import QuantityField
 from common import Redis
 from common.abstractModel import BaseModel, TreeModel
@@ -26,9 +26,10 @@ from common.fields import (
     CancelableSimpleStateCharField
 )
 from common.state import Statement, StateMachine
-from common.validators import NotZeroValidator
+from common.validators import NotZeroValidator, StateInstanceValidator
 
-User =get_user_model()
+
+User = get_user_model()
 
 
 class CacheItem(object):
@@ -46,7 +47,7 @@ class CacheItem(object):
     ALL_ITEM_NAME_TEMPLATE = 'all_item_{}'
     LOCK_ITEM_NAME_TEMPLATE = 'lock_item_{}'
     NOW_ITEM_NAME_TEMPLATE = 'now_item_{}'
-    QUANTITY_TYPE = {'now','lock','all'}
+    QUANTITY_TYPE = {'now', 'lock', 'all'}
 
     def __init__(self, item):
         '''
@@ -61,8 +62,7 @@ class CacheItem(object):
         :param item: stock.Item instance
         :return: string
         '''
-        return getattr(cls,'{}_ITEM_NAME_TEMPLATE'.format(quantity_type.upper())).format(item.pk)
-
+        return getattr(cls, '{}_ITEM_NAME_TEMPLATE'.format(quantity_type.upper())).format(item.pk)
 
     def cache_name(self, quantity_type='now'):
         '''
@@ -75,7 +75,7 @@ class CacheItem(object):
     def change_lock_name(self):
         return '{}_changed'.format(self.cache_name('now'))
 
-    def get_quantity(self, *usages,quantity_type='now'):
+    def get_quantity(self, *usages, quantity_type='now'):
         '''
         sum of item quantities figure out by set of usage
         :param usages: set or string
@@ -89,54 +89,54 @@ class CacheItem(object):
             if quantity_type == 'now' and redis.get(self.change_lock_name):
                 redis.zunionstore(
                     self.cache_name(quantity_type='now'),
-                    keys={self.cache_name('all'):1, self.cache_name('lock'):-1}
+                    keys={self.cache_name('all'): 1, self.cache_name('lock'): -1}
                 )
-                redis.setnx(self.change_lock_name,0)
-            return redis.zscore_sum(self.cache_name(quantity_type),*usages_set)
-        raise NotInStates(_('usage'),_('unknown usage'))
+                redis.setnx(self.change_lock_name, 0)
+            return redis.zscore_sum(self.cache_name(quantity_type), *usages_set)
+        raise NotInStates(_('usage'), _('unknown usage'))
 
     def all(self, quantity_type='now'):
         '''
         sum of item in all zones
         :return: decimal
         '''
-        return self.get_quantity(*self.ALL,quantity_type=quantity_type)
+        return self.get_quantity(*self.ALL, quantity_type=quantity_type)
 
     def settled(self, quantity_type='now'):
         '''
         sum of item in settled zones
         :return: decimal
         '''
-        return self.get_quantity(*self.SETTLED,quantity_type=quantity_type)
+        return self.get_quantity(*self.SETTLED, quantity_type=quantity_type)
 
     def transporting(self, quantity_type='now'):
         '''
         sum of item in transporting zones
         :return: decimal
         '''
-        return self.get_quantity(*self.TRANSPORTING,quantity_type=quantity_type)
+        return self.get_quantity(*self.TRANSPORTING, quantity_type=quantity_type)
 
     def scrap(self, quantity_type='now'):
         '''
         sum of item in scrap zones
         :return: decimal
         '''
-        return self.get_quantity(*self.SCRAP,quantity_type=quantity_type)
+        return self.get_quantity(*self.SCRAP, quantity_type=quantity_type)
 
     def repair(self, quantity_type='now'):
         '''
         sum of item in repair zones
         :return: decimal
         '''
-        return self.get_quantity(*self.REPAIR,quantity_type=quantity_type)
+        return self.get_quantity(*self.REPAIR, quantity_type=quantity_type)
 
     def closeout(self, quantity_type='now'):
         '''
         sum of item in closeout zones
         :return: decimal
         '''
-        return self.get_quantity(*self.CLOSEOUT,quantity_type=quantity_type)
-    
+        return self.get_quantity(*self.CLOSEOUT, quantity_type=quantity_type)
+
     def _change(self, usage, quantity, quantity_type, pipe=None):
         '''
         increase of decrease the quantity of item in the zone of usage
@@ -146,20 +146,20 @@ class CacheItem(object):
         :return: 0 or 1
         '''
         if usage in Zone.States.USAGE_STATES.keys():
-            if quantity_type in ('all','lock'):
+            if quantity_type in ('all', 'lock'):
                 redis = pipe or Redis()
                 result = redis.zincrby(self.cache_name(quantity_type=quantity_type), usage, quantity)
                 if result:
-                    redis.setnx(self.change_lock_name,1)
+                    redis.setnx(self.change_lock_name, 1)
                 return result
             raise AttributeError(quantity_type + _(' must be "all" or "lock".'))
         raise AttributeError(usage + _(' is unknown usage of zone.'))
 
     def refresh(self, usage, quantity, pipe=None):
-        return self._change(usage,quantity,quantity_type='all',pipe=pipe)
-    
+        return self._change(usage, quantity, quantity_type='all', pipe=pipe)
+
     def lock(self, usage, quantity, pipe=None):
-        return self._change(usage,quantity,quantity_type='lock',pipe=pipe)
+        return self._change(usage, quantity, quantity_type='lock', pipe=pipe)
 
     def sync(self):
         '''
@@ -170,7 +170,7 @@ class CacheItem(object):
         pipe = redis.pipeline()
         watch_keys = Warehouse.leaf_child_locations_cache_name
         pipe.watch(watch_keys)
-        pipe.delete(self.cache_name('now'),self.cache_name('all'),self.cache_name('lock'))
+        pipe.delete(self.cache_name('now'), self.cache_name('all'), self.cache_name('lock'))
         for warehouse in Warehouse.get_state_queryset('active'):
             for usage in Zone.States.USAGE_STATES.keys():
                 all_quantity = warehouse.get_item_quantity(
@@ -205,7 +205,7 @@ class CacheLocation(object):
         self.location = location
 
     @classmethod
-    def location_name(cls,location):
+    def location_name(cls, location):
         '''
         the name of location in redis as key
         :param location: stock.Location
@@ -220,7 +220,7 @@ class CacheLocation(object):
         :return: string
         '''
         return self.location_name(self.location)
-    
+
     def _change(self, item, quantity, quantity_type, pipe=None):
         '''
         increase of decrease the quantity of item in the location
@@ -238,10 +238,10 @@ class CacheLocation(object):
         )
 
     def refresh(self, item, quantity, pipe=None):
-        return self._change(item,quantity,quantity_type='all',pipe=pipe)
+        return self._change(item, quantity, quantity_type='all', pipe=pipe)
 
     def lock(self, item, quantity, pipe=None):
-        return self._change(item,quantity,quantity_type='lock',pipe=pipe)
+        return self._change(item, quantity, quantity_type='lock', pipe=pipe)
 
     def free_all(self, item, pipe=None):
         '''
@@ -253,9 +253,8 @@ class CacheLocation(object):
         redis = pipe or Redis()
         return redis.zrem(
             self.cache_name,
-            CacheItem.item_name(item,quantity_type='lock')
+            CacheItem.item_name(item, quantity_type='lock')
         )
-
 
     def sync(self):
         '''
@@ -280,7 +279,6 @@ class PackageType(BaseModel):
     '''
     the type of package which define it name,the name must be unique
     '''
-    RELATED_NAME = 'package_types'
 
     name = models.CharField(
         _('name'),
@@ -294,10 +292,9 @@ class PackageType(BaseModel):
     items = models.ManyToManyField(
         'stock.Item',
         blank=False,
-        through='stock.PackageTypeItemSetting',
+        through='stock.PackageTypeSetting',
         through_fields=('package_type', 'item'),
         verbose_name=_('items'),
-        related_name=RELATED_NAME,
         help_text=_('the packable items of package')
     )
 
@@ -309,18 +306,16 @@ class PackageType(BaseModel):
         verbose_name_plural = _('package types')
 
 
-class PackageTypeItemSetting(models.Model, StateMachine):
+class PackageTypeSetting(models.Model, StateMachine):
     '''
     Constraint sets the maximum number of packages
     '''
-    RELATED_NAME = 'item_settings'
 
     package_type = ActiveLimitForeignKey(
         'stock.PackageType',
         null=False,
         blank=False,
         verbose_name=_('package type'),
-        related_name=RELATED_NAME,
         help_text=_('the type of package which settings belongs to')
     )
 
@@ -329,7 +324,6 @@ class PackageTypeItemSetting(models.Model, StateMachine):
         null=False,
         blank=False,
         verbose_name=_('item'),
-        related_name=RELATED_NAME,
         help_text=_('the item which can be packed in this type of package')
     )
 
@@ -350,8 +344,8 @@ class PackageTypeItemSetting(models.Model, StateMachine):
         )
 
     class Meta:
-        verbose_name = _('item setting of package type')
-        verbose_name_plural = _('item settings of package type')
+        verbose_name = _('setting of package type')
+        verbose_name_plural = _('settings of package type')
         unique_together = (
             ('package_type', 'item'),
         )
@@ -367,7 +361,6 @@ class PackageTemplate(BaseModel):
     '''
     the template of package type
     '''
-    RELATED_NAME = 'package_templates'
 
     name = models.CharField(
         _('name'),
@@ -383,17 +376,15 @@ class PackageTemplate(BaseModel):
         null=False,
         blank=False,
         verbose_name=_('package type'),
-        related_name=RELATED_NAME,
         help_text=_('the package type of this template,constraint max number of item')
     )
 
     type_settings = models.ManyToManyField(
-        'stock.PackageTypeItemSetting',
+        'stock.PackageTypeSetting',
         blank=False,
-        through='stock.PackageTemplateItemSetting',
+        through='stock.PackageTemplateSetting',
         through_fields=('package_template', 'type_setting'),
         verbose_name=_('the type settings of package'),
-        related_name=RELATED_NAME,
         help_text=_('the type settings of package which constraint max number of item')
     )
 
@@ -405,27 +396,24 @@ class PackageTemplate(BaseModel):
         verbose_name_plural = _('package templates')
 
 
-class PackageTemplateItemSetting(models.Model):
+class PackageTemplateSetting(models.Model):
     '''
     the setting which set the number of item in the package
     '''
-    RELATED_NAME = 'template_settings'
 
     package_template = ActiveLimitForeignKey(
         'stock.PackageTemplate',
         null=False,
         blank=False,
         verbose_name=_('package template'),
-        related_name=RELATED_NAME,
         help_text=_('the package template which setting belongs to')
     )
 
     type_setting = models.ForeignKey(
-        'stock.PackageTypeItemSetting',
+        'stock.PackageTypeSetting',
         null=False,
         blank=False,
         verbose_name=_('package type setting'),
-        related_name=RELATED_NAME,
         help_text=_('the package type setting will constraint the max number of item of this template setting')
     )
 
@@ -453,7 +441,7 @@ class PackageTemplateItemSetting(models.Model):
         )
 
 
-class PackageNode(TreeModel,StateMachine):
+class PackageNode(TreeModel, StateMachine):
     '''
     package node,every node contain an package template
     '''
@@ -463,7 +451,6 @@ class PackageNode(TreeModel,StateMachine):
         null=False,
         blank=False,
         verbose_name=_('package template'),
-        related_name='package_nodes',
         help_text=_('package template in the package tree')
     )
 
@@ -493,7 +480,6 @@ class Warehouse(BaseModel):
     '''
     warehouse have different zones
     '''
-    RELATED_NAME = 'warehouses'
 
     name = models.CharField(
         _('name'),
@@ -503,11 +489,11 @@ class Warehouse(BaseModel):
         help_text=_('the name of warehouse')
     )
 
-    manager = PartnerForeignKey(
+    manager = models.ForeignKey(
+        User,
         null=False,
         blank=False,
         verbose_name=_('partner manage user'),
-        related_name=RELATED_NAME,
         help_text=_('partner user can manage this warehouse')
     )
 
@@ -516,7 +502,6 @@ class Warehouse(BaseModel):
         null=False,
         blank=False,
         verbose_name=_('address'),
-        related_name=RELATED_NAME,
         help_text=_('the real address of warehouse')
     )
 
@@ -618,7 +603,7 @@ class Warehouse(BaseModel):
         '''
         return [location.cache.cache_name for location in self.leaf_child_locations]
 
-    def get_item_quantity(self, item, usage,quantity_type='now',pipe=None):
+    def get_item_quantity(self, item, usage, quantity_type='now', pipe=None):
         '''
         return the item quantity in usage
         :param item: stock.Item instance
@@ -640,7 +625,6 @@ class Zone(BaseModel):
     '''
     zone in warehouse,every zone has it's own type
     '''
-    RELATED_NAME = 'zones'
     LAYOUT_USAGE = (
         ('stock', _('keep stock zone')),
         ('check', _('zone for checking')),
@@ -663,7 +647,6 @@ class Zone(BaseModel):
         null=False,
         blank=False,
         verbose_name=_('warehouse'),
-        related_name=RELATED_NAME,
         help_text=_('the warehouse zone belongs to')
     )
 
@@ -677,7 +660,7 @@ class Zone(BaseModel):
         help_text=_('the usage of zone')
     )
 
-    root_location = ActiveLimitForeignKey(
+    root_location = ActiveLimitOneToOneField(
         'stock.Location',
         null=True,
         blank=True,
@@ -730,7 +713,7 @@ class Zone(BaseModel):
             'midway': midway
         }
 
-    def get_item_quantity(self, item, quantity_type='now',pipe=None):
+    def get_item_quantity(self, item, quantity_type='now', pipe=None):
         '''
         get quantity of item in this zone
         :param item: stock.item instance
@@ -753,7 +736,6 @@ class Location(BaseModel, TreeModel):
         null=False,
         blank=False,
         verbose_name=_('zone'),
-        related_name='locations',
         help_text=_('the zone which contain this location')
     )
 
@@ -796,7 +778,6 @@ class Location(BaseModel, TreeModel):
         '''
         return CacheLocation.location_name(self)
 
-
     def __str__(self):
         return str(self.zone) + '(X:{},Y:{},Z:{})'.format(
             self.x,
@@ -824,6 +805,19 @@ class Location(BaseModel, TreeModel):
         virtual = Statement(inherits=active, is_virtual=True)
         no_virtual = Statement(inherits=active, is_virtual=False)
         root = Statement(inherits=virtual, parent_node=None)
+        stock = Statement(Q(zone_usage='stock'),inherits=no_virtual)
+        check = Statement(Q(zone_usage='check'),inherits=no_virtual)
+        pack = Statement(Q(zone_usage='pack'),inherits=no_virtual)
+        wait = Statement(Q(zone_usage='wait'),inherits=no_virtual)
+        deliver = Statement(Q(zone_usage='deliver'),inherits=no_virtual)
+        customer = Statement(Q(zone_usage='customer'),inherits=no_virtual)
+        supplier = Statement(Q(zone_usage='supplier'),inherits=no_virtual)
+        produce = Statement(Q(zone_usage='produce'),inherits=no_virtual)
+        repair = Statement(Q(zone_usage='repair'),inherits=no_virtual)
+        scrap = Statement(Q(zone_usage='scrap'),inherits=no_virtual)
+        closeout = Statement(Q(zone_usage='closeout'),inherits=no_virtual)
+        initial = Statement(Q(zone_usage='initial'),inherits=no_virtual)
+        midway = Statement(Q(zone_usage='midway'),inherits=no_virtual)
 
     def change_parent_node(self, node):
         '''
@@ -834,7 +828,6 @@ class Location(BaseModel, TreeModel):
         :return: self
         '''
         if self.zone == node.zone:
-            redis = Redis()
             node.check_states('virtual', raise_exception=True)
             self.check_states('active', raise_exception=True)
             return super(Location, self).change_parent_node(node)
@@ -888,7 +881,7 @@ class Location(BaseModel, TreeModel):
             from_location=self,
             procurement_detail__item=item
         ).aggregate(out_sum=Sum('quantity'))['out_sum'] or D(0)
-    
+
     def get_item_quantity(self, item, quantity_type='now', pipe=None):
         '''
         get the quantity of item in type
@@ -956,16 +949,14 @@ class Move(BaseModel):
         'stock.ProcurementDetail',
         blank=False,
         verbose_name=_('procurement detail'),
-        related_name='moves',
         help_text=_('the procurement detail which create this move')
     )
 
-    zone_setting = models.ForeignKey(
-        'stock.RouteZoneSetting',
+    route_setting = models.ForeignKey(
+        'stock.RouteSetting',
         null=False,
         blank=False,
         verbose_name=_('route zone setting'),
-        related_name='moves',
         help_text=_('moves will be create according to the route,each move has it own zone setting')
     )
 
@@ -998,21 +989,32 @@ class Move(BaseModel):
     class Meta:
         verbose_name = _('stock move')
         verbose_name_plural = _('stock moves')
-        unique_together = ('procurement_detail', 'zone_setting', 'is_return')
+        unique_together = ('procurement_detail', 'route_setting', 'is_return')
 
     class States(BaseModel.States):
         active = BaseModel.States.active
         draft = Statement(inherits=active, state='draft')
         confirmed = Statement(inherits=active, state='confirmed')
         doing = Statement(Q(state='draft') | Q(state='confirmed'), inherits=active)
-        done_able = Statement(Q(to_location__zone=F('zone_setting__zone')),inherits=confirmed)
+        done_able = Statement(
+            (
+                Q(to_location__zone=F('route_setting__zone')) &
+                (
+                    Q(to_location=F('route_setting__location')) |
+                    Q(to_loation__index__startswith=Concat(
+                        F('route_setting__location__index'),Value('-'),F('route_setting__location__pk')
+                    ))
+                )
+            ),
+            inherits=confirmed
+        )
         done = Statement(inherits=active, state='done')
-        cancel_able = Statement(Q(procurement_detail__procurement__state='cancel'),inherits=draft)
-        cancel = Statement(inherits=active,state='cancel')
+        cancel_able = Statement(Q(procurement_detail__procurement__state='cancel'), inherits=draft)
+        cancel = Statement(inherits=active, state='cancel')
         is_return = Statement(inherits=active, is_return=True)
         no_return = Statement(inherits=active, is_return=False)
 
-    def refresh_lock_item_quantity(self,pipe=None,reverse=False):
+    def refresh_lock_item_quantity(self, pipe=None, reverse=False):
         '''
         increase/decrease the lock number of item in the zone
         :return: 0 or 1
@@ -1040,7 +1042,7 @@ class Move(BaseModel):
             quantity=self.quantity,
             pipe=pipe
         )
-        self.refresh_lock_item_quantity(pipe=pipe,reverse=True)
+        self.refresh_lock_item_quantity(pipe=pipe, reverse=True)
         if self.from_location.zone.usage != self.to_location.zone.usage:
             self.procurement_detail.item.cache.refresh(self.from_location.zone.usage, -self.quantity, pipe=pipe)
             self.procurement_detail.item.cache.refresh(self.to_location.zone.usage, self.quantity, pipe=pipe)
@@ -1079,30 +1081,29 @@ class Move(BaseModel):
         '''
         is_cancel = self.check_states('cancel')
         procurement_cancel = self.procurement_detail.procurement.check_states('cancel')
-        next_zone_setting = self.procurement_detail.route.next_zone_setting(
-            now_zone_setting=(
+        next_route_setting = self.procurement_detail.route.next_route_setting(
+            now_route_setting=(
                 None if (procurement_cancel and self.procurement_detail.direct_return)
-                else self.zone_setting
+                else self.route_setting
             ),
             reverse=procurement_cancel
         )
         if is_cancel:
-            next_zone_setting = self.procurement_detail.route.next_zone_setting(
-                now_zone_setting=next_zone_setting,
+            next_route_setting = self.procurement_detail.route.next_route_setting(
+                now_route_setting=next_route_setting,
                 reverse=procurement_cancel
             )
-        if next_zone_setting:
+        if next_route_setting:
             return (Move(
                 from_location=self.to_location if not is_cancel else self.from_location,
                 to_location=None,
-                zone_setting=next_zone_setting,
+                route_setting=next_route_setting,
                 procurement_detail=self.procurement_detail,
                 quantity=self.quantity,
                 is_return=procurement_cancel,
                 state='draft'
-            ),is_cancel,procurement_cancel)
-        return (None,is_cancel,procurement_cancel)
-
+            ), is_cancel, procurement_cancel)
+        return (None, is_cancel, procurement_cancel)
 
     def done(self):
         '''
@@ -1115,9 +1116,9 @@ class Move(BaseModel):
         :return: self
         '''
         with transaction.atomic():
-            self.check_to_set_state('confirmed', set_state='done', raise_exception=True)
+            self.check_to_set_state('done_able', set_state='done', raise_exception=True)
             procurement = self.procurement_detail.procurement
-            move,cancel_status,procurement_cancel = self.get_next_move()
+            move, cancel_status, procurement_cancel = self.get_next_move()
             self.refresh_item_quantity()
             if move:
                 move.save()
@@ -1125,10 +1126,10 @@ class Move(BaseModel):
                 self.save()
                 move.confirm()
             elif Move.check_state_queryset(
-                'done',
-                Move.objects.filter(procurement_detail__procurement=procurement)
+                    'done',
+                    Move.objects.filter(procurement_detail__procurement=procurement)
             ) and not procurement_cancel and not ProcurementDetail.objects.filter(
-                moves__isnull=True,procurement=procurement).exists():
+                move__isnull=True, procurement=procurement).exists():
                 procurement.set_state('done')
             return self
 
@@ -1158,64 +1159,18 @@ class Move(BaseModel):
 #     '''物料表单'''
 #     pass
 #
-# class RepairOrder(StockOrder):
-#     '''维修表单'''
-#     pass
-#
-# class ScrapOrder(BaseModel):
-#     '''报废表单'''
-#     pass
-
-class StockOrder(BaseModel):
-    '''
-    the abstract order to manage stock operation
-    '''
-    @property
-    def state(self):
-        '''
-        the status of order,same as the procurement status
-        :return: string
-        '''
-        if self.procurement:
-            return self.procurement.state
-        return 'draft'
-
-    class Meta:
-        abstract = True
-
-    class States(BaseModel.States):
-        draft = Statement(Q(procurement__isnull=True),inherits=BaseModel.States.active)
-        confirmed = Statement(Q(procurement__state='confirmed'),inherits=BaseModel.States.active)
-        done = Statement(Q(procurement__state='done'),inherits=BaseModel.States.active)
-
-    def confirm(self):
-        '''
-        change the status of procurement from draft to confirmed
-        :return: self
-        '''
-        with transaction.atomic():
-            self.check_states('draft',raise_exception=True)
-            self.procurement = Procurement.objects.create(user=self.create_user)
-            self.save()
-            for line in self.lines.all():
-                line.create_procurement_detail()
-            self.procurement.confirm()
-            return self
 
 
-class PackOrder(StockOrder):
+class PackOrder(BaseModel):
     '''
     the order to manage packing operation
     '''
-    RELATED_NAME = 'pack_orders'
-    SINGLE_RELATED_NAME = 'pack_order'
 
     procurement = ActiveLimitOneToOneField(
         'stock.Procurement',
         null=True,
         blank=True,
         verbose_name=_('procurement'),
-        related_name=SINGLE_RELATED_NAME,
         help_text=_('the procurement about this order')
     )
 
@@ -1224,7 +1179,7 @@ class PackOrder(StockOrder):
         null=False,
         blank=False,
         verbose_name=_('location'),
-        related_name=RELATED_NAME,
+        validators=[StateInstanceValidator('pack')],
         help_text=_('the location to make operation')
     )
 
@@ -1233,7 +1188,6 @@ class PackOrder(StockOrder):
         null=False,
         blank=False,
         verbose_name=_('create user'),
-        related_name=RELATED_NAME,
         help_text=_('the user who create this pack order')
     )
 
@@ -1248,17 +1202,45 @@ class PackOrder(StockOrder):
         through='stock.PackOrderLine',
         through_fields=('order', 'package_node'),
         verbose_name=_('package nodes'),
-        related_name='pack_orders',
         help_text=_('all kinds of package node will be pack/unpack')
     )
 
+    @property
+    def state(self):
+        '''
+        the status of order,same as the procurement status
+        :return: string
+        '''
+        if self.procurement:
+            return self.procurement.state
+        return 'draft'
+
     def __str__(self):
-        return 'pack-order-{}-{}'.format(self.location,self.pk)
+        return 'pack-order-{}-{}'.format(self.location, self.pk)
 
     class Meta:
         verbose_name = _('pack order')
         verbose_name_plural = _('pack orders')
 
+    class States(BaseModel.States):
+        draft = Statement(Q(procurement__isnull=True), inherits=BaseModel.States.active)
+        confirm_able = Statement(Q(packorderline__isnull=False), inherits=draft)
+        confirmed = Statement(Q(procurement__state='confirmed'), inherits=BaseModel.States.active)
+        done = Statement(Q(procurement__state='done'), inherits=BaseModel.States.active)
+
+    def confirm(self):
+        '''
+        change the status of procurement from draft to confirmed
+        :return: self
+        '''
+        with transaction.atomic():
+            self.check_states('confirm_able', raise_exception=True)
+            self.procurement = Procurement.objects.create(user=self.create_user)
+            self.save()
+            for line in self.packorderline_set.all():
+                line.create_procurement_detail()
+            self.procurement.confirm()
+            return self
 
 class PackOrderLine(models.Model, StateMachine):
     '''
@@ -1270,7 +1252,6 @@ class PackOrderLine(models.Model, StateMachine):
         null=False,
         blank=False,
         verbose_name=_('pack order'),
-        related_name='lines',
         help_text=_('pack order')
     )
 
@@ -1279,7 +1260,6 @@ class PackOrderLine(models.Model, StateMachine):
         null=False,
         blank=False,
         verbose_name=_('package node'),
-        related_name='pack_order_lines',
         limit_choices_to=PackageNode.States.root.query,
         help_text=_('package node the procurement will be pack/unpack')
     )
@@ -1294,10 +1274,9 @@ class PackOrderLine(models.Model, StateMachine):
 
     procurement_details = models.ManyToManyField(
         'stock.ProcurementDetail',
-        through='stock.PackOrderLineProcurementDetailSetting',
+        through='stock.PackOrderLineSetting',
         through_fields=('line', 'detail'),
         verbose_name=_('procurement details'),
-        related_name='pack_order_lines',
         help_text=_('the procurement details about the package node')
     )
 
@@ -1307,7 +1286,7 @@ class PackOrderLine(models.Model, StateMachine):
         the procurement detail about package node
         :return: stock.ProcurementDetail instance
         '''
-        return self.procurement_details.get(item=self.package_node.item)
+        return self.procurement_details.filter(item=self.package_node.item).first()
 
     @property
     def item_details(self):
@@ -1332,28 +1311,28 @@ class PackOrderLine(models.Model, StateMachine):
         '''
         warehouse = self.order.location.zone.warehouse
         route = Route.get_default_route(warehouse, 'pack_closeout' if self.order.is_pack else 'closeout_pack')
-        for setting in self.package_node.template.template_settings.all():
+        for setting in self.package_node.template.packagetemplatesetting_set.all():
             detail = ProcurementDetail.objects.create(
                 procurement=self.order.procurement,
                 item=setting.type_setting.item,
                 quantity=setting.quantity * self.quantity,
                 route=route
             )
-            PackOrderLineProcurementDetailSetting.objects.create(
+            PackOrderLineSetting.objects.create(
                 line=self,
                 node=self.package_node,
                 template_setting=setting,
                 detail=detail
             )
         for node in self.package_node.all_child_nodes:
-            for setting in node.template.template_settings.all():
+            for setting in node.template.package_template_setting_set.all():
                 detail = ProcurementDetail.objects.create(
                     procurement=self.order.procurement,
                     item=setting.type_setting.item,
                     quantity=setting.quantiy * self.quantity,
                     route=route
                 )
-                PackOrderLineProcurementDetailSetting.objects.create(
+                PackOrderLineSetting.objects.create(
                     line=self,
                     detail=detail,
                     node=node,
@@ -1374,7 +1353,7 @@ class PackOrderLine(models.Model, StateMachine):
             quantity=self.quantity,
             route=route
         )
-        PackOrderLineProcurementDetailSetting.objects.create(
+        PackOrderLineSetting.objects.create(
             line=self,
             detail=detail,
             node=self.package_node,
@@ -1403,19 +1382,16 @@ class PackOrderLine(models.Model, StateMachine):
             return self
 
 
-class PackOrderLineProcurementDetailSetting(models.Model):
+class PackOrderLineSetting(models.Model):
     '''
     config the one to many relationship with pack order line and procurement detail
     '''
-    RELATED_NAME = 'pack_detail_settings'
-    SINGLE_RELATED_NAME = 'pack_detail_setting'
 
     line = models.ForeignKey(
         'stock.PackOrderLine',
         null=False,
         blank=False,
         verbose_name=_('pack order line'),
-        related_name=RELATED_NAME,
         help_text=_('the pack order line which procurement detail bind with')
     )
 
@@ -1424,7 +1400,6 @@ class PackOrderLineProcurementDetailSetting(models.Model):
         null=False,
         blank=False,
         verbose_name=_('procurement detail'),
-        related_name=SINGLE_RELATED_NAME,
         help_text=_('procurement detail bind with pack order line which config the package node')
     )
 
@@ -1433,16 +1408,14 @@ class PackOrderLineProcurementDetailSetting(models.Model):
         null=False,
         blank=False,
         verbose_name=_('package node'),
-        related_name=RELATED_NAME,
         help_text=_('package node which procurement detail was created by')
     )
 
     template_setting = models.ForeignKey(
-        'stock.PackageTemplateItemSetting',
+        'stock.PackageTemplateSetting',
         null=True,
         blank=True,
         verbose_name=_('package template setting'),
-        related_name=RELATED_NAME,
         help_text=_('package template setting about packing item')
     )
 
@@ -1454,17 +1427,14 @@ class PackOrderLineProcurementDetailSetting(models.Model):
         verbose_name_plural = _('pack order line - procurement detail relationships')
 
 
-class ScrapOrder(StockOrder):
+class ScrapOrder(BaseModel):
     '''the order to manage scrap operation'''
-    RELATED_NAME = 'scrap_orders'
-    SINGLE_RELATED_NAME = 'scrap_order'
 
     procurement = ActiveLimitOneToOneField(
         'stock.Procurement',
         null=True,
         blank=True,
         verbose_name=_('procurement'),
-        related_name=SINGLE_RELATED_NAME,
         help_text=_('the procurement about this order')
     )
 
@@ -1473,7 +1443,9 @@ class ScrapOrder(StockOrder):
         null=False,
         blank=False,
         verbose_name=_('location'),
-        related_name=RELATED_NAME,
+        validators=[StateInstanceValidator(
+            'pack','produce','stock','repair','check'
+        )],
         help_text=_('the location to make operation')
     )
 
@@ -1482,8 +1454,19 @@ class ScrapOrder(StockOrder):
         null=False,
         blank=False,
         verbose_name=_('create user'),
-        related_name=RELATED_NAME,
-        help_text=_('the user who create this pack order')
+        help_text=_('the user who create this order')
+    )
+
+    route = ActiveLimitForeignKey(
+        'stock.Route',
+        null=True,
+        blank=False,
+        verbose_name=_('scrap route'),
+        validators=[StateInstanceValidator(
+            'produce_scrap','stock_scrap','pack_scrap',
+            'repair_scrap','check_scrap'
+        )],
+        help_text=_('the route for order')
     )
 
     procurement_details = models.ManyToManyField(
@@ -1491,16 +1474,47 @@ class ScrapOrder(StockOrder):
         through='stock.ScrapOrderLine',
         through_fields=('order', 'detail'),
         verbose_name=_('procurement details'),
-        related_name=RELATED_NAME,
         help_text=_('scrap procurement details makes by this order')
     )
 
+    @property
+    def state(self):
+        '''
+        the status of order,same as the procurement status
+        :return: string
+        '''
+        if self.procurement:
+            return self.procurement.state
+        return 'draft'
+
     def __str__(self):
-        return 'scrap-order-{}-{}'.format(self.location,self.pk)
+        return 'scrap-order-{}-{}'.format(self.location, self.pk)
 
     class Meta:
         verbose_name = _('scrap order')
         verbose_name_plural = _('scrap orders')
+
+    class States(BaseModel.States):
+        draft = Statement(Q(procurement__isnull=True), inherits=BaseModel.States.active)
+        confirm_able = Statement(Q(scraporderline__isnull=False), inherits=draft)
+        confirmed = Statement(Q(procurement__state='confirmed'), inherits=BaseModel.States.active)
+        done = Statement(Q(procurement__state='done'), inherits=BaseModel.States.active)
+
+    def confirm(self):
+        '''
+        change the status of procurement from draft to confirmed
+        :return: self
+        '''
+        with transaction.atomic():
+            self.check_states('confirm_able', raise_exception=True)
+            self.procurement = Procurement.objects.create(user=self.create_user)
+            self.save()
+            for line in self.scraporderline_set.all():
+                line.create_procurement_detail()
+            self.procurement.confirm()
+            for line in self.scraporderline_set.all():
+                line.start()
+            return self
 
 
 class ScrapOrderLine(models.Model, StateMachine):
@@ -1508,12 +1522,11 @@ class ScrapOrderLine(models.Model, StateMachine):
     the scrap order line bind to procurement detail
     '''
 
-    order = models.ForeignKey(
+    order = ActiveLimitForeignKey(
         'stock.ScrapOrder',
         null=False,
         blank=False,
         verbose_name=_('scrap order'),
-        related_name='lines',
         help_text=_('scrap order')
     )
 
@@ -1522,7 +1535,6 @@ class ScrapOrderLine(models.Model, StateMachine):
         null=False,
         blank=False,
         verbose_name=_('item'),
-        related_name='scrap_order_lines',
         help_text=_('the item which will be scraped')
     )
 
@@ -1540,7 +1552,6 @@ class ScrapOrderLine(models.Model, StateMachine):
         null=True,
         blank=True,
         verbose_name=_('procurement detail'),
-        related_name='scrap_order_lines',
         help_text=_('the procurement detail which order line bind with')
     )
 
@@ -1550,6 +1561,7 @@ class ScrapOrderLine(models.Model, StateMachine):
     class Meta:
         verbose_name = _('scrap order line'),
         verbose_name_plural = _('scrap order lines')
+        unique_together = ('order','item')
 
     def create_procurement_detail(self):
         '''
@@ -1557,13 +1569,11 @@ class ScrapOrderLine(models.Model, StateMachine):
         :return: stock.ScrapOrderLine instance
         '''
         with transaction.atomic():
-            zone = self.order.location.zone
-            route = Route.get_default_route(zone.warehouse, '{}_scrap'.format(zone.usage))
             self.detail = ProcurementDetail.objects.create(
                 procurement=self.order.procurement,
                 item=self.item,
                 quantity=self.quantity,
-                route=route
+                route=self.order.route
             )
             self.save()
             return self
@@ -1571,28 +1581,23 @@ class ScrapOrderLine(models.Model, StateMachine):
     def start(self):
         '''
         start moving the scrap procurement detail item
-        :return:
+        :return: stock.Move instance
         '''
         with transaction.atomic():
             from_location = self.order.location
-            to_location = from_location.zone.warehouse.scrap_location
-            self.detail.start(from_location, to_location)
-            return self
+            return self.detail.start(from_location)
 
 
-class CloseoutOrder(StockOrder):
+class CloseoutOrder(BaseModel):
     '''
     the order to manage closeout operation
     '''
-    RELATED_NAME= 'closeout_orders'
-    SINGLE_RELATED_NAME = 'closeout_order'
 
     procurement = ActiveLimitOneToOneField(
         'stock.Procurement',
         null=True,
         blank=True,
         verbose_name=_('procurement'),
-        related_name=SINGLE_RELATED_NAME,
         help_text=_('the procurement about this order')
     )
 
@@ -1601,7 +1606,7 @@ class CloseoutOrder(StockOrder):
         null=False,
         blank=False,
         verbose_name=_('location'),
-        related_name=RELATED_NAME,
+        validators=[StateInstanceValidator('stock')],
         help_text=_('the location to make operation')
     )
 
@@ -1610,7 +1615,6 @@ class CloseoutOrder(StockOrder):
         null=False,
         blank=False,
         verbose_name=_('create user'),
-        related_name=RELATED_NAME,
         help_text=_('the user who create this pack order')
     )
 
@@ -1619,28 +1623,57 @@ class CloseoutOrder(StockOrder):
         through='stock.CloseoutOrderLine',
         through_fields=('order', 'detail'),
         verbose_name=_('procurement details'),
-        related_name=RELATED_NAME,
         help_text=_('procurement details about closeout operation')
     )
 
+    @property
+    def state(self):
+        '''
+        the status of order,same as the procurement status
+        :return: string
+        '''
+        if self.procurement:
+            return self.procurement.state
+        return 'draft'
+
     def __str__(self):
-        return 'closeout-order-{}'.format(self.location,self.pk)
+        return 'closeout-order-{}'.format(self.location, self.pk)
 
     class Meta:
         verbose_name = _('closeout order')
         verbose_name_plural = _('closeout orders')
 
+    class States(BaseModel.States):
+        draft = Statement(Q(procurement__isnull=True), inherits=BaseModel.States.active)
+        confirm_able = Statement(Q(closeoutorderline__isnull=False), inherits=draft)
+        confirmed = Statement(Q(procurement__state='confirmed'), inherits=BaseModel.States.active)
+        done = Statement(Q(procurement__state='done'), inherits=BaseModel.States.active)
 
-class CloseoutOrderLine(models.Model,StateMachine):
+    def confirm(self):
+        '''
+        change the status of procurement from draft to confirmed
+        :return: self
+        '''
+        with transaction.atomic():
+            self.check_states('confirm_able', raise_exception=True)
+            self.procurement = Procurement.objects.create(user=self.create_user)
+            self.save()
+            for line in self.closeoutorderline_set.all():
+                line.create_procurement_detail()
+            self.procurement.confirm()
+            for line in self.closeoutorderline_set.all():
+                line.done()
+            return self
+
+class CloseoutOrderLine(models.Model, StateMachine):
     '''
     order line of closeout
     '''
-    order = models.ForeignKey(
+    order = ActiveLimitForeignKey(
         'stock.CloseoutOrder',
         null=False,
         blank=False,
         verbose_name=_('closeout order'),
-        related_name='lines',
         help_text=_('closeout order')
     )
 
@@ -1649,7 +1682,6 @@ class CloseoutOrderLine(models.Model,StateMachine):
         null=True,
         blank=True,
         verbose_name=_('procurement detail'),
-        related_name='closeout_order_lines',
         help_text=_('procurement detail of closeout')
     )
 
@@ -1658,7 +1690,6 @@ class CloseoutOrderLine(models.Model,StateMachine):
         null=False,
         blank=False,
         verbose_name=_('item'),
-        related_name='closeout_order_lines',
         help_text=_('the item which will be closeout')
     )
 
@@ -1677,6 +1708,7 @@ class CloseoutOrderLine(models.Model,StateMachine):
     class Meta:
         verbose_name = _('closeout order line')
         verbose_name_plural = _('closeout order lines')
+        unique_together = ('order', 'item')
 
     def create_procurement_detail(self):
         '''
@@ -1685,7 +1717,7 @@ class CloseoutOrderLine(models.Model,StateMachine):
         '''
         with transaction.atomic():
             zone = self.order.location.zone
-            route_label ='closeout_{}' if self.quantity > 0 else '{}_closeout'
+            route_label = 'closeout_{}' if self.quantity > 0 else '{}_closeout'
             route = Route.get_default_route(zone.warehouse, route_label.format(zone.usage))
             self.detail = ProcurementDetail.objects.create(
                 procurement=self.order.procurement,
@@ -1696,7 +1728,7 @@ class CloseoutOrderLine(models.Model,StateMachine):
             self.save()
             return self
 
-    def start(self):
+    def done(self):
         '''
         start to move closeout procurement detail item
         :return:
@@ -1705,24 +1737,22 @@ class CloseoutOrderLine(models.Model,StateMachine):
             from_location = self.order.location
             to_location = from_location.zone.warehouse.closeout_location
             if self.quantity > 0:
-                self.detail.start(to_location, from_location)
+                self.detail.start(to_location, from_location).done()
             else:
-                self.detail.start(from_location, to_location)
+                self.detail.start(from_location, to_location).done()
             return self
 
-class RepairOrder(StockOrder):
+
+class RepairOrder(BaseModel):
     '''
     the order of make repair operation of item
     '''
-    RELATED_NAME = 'repair_orders'
-    SINGLE_RELATED_NAME = 'repair_order'
 
     procurement = ActiveLimitOneToOneField(
         'stock.Procurement',
         null=True,
         blank=True,
         verbose_name=_('procurement'),
-        related_name=SINGLE_RELATED_NAME,
         help_text=_('the procurement about this order')
     )
 
@@ -1731,8 +1761,24 @@ class RepairOrder(StockOrder):
         null=False,
         blank=False,
         verbose_name=_('location'),
-        related_name=RELATED_NAME,
+        validators=[StateInstanceValidator(
+            'produce','stock','pack','check','customer'
+        )],
         help_text=_('the location to make operation')
+    )
+
+    route = ActiveLimitForeignKey(
+        'stock.Route',
+        null=False,
+        blank=False,
+        verbose_name=_('route'),
+        validators=[StateInstanceValidator(
+            'produce_repair', 'repair_produce',
+            'pack_repair', 'repair_pack',
+            'customer_repair','repair_customer',
+            'stock_repair','repair_stock',
+            'check_repair','repair_check'
+        )],
     )
 
     create_user = models.ForeignKey(
@@ -1740,7 +1786,6 @@ class RepairOrder(StockOrder):
         null=False,
         blank=False,
         verbose_name=_('create user'),
-        related_name=RELATED_NAME,
         help_text=_('the user who create this pack order')
     )
 
@@ -1749,9 +1794,18 @@ class RepairOrder(StockOrder):
         through='stock.RepairOrderLine',
         through_fields=('order', 'detail'),
         verbose_name=_('procurement details'),
-        related_name=RELATED_NAME,
         help_text=_('procurement details about repair operation')
     )
+
+    @property
+    def state(self):
+        '''
+        the status of order,same as the procurement status
+        :return: string
+        '''
+        if self.procurement:
+            return self.procurement.state
+        return 'draft'
 
     def __str__(self):
         return 'repair-order-{}'.format(self.location, self.pk)
@@ -1760,16 +1814,43 @@ class RepairOrder(StockOrder):
         verbose_name = _('repair order')
         verbose_name_plural = _('repair orders')
 
-class RepairOrderLine(models.Model,StateMachine):
+    class States(BaseModel.States):
+        draft = Statement(Q(procurement__isnull=True), inherits=BaseModel.States.active)
+        confirm_able = Statement(
+            (Q(location__zone__usage='produce') & Q(route__route_type__in=('produce_repair', 'repair_produce'))) |
+            (Q(location__zone__usage='stock') & Q(route__route_type__in=('stock_repair', 'repair_stock'))) |
+            (Q(location__zone__usage='pack') & Q(route__route_type__in=('pack_repair', 'repair_pack'))) |
+            (Q(location__zone__usage='check') & Q(route__route_type__in=('check_repair', 'repair_check'))) |
+            (Q(location__zone__usage='customer') & Q(route__route_type__in=('customer_repair', 'repair_customer'))),
+            inherits=draft
+        )
+        confirmed = Statement(Q(procurement__state='confirmed'), inherits=BaseModel.States.active)
+        done = Statement(Q(procurement__state='done'), inherits=BaseModel.States.active)
+
+    def confirm(self):
+        '''
+        change the status of procurement from draft to confirmed
+        :return: self
+        '''
+        with transaction.atomic():
+            self.check_states('confirm_able', raise_exception=True)
+            self.procurement = Procurement.objects.create(user=self.create_user)
+            self.save()
+            for line in self.repairorderline_set.all():
+                line.create_procurement_detail()
+            self.procurement.confirm()
+            return self
+
+
+class RepairOrderLine(models.Model, StateMachine):
     '''
     order line of repair
     '''
-    order = models.ForeignKey(
+    order = ActiveLimitForeignKey(
         'stock.RepairOrder',
         null=False,
         blank=False,
         verbose_name=_('repair order'),
-        related_name='lines',
         help_text=_('repair order')
     )
 
@@ -1778,7 +1859,6 @@ class RepairOrderLine(models.Model,StateMachine):
         null=True,
         blank=True,
         verbose_name=_('procurement detail'),
-        related_name='repair_order_lines',
         help_text=_('procurement detail of repair')
     )
 
@@ -1787,7 +1867,6 @@ class RepairOrderLine(models.Model,StateMachine):
         null=False,
         blank=False,
         verbose_name=_('item'),
-        related_name='repair_order_lines',
         help_text=_('the item which will be repair')
     )
 
@@ -1804,8 +1883,9 @@ class RepairOrderLine(models.Model,StateMachine):
         return '{}/{}'.format(self.order, self.detail)
 
     class Meta:
-        verbose_name = _('closeout order line')
-        verbose_name_plural = _('closeout order lines')
+        verbose_name = _('repair order line')
+        verbose_name_plural = _('repair order lines')
+        unique_together = ('order', 'item')
 
     def create_procurement_detail(self):
         '''
@@ -1813,29 +1893,64 @@ class RepairOrderLine(models.Model,StateMachine):
         :return: stock.CloseoutOrderLine instance
         '''
         with transaction.atomic():
-            zone = self.order.location.zone
-            route_label ='repair_{}' if self.quantity > 0 else '{}_repair'
-            route = Route.get_default_route(zone.warehouse, route_label.format(zone.usage))
             self.detail = ProcurementDetail.objects.create(
                 procurement=self.order.procurement,
                 item=self.item,
                 quantity=abs(self.quantity),
-                route=route
+                route=self.order.route,
             )
             self.save()
             return self
 
-class InnerOrder(BaseModel):
+
+class PickOrder(BaseModel):
     ''''''
-    RELATED_NAME = 'inner_orders'
 
     procurement = ActiveLimitOneToOneField(
         'stock.Procurement',
+        null=True,
+        blank=True,
+        verbose_name=_('procurement'),
+        help_text=_('the procurement about this order')
+    )
+
+    location = ActiveLimitForeignKey(
+        'stock.Location',
         null=False,
         blank=False,
-        verbose_name=_('procurement'),
-        related_name=RELATED_NAME,
-        help_text=_('the procurement about this order')
+        verbose_name=_('location'),
+        validators=[StateInstanceValidator(
+            'pack', 'produce', 'stock', 'repair', 'check'
+        )],
+        help_text=_('the location to make operation')
+    )
+
+    create_user = models.ForeignKey(
+        User,
+        null=False,
+        blank=False,
+        verbose_name=_('create user'),
+        help_text=_('the user who create this order')
+    )
+
+    route = ActiveLimitForeignKey(
+        'stock.Route',
+        null=True,
+        blank=False,
+        verbose_name=_('scrap route'),
+        validators=[StateInstanceValidator(
+            'produce_stock', 'stock_scrap', 'pack_scrap',
+            'produce_customer', 'check_scrap'
+        )],
+        help_text=_('the route for order to scrap')
+    )
+
+    procurement_details = models.ManyToManyField(
+        'stock.ProcurementDetail',
+        through='stock.PickOrderLine',
+        through_fields=('order', 'detail'),
+        verbose_name=_('procurement details'),
+        help_text=_('scrap procurement details makes by this order')
     )
 
     @classmethod
@@ -1865,25 +1980,24 @@ class InnerOrder(BaseModel):
     def __str__(self):
         return 'inner-order-{}'.format(self.pk)
 
-class InnerOrderLine(models.Model,StateMachine):
+
+class PickOrderLine(models.Model, StateMachine):
     '''
     inner order line for make moving according inner route
     '''
     order = ActiveLimitForeignKey(
-        'stock.InnerOrder',
+        'stock.PickOrder',
         null=False,
         blank=False,
         verbose_name=_('inner order'),
-        related_name='lines',
         help_text=_('inner order which this order line belongs to')
     )
 
-    procurement_detail = models.OneToOneField(
+    detail = models.OneToOneField(
         'stock.ProcurementDetail',
         null=False,
         blank=False,
         verbose_name=_('procurement detail'),
-        related_name='inner_order_lines',
         help_text=_('the procurement detail which order line bind with')
     )
 
@@ -1902,57 +2016,58 @@ class InnerOrderLine(models.Model,StateMachine):
         with transaction.atomic():
             from_location = self.order.scrap_location
             to_location = from_location.zone.warehouse.scrap_location
-            self.procurement_detail.start(from_location,to_location)
+            self.procurement_detail.start(from_location, to_location)
             return self
 
+
 class Route(BaseModel):
-    ROUTE_TYPE = (
-        ('produce_stock',       _('produce to stock route')),
-        ('produce_customer',    _('produce to customer route')),
-        ('produce_pack',        _('produce to pack route')),
-        ('produce_closeout',    _('produce to closeout route')),
-        ('produce_produce',     _('produce to produce route')),
-        ('produce_repair',      _('produce to repair route')),
-        ('produce_scrap',       _('produce to scrap route')),
-
-        ('stock_stock',         _('stock to stock route')),
-        ('stock_customer',      _('stock to customer route')),
-        ('stock_pack',          _('stock to pack route')),
-        ('stock_closeout',      _('stock to closeout route')),
-        ('stock_produce',       _('stock to produce route')),
-        ('stock_repair',        _('stock to repair route')),
-        ('stock_scrap',         _('stock to scrap route')),
-
-        ('pack_stock',          _('pack to stock route')),
-        ('pack_customer',       _('pack to customer route')),
-        ('pack_pack',           _('pack to pack route')),
-        ('pack_closeout',       _('pack to closeout route')),
-        ('pack_produce',        _('pack to produce route')),
-        ('pack_repair',         _('pack to repair route')),
-        ('pack_scrap',          _('pack to scrap route')),
-
-        ('closeout_stock',      _('closeout to stock route')),
-        ('closeout_pack',       _('closeout to pack route')),
-        ('closeout_produce',    _('closeout to produce route')),
-
-        ('supplier_stock',      _('supplier to stock route')),
-        ('supplier_pack',       _('supplier to pack route')),
-        ('supplier_produce',    _('supplier to produce route')),
-
-        ('repair_stock',        _('repair to stock route')),
-        ('repair_customer',     _('repair to customer route')),
-        ('repair_pack',         _('repair to pack route')),
-        ('repair_produce',      _('repair to produce route')),
-        ('repair_scrap',        _('repair to scrap route')),
-
-        ('scrap_repair',        _('scrap to repair route')),
-        ('customer_repair',     _('customer to repair route')),
-        ('check_repair',        _('check to repair route')),
-        ('check_scrap',         _('check to scrap route')),
-    )
     '''
     the route of zone to chain together
     '''
+    ROUTE_TYPE = (
+        ('produce_stock', _('produce to stock route')),
+        ('produce_customer', _('produce to customer route')),
+        ('produce_pack', _('produce to pack route')),
+        ('produce_closeout', _('produce to closeout route')),
+        ('produce_produce', _('produce to produce route')),
+        ('produce_repair', _('produce to repair route')),
+        ('produce_scrap', _('produce to scrap route')),
+
+        ('stock_stock', _('stock to stock route')),
+        ('stock_customer', _('stock to customer route')),
+        ('stock_pack', _('stock to pack route')),
+        ('stock_closeout', _('stock to closeout route')),
+        ('stock_produce', _('stock to produce route')),
+        ('stock_repair', _('stock to repair route')),
+        ('stock_scrap', _('stock to scrap route')),
+
+        ('pack_stock', _('pack to stock route')),
+        ('pack_customer', _('pack to customer route')),
+        ('pack_pack', _('pack to pack route')),
+        ('pack_closeout', _('pack to closeout route')),
+        ('pack_produce', _('pack to produce route')),
+        ('pack_repair', _('pack to repair route')),
+        ('pack_scrap', _('pack to scrap route')),
+
+        ('closeout_stock', _('closeout to stock route')),
+        ('closeout_pack', _('closeout to pack route')),
+        ('closeout_produce', _('closeout to produce route')),
+
+        ('supplier_stock', _('supplier to stock route')),
+        ('supplier_pack', _('supplier to pack route')),
+        ('supplier_produce', _('supplier to produce route')),
+
+        ('repair_stock', _('repair to stock route')),
+        ('repair_customer', _('repair to customer route')),
+        ('repair_pack', _('repair to pack route')),
+        ('repair_produce', _('repair to produce route')),
+        ('repair_scrap', _('repair to scrap route')),
+        ('repair_check', _('repair to check route')),
+
+        ('customer_repair', _('customer to repair route')),
+        ('check_repair', _('check to repair route')),
+        ('check_scrap', _('check to scrap route')),
+    )
 
     name = models.CharField(
         _('name'),
@@ -1968,7 +2083,6 @@ class Route(BaseModel):
         null=False,
         blank=False,
         verbose_name=_('warehouse'),
-        related_name='routes',
         help_text=_('the warehouse which route belongs to')
     )
 
@@ -1981,21 +2095,19 @@ class Route(BaseModel):
         help_text=_('the type of route')
     )
 
-    zones = models.ManyToManyField(
-        'stock.Zone',
-        through='stock.RouteZoneSetting',
-        through_fields=('route', 'zone'),
+    locations = models.ManyToManyField(
+        'stock.Location',
+        through='stock.RouteSetting',
+        through_fields=('route', 'location'),
         blank=False,
-        verbose_name=_('zones'),
-        related_name='routes',
-        help_text=_('the zones chain to be route')
+        verbose_name=_('locations'),
+        help_text=_('the location chain to be route')
     )
 
     users = models.ManyToManyField(
-        settings.AUTH_USER_MODEL,
+        User,
         blank=False,
         verbose_name=_('users'),
-        related_name='usable_routes',
         help_text=_('the users who can use this route')
     )
 
@@ -2016,39 +2128,54 @@ class Route(BaseModel):
         the count of route's zones
         :return: int
         '''
-        return RouteZoneSetting.objects.filter(route=self).count()
+        return RouteSetting.objects.filter(route=self).count()
 
     @property
-    def initial_zone(self):
+    def initial_and_end_zones(self):
         '''
-        get the first zone of this route
-        :return: stock.Zone instance
+        the initial and end zones tuple
+        :return: tuple
         '''
-        return Zone.objects.get(warehouse=self.warehouse, usage=self.route_type.split('_')[0])
+        return tuple(self.routesetting_set.filter(Q()))
+
 
     @property
-    def end_zone(self):
+    def initial_location(self):
+        '''
+        get the first location of this route
+        :return: stock.Location instance
+        '''
+        return Location.objects.get(
+            routesetting__route=self,
+            routesetting__sequence=INITIAL_ROUTE_SEQUENCE
+        )
+
+    @property
+    def end_location(self):
         '''
         get the last zone of this route
         :return: stock.Zone instance
         '''
-        return Zone.objects.get(warehouse=self.warehouse, usage=self.route_type.split('_')[1])
+        return Location.objects.get(
+            routesetting__route=self,
+            routesetting__sequence=END_ROUTE_SEQUENCE
+        )
 
     @property
     def initial_setting(self):
         '''
         get the first route zone setting contain the first zone
-        :return: stock.RouteZoneSetting instance
+        :return: stock.RouteSetting instance
         '''
-        return RouteZoneSetting.objects.filter(route=self).first()
+        return self.routesetting_set.first()
 
     @property
     def end_setting(self):
         '''
         get the last route zone setting contain the last zone
-        :return: stock.RouteZoneSetting instance
+        :return: stock.RouteSetting instance
         '''
-        return RouteZoneSetting.objects.filter(route=self).last()
+        return self.routesetting_set.last()
 
     class Meta:
         verbose_name = _('route')
@@ -2060,17 +2187,17 @@ class Route(BaseModel):
         INPUT_TYPE = {'supplier_stock', 'supplier_stock', 'supplier_produce'}
         INNER_TYPE = {
             'produce_stock', 'produce_pack', 'produce_produce',
-            'stock_produce','stock_pack','stock_stock',
-            'pack_stock','pack_produce','pack_pack'
+            'stock_produce', 'stock_pack', 'stock_stock',
+            'pack_stock', 'pack_produce', 'pack_pack'
         }
         SCRAP_TYPE = {
-            'scrap_repair','repair_scrap',
-            'stock_scrap','pack_scrap','produce_scrap','check_scrap'
+            'scrap_repair', 'repair_scrap',
+            'stock_scrap', 'pack_scrap', 'produce_scrap', 'check_scrap'
         }
         CLOSEOUT_TYPE = {
-            'closeout_stock','stock_closeout',
-            'closeout_pack','pack_closeout',
-            'closeout_produce','produce_closeout'
+            'closeout_stock', 'stock_closeout',
+            'closeout_pack', 'pack_closeout',
+            'closeout_produce', 'produce_closeout'
         }
 
         active = BaseModel.States.active
@@ -2109,18 +2236,18 @@ class Route(BaseModel):
         customer_repair = Statement(inherits=active, route_type='customer_repair')
         scrap_repair = Statement(inherits=active, route_type='scrap_repair')
         check_repair = Statement(inherits=active, route_type='check_repair')
-        check_scrap = Statement(inherits=active, route_type='check_repair')
+        check_scrap = Statement(inherits=active, route_type='check_scrap')
 
         repair_customer = Statement(inherits=active, route_type='repair_customer')
         repair_stock = Statement(inherits=active, route_type='repair_stock')
         repair_pack = Statement(inherits=active, route_type='repair_pack')
         repair_produce = Statement(inherits=active, route_type='repair_produce')
         repair_scrap = Statement(inherits=active, route_type='repair_scrap')
+        repair_check = Statement(inherits=active, route_type='repair_check')
 
-        output = Statement(Q(route_type__in=OUTPUT_TYPE),inherits=active)
-        input = Statement(Q(route_type__in=INPUT_TYPE),inherits=active)
-        inner = Statement(Q(route_type__in=INNER_TYPE),inherits=active)
-
+        output = Statement(Q(route_type__in=OUTPUT_TYPE), inherits=active)
+        input = Statement(Q(route_type__in=INPUT_TYPE), inherits=active)
+        inner = Statement(Q(route_type__in=INNER_TYPE), inherits=active)
 
     @classmethod
     def get_default_route(cls, warehouse, route_type):
@@ -2132,30 +2259,33 @@ class Route(BaseModel):
         '''
         return cls.get_state_instance(route_type, cls.objects.filter(warehouse=warehouse, sequence=0))
 
-    def next_zone_setting(self, now_zone_setting=None, reverse=False):
+    def next_route_setting(self, now_route_setting=None, reverse=False):
         '''
         get the next zone setting of the route after now zone setting,
         when reverse is True,return the previous zone setting of the route
-        :param now_zone_setting: stock.RouteZoneSetting instance
+        :param now_route_setting: stock.RouteZoneSetting instance
         :param reverse: boolean
         :return: stock.RouteZoneSetting instance
         '''
-        settings = self.route_zone_settings.all()
+        settings = self.routesetting_set.all()
         if not reverse:
-            if now_zone_setting:
-                return settings.filter(sequence__gt=now_zone_setting.sequence).first()
+            if now_route_setting:
+                if not now_route_setting.check_states('end'):
+                    return settings.filter(sequence__gt=now_route_setting.sequence).first()
+                return None
             return settings.first()
         else:
-            if now_zone_setting:
-                return settings.filter(sequence__lt=now_zone_setting.sequence).order_by('-sequence').first()
+            if now_route_setting:
+                if not now_route_setting.check_states('initial'):
+                    return settings.filter(sequence__lt=now_route_setting.sequence).order_by('-sequence').first()
+                return None
             return settings.order_by('-sequence').first()
 
 
-class RouteZoneSetting(models.Model):
+class RouteSetting(models.Model, StateMachine):
     '''
     the setting of zone config the route's zone chain
     '''
-    RELATED_NAME = 'route_zone_settings'
 
     name = models.CharField(
         _('name'),
@@ -2170,17 +2300,18 @@ class RouteZoneSetting(models.Model):
         null=False,
         blank=False,
         verbose_name=_('route'),
-        related_name=RELATED_NAME,
         help_text=_('the route of zone to chain together')
     )
 
-    zone = ActiveLimitForeignKey(
-        'stock.Zone',
+    location = ActiveLimitForeignKey(
+        'stock.Location',
         null=False,
         blank=False,
-        verbose_name=_('zone'),
-        related_name=RELATED_NAME,
-        help_text=_('the zone that move must according to')
+        verbose_name=_('limit location'),
+        help_text=_("""
+        if the location is virtual,the location item move to must be child of this,
+        if the location is not virtual,the location item must move to this location
+        """)
     )
 
     sequence = models.PositiveSmallIntegerField(
@@ -2188,28 +2319,25 @@ class RouteZoneSetting(models.Model):
         null=False,
         blank=False,
         default=0,
-        help_text=_('the order of the zone in route')
+        help_text=_('the order of the location in route')
     )
 
-    @property
-    def is_end(self):
-        '''
-        if this zone setting is the last in the chain of route
-        :return: boolean
-        '''
-        return self.sequence == 32767
-
     def __str__(self):
-        return '{}/{}/{}'.format(self.route, self.zone, self.sequence)
+        return '{}/{}/{}'.format(self.route, self.location, self.sequence)
 
     class Meta:
-        verbose_name = _('route zone setting')
-        verbose_name_plural = _('route zone settings')
+        verbose_name = _('route setting')
+        verbose_name_plural = _('route settings')
         unique_together = (
             ('route', 'sequence'),
             ('route', 'name')
         )
         ordering = ('sequence',)
+
+    class States:
+        active = Statement(Q(route__warehouse=F('location__zone__warehouse')))
+        initial = Statement(sequence=INITIAL_ROUTE_SEQUENCE,inherits=active)
+        end = Statement(sequence=END_ROUTE_SEQUENCE,inherits=active)
 
 
 class Procurement(BaseModel):
@@ -2218,7 +2346,8 @@ class Procurement(BaseModel):
     it makes a series of move according to the route
     '''
 
-    user = PartnerForeignKey(
+    user = models.ForeignKey(
+        User,
         null=False,
         blank=False,
         verbose_name=_('user'),
@@ -2311,7 +2440,6 @@ class ProcurementDetail(models.Model, StateMachine):
         null=False,
         blank=False,
         verbose_name=_('procurement'),
-        related_name='details',
         help_text=_('the procurement which detail belongs to')
     )
 
@@ -2320,7 +2448,6 @@ class ProcurementDetail(models.Model, StateMachine):
         null=False,
         blank=False,
         verbose_name=_('route'),
-        related_name='details',
         help_text=_('the chain of zone config by route which item will move according to')
     )
 
@@ -2339,10 +2466,10 @@ class ProcurementDetail(models.Model, StateMachine):
 
     class States:
         start_able = Statement(
-            Q(moves__isnull=True) &
+            Q(move__isnull=True) &
             (Q(procurement__require_procurements__isnull=True) | Q(procurement__require_procurements__state='done'))
         )
-        started = Statement(Q(moves__isnull=False))
+        started = Statement(Q(move_set__isnull=False))
 
     @property
     def doing_move(self):
@@ -2363,12 +2490,12 @@ class ProcurementDetail(models.Model, StateMachine):
         with transaction.atomic():
             self.check_states('start_able', raise_exception=True)
             self.procurement.check_states('confirmed', raise_exception=True)
-            next_zone_setting = self.route.route_zone_settings.all()[1]
+            next_route_setting = self.route.routesetting_set.all()[1]
             move = Move.objects.create(
                 from_location=initial_location,
                 to_location=end_location,
                 procurement_detail=self,
-                zone_setting=next_zone_setting,
+                route_setting=next_route_setting,
                 quantity=self.quantity,
                 state='draft',
                 is_return=False
@@ -2387,7 +2514,6 @@ class Item(BaseModel):
         null=False,
         blank=False,
         verbose_name=_('content type'),
-        related_name='item',
         help_text=_('the type of content reflect to the model')
     )
 
@@ -2402,7 +2528,7 @@ class Item(BaseModel):
 
     @property
     def cache(self):
-        if not hasattr(self,'__cache'):
+        if not hasattr(self, '__cache'):
             self.__cache = CacheItem(self)
         return self.__cache
 
@@ -2426,7 +2552,7 @@ class Item(BaseModel):
         )
 
     @property
-    def item_name(self):
+    def now_item_name(self):
         '''
         get item key name
         :return: string
@@ -2434,9 +2560,17 @@ class Item(BaseModel):
         return CacheItem.item_name(self)
 
     @property
-    def item_lock_name(self):
+    def lock_item_name(self):
         '''
         get item lock key name for zone
         :return: string
         '''
-        return CacheItem.item_lock_name(self)
+        return CacheItem.item_name(self,quantity_type='lock')
+
+    @property
+    def lock_item_name(self):
+        '''
+        get item all key name for zone
+        :return: string
+        '''
+        return CacheItem.item_name(self, quantity_type='all')

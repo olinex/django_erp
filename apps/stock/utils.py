@@ -3,6 +3,8 @@
 
 from apps.djangoperm import models
 
+INITIAL_ROUTE_SEQUENCE = 0
+END_ROUTE_SEQUENCE = 32767
 
 class LocationForeignKey(models.ForeignKey):
     '''库位外键'''

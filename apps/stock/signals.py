@@ -12,6 +12,7 @@ from django.dispatch import receiver
 from django.db import transaction
 
 from . import models
+from .utils import INITIAL_ROUTE_SEQUENCE,END_ROUTE_SEQUENCE
 
 
 @receiver(post_save, sender=models.Warehouse)
@@ -21,8 +22,9 @@ def create_warehouse_zone(sender, instance, created, **kwargs):
     warehouse and all default routes which are all directly
     '''
     if created:
-        instance.create_zones()
-        instance.create_default_routes()
+        with transaction.atomic():
+            instance.create_zones()
+            instance.create_default_routes()
 
 
 @receiver(post_save, sender=models.Route)
@@ -32,19 +34,20 @@ def create_initial_and_end_zone_settings(sender, instance, created, **kwargs):
     according to the route type
     '''
     if created:
-        initial = models.RouteZoneSetting(
-            name='initial zone',
-            route=instance,
-            zone=instance.initial_zone,
-            sequence=0
-        )
-        end = models.RouteZoneSetting(
-            name='end zone',
-            route=instance,
-            zone=instance.end_zone,
-            sequence=32767
-        )
-        models.RouteZoneSetting.objects.bulk_create([initial,end])
+        with transaction.atomic():
+            initial = models.RouteSetting(
+                name='initial location',
+                route=instance,
+                loaction=instance.initial_zone.root_location,
+                sequence=INITIAL_ROUTE_SEQUENCE
+            )
+            end = models.RouteSetting(
+                name='end location',
+                route=instance,
+                loaction=instance.end_zone.root_location,
+                sequence=END_ROUTE_SEQUENCE
+            )
+            models.RouteSetting.objects.bulk_create([initial,end])
 
 @receiver(post_save, sender=models.PackageNode)
 def create_package_template_item(sender, instance, created, **kwargs):
@@ -54,3 +57,17 @@ def create_package_template_item(sender, instance, created, **kwargs):
     '''
     if created:
         models.Item.objects.create(instance=instance)
+
+@receiver(post_save, sender=models.ScrapOrder)
+def get_default_route_for_scrap_order(sender, instance, created, **kwargs):
+    '''
+    when scrap order instance is creating,
+    automatically bind the default scrap route
+    '''
+    if not instance.route and instance.location:
+        route_type = f'{instance.location.zone.usage}_scrap'
+        instance.route = models.Route.get_default_route(
+            warehouse=instance.location.zone.warehouse,
+            route_type=route_type
+        )
+        instance.save(update_fields=('route',))

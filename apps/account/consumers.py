@@ -27,13 +27,13 @@ class Server(WebsocketConsumer):
         if user.profile.online_notice:
             notice=Notice(
                 user=user,
-                detail=_('已经上线'),
+                detail=_('online'),
                 content='',
                 status='info')
             group=Group(online_group)
             group.send({'text':notice.to_json()})
             group.add(channel)
-        response=Response(detail='成功连接')
+        response=Response(detail=_('connected successfully'))
         channel.send({'accept':True,'text':response.to_json()})
 
     @http_login_required
@@ -45,13 +45,13 @@ class Server(WebsocketConsumer):
         group.discard(channel)
         notice=Notice(
             user=user,
-            detail=_('已经离线'),
+            detail=_('leave'),
             content='',
             status='info')
         if user.profile.online_notice:
             group.send({'text':notice.to_json()})
         redis.hdel(online_group,str(user.id))
-        response=Response(detail='成功断开连接')
+        response=Response(detail=_('disconnected successsfully'))
         channel.send({'accept':True,'close':True,'text':response.to_json()})
 
 
@@ -65,8 +65,8 @@ class Server(WebsocketConsumer):
             message.reply_channel.send({
                 'accept':False,
                 'text':Response(
-                    detail='请求必须包含type和to_user',
-                    status='error'
+                    detail=_('request must have the params "type" and "to_user"'),
+                    status=_('error')
                 ).to_json()
             })
             return None
@@ -74,8 +74,8 @@ class Server(WebsocketConsumer):
             message.reply_channel.send({
                 'accept':False,
                 'text':Response(
-                    detail='请求to_user不能为自身',
-                    status='error'
+                    detail=_('request can not be himself'),
+                    status=_('error')
                 ).to_json()
             })
             return None
@@ -85,8 +85,8 @@ class Server(WebsocketConsumer):
             message.reply_channel.send({
                 'accept':False,
                 'text':Response(
-                    detail='对方尚未上线',
-                    status='warning'
+                    detail=_("your friend did't login yet"),
+                    status=_('warning')
                 ).to_json()
             })
             return None
@@ -99,16 +99,16 @@ class Server(WebsocketConsumer):
             message.reply_channel.send({
                 'accept':False,
                 'text':Response(
-                    detail='无效的输入内容',
-                    status='warning'
+                    detail=_('not valid content'),
+                    status=_('warning')
                 ).to_json()
             })
             return None
         talk=Talk(
             user=message.user,
-            detail='新私聊',
+            detail=_('new talk'),
             content=form.cleaned_data['content'],
-            status='success'
+            status=_('success')
         )
         Channel(channel_name).send({
             'accept':True,

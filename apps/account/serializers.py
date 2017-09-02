@@ -63,7 +63,7 @@ class PasswordSerializer(serializers.ModelSerializer):
         password1 = data.get('password1')
         password2 = data.get('password2')
         if password1 and password2 and password1 != password2:
-            raise serializers.ValidationError('密码以及确认密码不一致')
+            raise serializers.ValidationError(_('password and password confirm is not same'))
         password_validation.validate_password(password2)
         return data
 
@@ -91,7 +91,6 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = (
             'user', 'sex', 'phone', 'language', 'mail_notice', 'online_notice',
             'address', 'default_send_address', 'usual_send_addresses',
-            'salable', 'purchasable', 'is_partner',
             'usual_send_addresses_detail'
         )
 
@@ -106,7 +105,7 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
 
     def validate_old_password(self, value):
         if not self.instance.check_password(value):
-            raise serializers.ValidationError('请输入正确的原始密码')
+            raise serializers.ValidationError(_('origin password not valid'))
         return value
 
     def save(self):
@@ -161,32 +160,31 @@ class CaptchaSerializer(serializers.Serializer):
         pass
 
 
-class CompanySerializer(ActiveModelSerializer):
+class PartnerSerializer(ActiveModelSerializer):
     usual_send_addresses_detail = AddressSerializer(
         source='usual_send_addresses',
         read_only=True,
         many=True
     )
-    belong_users_detail = UserSerializer(
-        source='belong_customers',
+    managers_detail = UserSerializer(
+        source='managers',
         read_only=True,
         many=True
     )
     address = StatePrimaryKeyRelatedField(models.Address, 'active')
     default_send_address = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
     usual_send_addresses = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
-    belong_users = serializers.PrimaryKeyRelatedField(
+    managers = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(is_active=True, is_superuser=False, is_staff=False),
         many=True
     )
 
     class Meta:
-        model = models.Company
+        model = models.Partner
         fields = (
-            'id', 'name', 'tel', 'is_active', 'address',
+            'id', 'name', 'phone', 'is_active', 'address',
             'default_send_address', 'usual_send_addresses',
             'usual_send_addresses_detail',
-            'salable', 'purchasable',
-            'belong_users',
-            'belong_users_detail'
+            'managers','managers_detail',
+            'is_company','sale_able','purchase_able'
         )
