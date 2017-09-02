@@ -3,42 +3,43 @@
 
 from django.contrib import admin
 from django.contrib import messages
+from django.utils.translation import ugettext_lazy as _
 
 def active(modeladmin,request,queryset):
     if queryset.filter(is_delete=True).exists():
         modeladmin.message_user(
             request,
-            '选中存在已删除记录',
+            _('Deleted rows was selected'),
             level=messages.ERROR,
         )
     else:
         queryset.update(is_active=True)
-        modeladmin.message_user(request,'解锁成功')
-active.short_description="解锁"
+        modeladmin.message_user(request,_('act rows successfully'))
+active.short_description=_('active')
 
 def lock(modeladmin,request,queryset):
     if queryset.filter(is_delete=True).exists():
         modeladmin.message_user(
             request,
-            '选中存在已删除记录',
+            _('Deleted rows was selected'),
             level=messages.ERROR,
         )
     else:
         queryset.update(is_active=False)
-        modeladmin.message_user(request,'锁定成功')
-lock.short_description="锁定"
+        modeladmin.message_user(request,_('lock rows successfully'))
+lock.short_description=_('lock')
 
 def delete(modeladmin,request,queryset):
     if queryset.filter(is_active=False).exists():
         modeladmin.message_user(
             request,
-            '选中存在已锁定记录',
+            _('locked rows was selected'),
             level=messages.ERROR,
         )
     else:
         queryset.update(is_delete=True)
-        modeladmin.message_user(request,'删除成功')
-delete.short_description="删除"
+        modeladmin.message_user(request,'delete rows successfully')
+delete.short_description=_('delete')
 
 class CommonAdmin(admin.ModelAdmin):
     LIST_DISPLAY = (
@@ -79,7 +80,7 @@ class CommonAdmin(admin.ModelAdmin):
 
     list_display_links = ('id',)
     list_per_page = 20
-    empty_value_display = '- empty -'
+    empty_value_display = _('- empty -')
     actions = [active,lock,delete]
     save_as = True
     save_on_top = True

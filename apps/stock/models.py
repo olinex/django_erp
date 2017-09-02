@@ -14,7 +14,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django.core.validators import MinValueValidator
 
 from apps.djangoperm import models
-from .utils import LocationForeignKey,INITIAL_ROUTE_SEQUENCE,END_ROUTE_SEQUENCE
+from .utils import LocationForeignKey, INITIAL_ROUTE_SEQUENCE, END_ROUTE_SEQUENCE
 from apps.product.models import Product
 from apps.product.utils import QuantityField
 from common import Redis
@@ -27,7 +27,6 @@ from common.fields import (
 )
 from common.state import Statement, StateMachine
 from common.validators import NotZeroValidator, StateInstanceValidator
-
 
 User = get_user_model()
 
@@ -454,6 +453,13 @@ class PackageNode(TreeModel, StateMachine):
         help_text=_('package template in the package tree')
     )
 
+    quantity = PositiveSmallIntegerField(
+        _('quantity'),
+        null=False,
+        blank=False,
+        help_text=_('the quantity of the template in this node')
+    )
+
     items = GenericRelation('stock.Item')
 
     @property
@@ -464,6 +470,17 @@ class PackageNode(TreeModel, StateMachine):
         :return: stock.Item instance
         '''
         return self.items.first()
+
+    @property
+    def child_quantity_dict(self):
+        '''
+        return the dict of all childs pk and quantity dict,
+        and an empty string with itself's quantity
+        :return: dict
+        '''
+        result = dict(self.all_child_nodes.values_list('pk', 'quantity'))
+        result[self.pk] = self.quantity
+        return result
 
     def __str__(self):
         return self.template.name
@@ -516,7 +533,8 @@ class Warehouse(BaseModel):
             Location.objects.filter(
                 parent_node=None,
                 zone__warehouse=self,
-                zone__usage=usage
+                zone__usage=usage,
+                index=''
             )
         )
 
@@ -527,14 +545,6 @@ class Warehouse(BaseModel):
         :return: stock.Location instance
         '''
         return self.get_default_location('initial')
-
-    @property
-    def scrap_location(self):
-        '''
-        the default location of scrap zone
-        :return: stock.Location instance
-        '''
-        return self.get_default_location('scrap')
 
     @property
     def closeout_location(self):
@@ -549,7 +559,7 @@ class Warehouse(BaseModel):
 
     class Meta:
         verbose_name = _('warehouse')
-        verbose_name_plural = _('warehouse')
+        verbose_name_plural = _('warehouses')
 
     def create_zones(self):
         '''
@@ -805,19 +815,19 @@ class Location(BaseModel, TreeModel):
         virtual = Statement(inherits=active, is_virtual=True)
         no_virtual = Statement(inherits=active, is_virtual=False)
         root = Statement(inherits=virtual, parent_node=None)
-        stock = Statement(Q(zone_usage='stock'),inherits=no_virtual)
-        check = Statement(Q(zone_usage='check'),inherits=no_virtual)
-        pack = Statement(Q(zone_usage='pack'),inherits=no_virtual)
-        wait = Statement(Q(zone_usage='wait'),inherits=no_virtual)
-        deliver = Statement(Q(zone_usage='deliver'),inherits=no_virtual)
-        customer = Statement(Q(zone_usage='customer'),inherits=no_virtual)
-        supplier = Statement(Q(zone_usage='supplier'),inherits=no_virtual)
-        produce = Statement(Q(zone_usage='produce'),inherits=no_virtual)
-        repair = Statement(Q(zone_usage='repair'),inherits=no_virtual)
-        scrap = Statement(Q(zone_usage='scrap'),inherits=no_virtual)
-        closeout = Statement(Q(zone_usage='closeout'),inherits=no_virtual)
-        initial = Statement(Q(zone_usage='initial'),inherits=no_virtual)
-        midway = Statement(Q(zone_usage='midway'),inherits=no_virtual)
+        stock = Statement(Q(zone_usage='stock'), inherits=no_virtual)
+        check = Statement(Q(zone_usage='check'), inherits=no_virtual)
+        pack = Statement(Q(zone_usage='pack'), inherits=no_virtual)
+        wait = Statement(Q(zone_usage='wait'), inherits=no_virtual)
+        deliver = Statement(Q(zone_usage='deliver'), inherits=no_virtual)
+        customer = Statement(Q(zone_usage='customer'), inherits=no_virtual)
+        supplier = Statement(Q(zone_usage='supplier'), inherits=no_virtual)
+        produce = Statement(Q(zone_usage='produce'), inherits=no_virtual)
+        repair = Statement(Q(zone_usage='repair'), inherits=no_virtual)
+        scrap = Statement(Q(zone_usage='scrap'), inherits=no_virtual)
+        closeout = Statement(Q(zone_usage='closeout'), inherits=no_virtual)
+        initial = Statement(Q(zone_usage='initial'), inherits=no_virtual)
+        midway = Statement(Q(zone_usage='midway'), inherits=no_virtual)
 
     def change_parent_node(self, node):
         '''
@@ -1002,7 +1012,7 @@ class Move(BaseModel):
                 (
                     Q(to_location=F('route_setting__location')) |
                     Q(to_loation__index__startswith=Concat(
-                        F('route_setting__location__index'),Value('-'),F('route_setting__location__pk')
+                        F('route_setting__location__index'), Value('-'), F('route_setting__location__pk')
                     ))
                 )
             ),
@@ -1134,33 +1144,6 @@ class Move(BaseModel):
             return self
 
 
-# class PickOrder(StockOrder):
-#     '''分拣表单'''
-#     pass
-#
-# class CheckOrder(StockOrder):
-#     '''送检表单'''
-#     pass
-#
-#
-# class OutPutOrder(StockOrder):
-#     '''出库表单'''
-#     pass
-#
-# class InPutOrder(StockOrder):
-#     '''入库表单'''
-#     pass
-#
-# class StreamOrder(StockOrder):
-#     '''物流表单'''
-#     pass
-#
-# class ProduceOrder(StockOrder):
-#     '''物料表单'''
-#     pass
-#
-
-
 class PackOrder(BaseModel):
     '''
     the order to manage packing operation
@@ -1242,6 +1225,7 @@ class PackOrder(BaseModel):
             self.procurement.confirm()
             return self
 
+
 class PackOrderLine(models.Model, StateMachine):
     '''
     the pack order line bind to procurement details
@@ -1309,6 +1293,8 @@ class PackOrderLine(models.Model, StateMachine):
         create every package template's items
         :return: self
         '''
+        from functools import reduce
+
         warehouse = self.order.location.zone.warehouse
         route = Route.get_default_route(warehouse, 'pack_closeout' if self.order.is_pack else 'closeout_pack')
         for setting in self.package_node.template.packagetemplatesetting_set.all():
@@ -1324,12 +1310,17 @@ class PackOrderLine(models.Model, StateMachine):
                 template_setting=setting,
                 detail=detail
             )
+        quantity_dict = self.package_node.child_quantity_dict
         for node in self.package_node.all_child_nodes:
-            for setting in node.template.package_template_setting_set.all():
+            quantiy = reduce(lambda a, b: a * b, map(
+                lambda index: quantity_dict[int(index)],
+                node.index.split('-')[:-1]
+            ))
+            for setting in node.template.packagetemplatesetting_set.all():
                 detail = ProcurementDetail.objects.create(
                     procurement=self.order.procurement,
                     item=setting.type_setting.item,
-                    quantity=setting.quantiy * self.quantity,
+                    quantity=setting.quantiy * quantiy,
                     route=route
                 )
                 PackOrderLineSetting.objects.create(
@@ -1444,7 +1435,7 @@ class ScrapOrder(BaseModel):
         blank=False,
         verbose_name=_('location'),
         validators=[StateInstanceValidator(
-            'pack','produce','stock','repair','check'
+            'pack', 'produce', 'stock', 'repair', 'check'
         )],
         help_text=_('the location to make operation')
     )
@@ -1463,8 +1454,8 @@ class ScrapOrder(BaseModel):
         blank=False,
         verbose_name=_('scrap route'),
         validators=[StateInstanceValidator(
-            'produce_scrap','stock_scrap','pack_scrap',
-            'repair_scrap','check_scrap'
+            'produce_scrap', 'stock_scrap', 'pack_scrap',
+            'repair_scrap', 'check_scrap'
         )],
         help_text=_('the route for order')
     )
@@ -1561,7 +1552,7 @@ class ScrapOrderLine(models.Model, StateMachine):
     class Meta:
         verbose_name = _('scrap order line'),
         verbose_name_plural = _('scrap order lines')
-        unique_together = ('order','item')
+        unique_together = ('order', 'item')
 
     def create_procurement_detail(self):
         '''
@@ -1665,6 +1656,7 @@ class CloseoutOrder(BaseModel):
                 line.done()
             return self
 
+
 class CloseoutOrderLine(models.Model, StateMachine):
     '''
     order line of closeout
@@ -1762,7 +1754,7 @@ class RepairOrder(BaseModel):
         blank=False,
         verbose_name=_('location'),
         validators=[StateInstanceValidator(
-            'produce','stock','pack','check','customer'
+            'produce', 'stock', 'pack', 'check', 'customer'
         )],
         help_text=_('the location to make operation')
     )
@@ -1775,9 +1767,9 @@ class RepairOrder(BaseModel):
         validators=[StateInstanceValidator(
             'produce_repair', 'repair_produce',
             'pack_repair', 'repair_pack',
-            'customer_repair','repair_customer',
-            'stock_repair','repair_stock',
-            'check_repair','repair_check'
+            'customer_repair', 'repair_customer',
+            'stock_repair', 'repair_stock',
+            'check_repair', 'repair_check'
         )],
     )
 
@@ -2138,7 +2130,6 @@ class Route(BaseModel):
         '''
         return tuple(self.routesetting_set.filter(Q()))
 
-
     @property
     def initial_location(self):
         '''
@@ -2336,8 +2327,8 @@ class RouteSetting(models.Model, StateMachine):
 
     class States:
         active = Statement(Q(route__warehouse=F('location__zone__warehouse')))
-        initial = Statement(sequence=INITIAL_ROUTE_SEQUENCE,inherits=active)
-        end = Statement(sequence=END_ROUTE_SEQUENCE,inherits=active)
+        initial = Statement(sequence=INITIAL_ROUTE_SEQUENCE, inherits=active)
+        end = Statement(sequence=END_ROUTE_SEQUENCE, inherits=active)
 
 
 class Procurement(BaseModel):
@@ -2565,7 +2556,7 @@ class Item(BaseModel):
         get item lock key name for zone
         :return: string
         '''
-        return CacheItem.item_name(self,quantity_type='lock')
+        return CacheItem.item_name(self, quantity_type='lock')
 
     @property
     def lock_item_name(self):

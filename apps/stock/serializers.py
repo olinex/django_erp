@@ -50,10 +50,11 @@ class LocationSerializer(ActiveModelSerializer):
 class RouteSettingSerializer(serializers.ModelSerializer):
     route = StatePrimaryKeyRelatedField(models.Route, 'active')
     location = StatePrimaryKeyRelatedField(models.Location, 'active')
+
     class Meta:
-        model= models.RouteSetting
-        fields=(
-            'route','location','sequence'
+        model = models.RouteSetting
+        fields = (
+            'route', 'location', 'sequence'
         )
 
     def validate(self, data):
@@ -67,7 +68,7 @@ class RouteSettingSerializer(serializers.ModelSerializer):
 class RouteSerializer(ActiveModelSerializer):
     warehouse = StatePrimaryKeyRelatedField(models.Warehouse, 'active')
     warehouse_detail = WarehouseSerializer(source='warehouse', read_only=True)
-    zones_detail = ZoneSerializer(source='zones',read_only=True,many=True)
+    zones_detail = ZoneSerializer(source='zones', read_only=True, many=True)
 
     class Meta:
         model = models.Route
@@ -80,18 +81,25 @@ class RouteSerializer(ActiveModelSerializer):
 class PackageTypeSettingSerializer(serializers.ModelSerializer):
     package_type = StatePrimaryKeyRelatedField(models.PackageType, 'active')
     item = StatePrimaryKeyRelatedField(models.Item, 'active')
+    item_detail = ItemSerializer(source='item', read_only=True)
 
     class Meta:
         model = models.PackageTypeSetting
         fields = (
-            'package_type', 'item', 'max_quantity'
+            'package_type', 'item', 'item_detail', 'max_quantity'
         )
 
 
 class PackageTypeSerializer(ActiveModelSerializer):
+    item_settings = PackageTypeSettingSerializer(
+        source='packagetypesetting_set',
+        read_only=True,
+        many=True
+    )
+
     class Meta:
         model = models.PackageType
-        fields = ('name', 'items')
+        fields = ('name', 'item_settings')
 
 
 class PackageTemplateSettingSerializer(serializers.ModelSerializer):
@@ -111,8 +119,8 @@ class PackageTemplateSettingSerializer(serializers.ModelSerializer):
 
 class PackageTemplateSerializer(ActiveModelSerializer):
     package_type = StatePrimaryKeyRelatedField(models.PackageType, 'active')
-    type_settings_detail = PackageTemplateSettingSerializer(
-        source='type_settings',
+    item_settings = PackageTemplateSettingSerializer(
+        source='packagetemplatesetting_set',
         read_only=True,
         many=True
     )
@@ -120,7 +128,7 @@ class PackageTemplateSerializer(ActiveModelSerializer):
     class Meta:
         model = models.PackageTemplate
         fields = (
-            'name', 'package_type', 'type_settings', 'type_settings_detail'
+            'name', 'package_type', 'item_settings'
         )
 
 
@@ -173,7 +181,7 @@ class MoveSerializer(ActiveModelSerializer):
     from_zone_detail = ZoneSerializer(source='from_zone', read_only=True)
     to_zone_detail = ZoneSerializer(source='to_zone', read_only=True)
     to_move = serializers.ReadOnlyField()
-    procurement_detail_context = ProcurementDetailSerializer(source='procurement_detail',read_only=True)
+    procurement_detail_context = ProcurementDetailSerializer(source='procurement_detail', read_only=True)
     route_setting = serializers.ReadOnlyField()
     quantity = serializers.ReadOnlyField()
     state = serializers.CharField(read_only=True)
@@ -181,7 +189,13 @@ class MoveSerializer(ActiveModelSerializer):
     class Meta:
         model = models.Move
         fields = (
-            'from_zone_detail','to_zone_detail',
-            'to_move', 'procurement_detail','procurement_detail_context',
+            'from_zone_detail', 'to_zone_detail',
+            'to_move', 'procurement_detail', 'procurement_detail_context',
             'route_setting', 'quantity', 'state'
         )
+
+
+class ItemSerializer(ActiveModelSerializer):
+    class Meta:
+        model = models.Item
+        fields = ('content_type', 'object_id')

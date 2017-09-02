@@ -12,13 +12,13 @@ from common.fields import ActiveLimitForeignKey, ActiveLimitOneToOneField, Activ
 
 User = get_user_model()
 
-COUNTRIES = (
-    ('China', _('China')),
-)
-
 
 class Province(models.Model):
     '''province'''
+
+    COUNTRIES = (
+        ('China', _('China')),
+    )
 
     class KeyManager(Manager):
         def get_by_natural_key(self, country, name):
@@ -49,7 +49,7 @@ class Province(models.Model):
         unique_together = ('country', 'name')
 
     def __str__(self):
-        return self.get_country_display() + '/' + self.name
+        return '{}/{}'.format(self.get_country_display(),self.name)
 
     def natural_key(self):
         return (self.country, self.name)
@@ -57,8 +57,9 @@ class Province(models.Model):
 
 class City(models.Model):
     '''city'''
+
     class KeyManager(Manager):
-        def get_by_natural_key(self,country,province,name):
+        def get_by_natural_key(self, country, province, name):
             return self.get(
                 province__country=country,
                 province__name=province,
@@ -93,6 +94,7 @@ class City(models.Model):
 
     def natural_key(self):
         return self.province.natural_key() + (self.name,)
+
     natural_key.dependencies = ['account.Province']
 
 
@@ -100,7 +102,7 @@ class Region(models.Model):
     '''region'''
 
     class KeyManager(Manager):
-        def get_by_natural_key(self,country,province,city,name):
+        def get_by_natural_key(self, country, province, city, name):
             return self.get(
                 city__province__country=country,
                 city__province__name=province,
@@ -130,10 +132,11 @@ class Region(models.Model):
         unique_together = ('city', 'name')
 
     def __str__(self):
-        return str(self.city) + '/' + self.name
+        return '{}/{}'.format(self.city,self.name)
 
     def natural_key(self):
         return self.city.natural_key() + (self.name,)
+
     natural_key.dependencies = ['account.City']
 
 
@@ -161,15 +164,15 @@ class Address(BaseModel):
         unique_together = ('region', 'name')
 
     def __str__(self):
-        return str(self.region) + '/' + self.name
+        return '{}/{}'.format(self.region,self.name)
 
 
 class Profile(models.Model):
     '''用户的其他信息'''
     SEX_CHOICES = (
         ('unknown', _('unknown')),
-        ('male', _('male')),
-        ('female', _('female')),
+        ('male',    _('male')),
+        ('female',  _('female')),
     )
 
     user = models.OneToOneField(
@@ -251,10 +254,13 @@ class Profile(models.Model):
         verbose_name_plural = _('user profiles')
 
     def __str__(self):
-        return '{}-{}'.format(self.user.id, self.user.get_full_name() or self.user.get_username())
+        return '{}-{}'.format(
+            self.user.id,
+            self.user.get_full_name() or self.user.get_username()
+        )
 
 
-class Partner(BaseModel,TreeModel):
+class Partner(BaseModel, TreeModel):
     '''partner'''
     name = models.CharField(
         _('name'),
@@ -329,9 +335,3 @@ class Partner(BaseModel,TreeModel):
 
     def __str__(self):
         return self.name
-
-
-
-
-
-

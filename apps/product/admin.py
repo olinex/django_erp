@@ -19,19 +19,25 @@ class LotInline(CommonTabInLine):
         (None,{'fields':('name',)}),
     )
 
+class ValidateActionInline(CommonTabInLine):
+    model= models.ValidateAction
+    fieldsets = (
+        (None,{'fields':('symbol','name','uom','explain')}),
+    )
+
 @admin.register(models.ProductCategory)
 class ProductCategoryAdmin(CommonAdmin):
     list_display = ('name','sequence')
+    list_display_links = ('name',)
     search_fields = ('name',)
     list_editable = ('sequence',)
-    list_display_links = ('name',)
     fieldsets = (
         (None,{'fields':('name','sequence')}),
     )
 
 @admin.register(models.Attribute)
 class AttributeAdmin(CommonAdmin):
-    list_display = ('id','name','value','extra_price',)
+    list_display = ('name','value','extra_price',)
     search_fields = ('name',)
     list_editable = ('name',)
     fieldsets = (
@@ -41,7 +47,7 @@ class AttributeAdmin(CommonAdmin):
 @admin.register(models.UOM)
 class UOMAdmin(CommonAdmin):
     list_display = (
-        'id','name','symbol','decimal_places',
+        'name','symbol','decimal_places',
         'round_method','ratio','category'
     )
     list_filter = ('round_method','category')
@@ -61,19 +67,21 @@ class UOMAdmin(CommonAdmin):
 @admin.register(models.ProductTemplate)
 class ProductTemplateAdmin(CommonAdmin):
     list_display = (
-        'id','name','uom','sequence',
-        'category',
+        'name','uom','sequence',
+        'category','detail'
     )
     list_filter = ('category',)
     search_fields = ('name','uom')
     list_editable = ('name','sequence','category')
     fieldsets = (
         (None,{'fields':(
-            'name','attributes','uom',
-            'sequence','detail','in_description',
-            'out_description'
+            'name','attributes','detail',
+            ('uom','stock_type'),
+            ('in_description','out_description'),
+            ('category','sequence'),
         )}),
     )
+
 
 @admin.register(models.Product)
 class ProductAdmin(CommonAdmin):
@@ -100,27 +108,17 @@ class ProductAdmin(CommonAdmin):
         LotInline,
     )
 
-@admin.register(models.ValidateAction)
-class ValidationActionAdmin(CommonAdmin):
-    list_display = ('symbol','name','uom','explain')
-    list_filter = ('uom',)
-    search_fields = ('name',)
-    list_editable = ('name','uom')
-    list_display_links = ('symbol',)
-    fieldsets = (
-        (None,{'fields':(
-            ('symbol','name'),'uom','explain'
-        )}),
-    )
-
 @admin.register(models.Validation)
 class ValidationAdmin(CommonAdmin):
     list_display = ('name',)
-    search_fields = list_display
+    search_fields = ('name',)
     list_display_links = ('name',)
     fieldsets = (
         (None,{'fields':(
             'name','actions'
         )}),
+    )
+    inlines = (
+        ValidateActionInline,
     )
 

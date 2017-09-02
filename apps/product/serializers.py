@@ -26,7 +26,7 @@ class UOMSerializer(ActiveModelSerializer):
     class Meta:
         model = models.UOM
         fields = (
-            'name', 'symbol', 'decimal_places',
+            'id', 'name', 'symbol', 'decimal_places',
             'round_method', 'ratio', 'category'
         )
 
@@ -44,13 +44,16 @@ class ProductTemplateSerializer(ActiveModelSerializer):
     uom = StatePrimaryKeyRelatedField(models.UOM, 'active')
     attributes = StatePrimaryKeyRelatedField(models.Attribute, 'active', many=True)
     category = StatePrimaryKeyRelatedField(models.ProductCategory, 'active')
+    validation = StatePrimaryKeyRelatedField(models.Validation, 'active')
+    validation_detail = ValidationSerializer(source='validation', read_only=True)
 
     class Meta:
         model = models.ProductTemplate
         fields = (
-            'id', 'name', 'attributes',
+            'id', 'name', 'attributes', 'stock_type',
             'uom', 'sequence', 'detail',
             'in_description', 'out_description',
+            'validation', 'validation_detail',
             'category', 'uom_detail', 'attributes_detail'
         )
 
@@ -88,7 +91,7 @@ class ValidateActionSerializer(ActiveModelSerializer):
 
     class Meta:
         model = models.ValidateAction
-        fields = ('symbol','name', 'uom', 'explain')
+        fields = ('symbol', 'name', 'uom', 'explain')
 
 
 class ValidationSerializer(ActiveModelSerializer):
@@ -97,4 +100,4 @@ class ValidationSerializer(ActiveModelSerializer):
 
     class Meta:
         model = models.Validation
-        fields = ('name', 'actions','actions_detail')
+        fields = ('name', 'actions', 'actions_detail')

@@ -31,8 +31,9 @@ class AddressInline(CommonTabInLine):
 @admin.register(models.Province)
 class ProvinceAdmin(admin.ModelAdmin):
     list_display = ('id', 'country', 'name')
+    list_display_links = ('name',)
     search_fields = ('name',)
-    list_editable = ('name',)
+    list_editable = ('country',)
     fieldsets = (
         (None, {'fields': ('country', 'name')}),
     )
@@ -44,8 +45,9 @@ class ProvinceAdmin(admin.ModelAdmin):
 @admin.register(models.City)
 class CityAdmin(admin.ModelAdmin):
     list_display = ('id', 'province', 'name')
+    list_display_links = ('name',)
     search_fields = ('name',)
-    list_editable = ('name',)
+    list_editable = ('province',)
     fieldsets = (
         (None, {'fields': ('province', 'name')}),
     )
@@ -57,8 +59,9 @@ class CityAdmin(admin.ModelAdmin):
 @admin.register(models.Region)
 class RegionAdmin(admin.ModelAdmin):
     list_display = ('id', 'city', 'name')
+    list_display_links = ('name',)
     search_fields = ('name',)
-    list_editable = ('name',)
+    list_editable = ('city',)
     fieldsets = (
         (None, {'fields': ('city', 'name')}),
     )
@@ -69,10 +72,10 @@ class RegionAdmin(admin.ModelAdmin):
 @admin.register(models.Partner)
 class PartnerAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'phone', 'address','is_company','sale_able','purchase_able')
-    list_display_links = ('id',)
+    list_display_links = ('name',)
     list_filter = ('is_company','sale_able','purchase_able')
     search_fields = ('name', 'phone', 'address__name')
-    list_editable = ('name', 'phone')
+    list_editable = ('phone','is_company','sale_able','purchase_able')
     fieldsets = (
         (None, {'fields': (
             'name', 'phone', 'address',
@@ -89,11 +92,11 @@ class ProfileAdmin(admin.ModelAdmin):
         'user', 'sex', 'phone', 'online_notice', 'mail_notice', 'language',
         'address', 'default_send_address',
     )
+    list_display_links = ('user')
     list_filter = (
         'sex', 'online_notice', 'mail_notice'
     )
     search_fields = ('phone', 'user__username')
-    list_per_page = 20
     list_editable = (
         'phone', 'sex', 'online_notice', 'mail_notice','language'
     )

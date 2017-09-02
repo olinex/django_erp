@@ -5,8 +5,8 @@ from decimal import Decimal as D
 
 from django.db import transaction
 from django.db.models import Manager
-from django.contrib.contenttypes.fields import GenericRelation
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.contenttypes.fields import GenericRelation
 from apps.djangoperm import models
 from common.state import Statement, StateMachine
 from common.abstractModel import BaseModel
@@ -16,7 +16,7 @@ from common.fields import (
 
 
 class ProductCategory(BaseModel):
-    '''产品分类'''
+    '''product category'''
     name = models.CharField(
         _('name'),
         primary_key=True,
@@ -35,6 +35,7 @@ class ProductCategory(BaseModel):
     class Meta:
         verbose_name = _('product category')
         verbose_name_plural = _('product categories')
+        ordering = ('sequence',)
 
     def __str__(self):
         return self.name
@@ -150,10 +151,7 @@ class Product(BaseModel):
         return self.template.uom
 
     def __str__(self):
-        return (
-            self.template.name +
-            '(' + self.attributes_str + ')'
-        )
+        return '{}({})'.format(self.template.name,self.attributes_str)
 
     class Meta:
         verbose_name = _('product')
@@ -191,7 +189,7 @@ class Validation(BaseModel):
 
     class Meta:
         verbose_name = _('validation')
-        verbose_name_plural = _('validation')
+        verbose_name_plural = _('validations')
 
     @property
     def validators(self):
@@ -260,7 +258,7 @@ class ValidateAction(BaseModel):
 
     class Meta:
         verbose_name = _('validate action')
-        verbose_name_plural = _('validate action')
+        verbose_name_plural = _('validate actions')
 
     @property
     def validator(self):
@@ -363,7 +361,7 @@ class ProductTemplate(BaseModel):
 
     class Meta:
         verbose_name = _('product template')
-        verbose_name_plural = _('product template')
+        verbose_name_plural = _('product templates')
 
     def __str__(self):
         return self.name
@@ -423,7 +421,7 @@ class Attribute(BaseModel):
 
     class Meta:
         verbose_name = _('attribute')
-        verbose_name_plural = _('attribute')
+        verbose_name_plural = _('attributes')
 
     def __str__(self):
         return self.name
@@ -446,27 +444,27 @@ class UOM(BaseModel):
     objects = KeyManager()
 
     UOM_CATEGORY = (
-        ('m', _('meter')),
-        ('kg', _('kilogram')),
-        ('s', _('second')),
-        ('A', _('Ampere')),
-        ('K', _('Kelvins')),
-        ('J', _('Joule')),
-        ('m2', _('square meter')),
-        ('m3', _('cubic meter')),
-        ('unit', _('unit')),
-        ('yuan', _('yuan'))
+        ('m',       _('meter')),
+        ('kg',      _('kilogram')),
+        ('s',       _('second')),
+        ('A',       _('Ampere')),
+        ('K',       _('Kelvins')),
+        ('J',       _('Joule')),
+        ('m2',      _('square meter')),
+        ('m3',      _('cubic meter')),
+        ('unit',    _('unit')),
+        ('yuan',    _('yuan'))
     )
 
     ROUND_METHOD = (
-        ('ROUND_CEILING', _('round ceiling')),      #趋向无穷取整
-        ('ROUND_DOWN', _('round down')),            #趋向0取整
-        ('ROUND_FLOOR', _('round floor')),          #趋向负无穷取整
-        ('ROUND_HALF_DOWN', _('round half down')),  #末位大于五反向零取整,否则趋向零取整
-        ('ROUND_HALF_EVEN', _('round half even')),  #末位大于五反向零取整,小于五趋向零取整,遇五前位为奇数反向零取整
-        ('ROUND_HALF_UP', _('round half up')),      #末位大于等于五反向零取整,否则趋向零取整
-        ('ROUND_UP', _('round up')),                #反向0取整
-        ('ROUND_05UP', _('round zero and half up')) #取整位数为零或五时反向零取整,否则趋向零取整
+        ('ROUND_CEILING',   _('round ceiling')),            #趋向无穷取整
+        ('ROUND_DOWN',      _('round down')),               #趋向0取整
+        ('ROUND_FLOOR',     _('round floor')),              #趋向负无穷取整
+        ('ROUND_HALF_DOWN', _('round half down')),          #末位大于五反向零取整,否则趋向零取整
+        ('ROUND_HALF_EVEN', _('round half even')),          #末位大于五反向零取整,小于五趋向零取整,遇五前位为奇数反向零取整
+        ('ROUND_HALF_UP',   _('round half up')),            #末位大于等于五反向零取整,否则趋向零取整
+        ('ROUND_UP',        _('round up')),                 #反向0取整
+        ('ROUND_05UP',      _('round zero and half up'))    #取整位数为零或五时反向零取整,否则趋向零取整
     )
 
     name = models.CharField(
@@ -539,17 +537,17 @@ class UOM(BaseModel):
 
     class Meta:
         verbose_name = _('uom')
-        verbose_name_plural = _('uom')
+        verbose_name_plural = _('uoms')
 
     def __str__(self):
-        return f'{self.name}({self.symbol})'
+        return '{}({})'.format(self.name,self.symbol)
 
     def natural_key(self):
         return (self.symbol,)
 
     def accuracy_convert(self, value):
         '''
-        将value转换为单位的精度
+        convert value's precision to this uom's precision
         :param value: decimal
         :return: decimal
         '''
@@ -563,7 +561,7 @@ class UOM(BaseModel):
 
     def convert(self, value, to_uom):
         '''
-        将value转换为指定单位的值
+        convert value as this uom precision and ratio to another uom
         :param value: decimal
         :param to_uom: uom
         :return: decimal
@@ -595,7 +593,7 @@ class Lot(BaseModel):
 
     class Meta:
         verbose_name = _('lot')
-        verbose_name_plural = _('lot')
+        verbose_name_plural = _('lots')
 
     def __str__(self):
         return self.name

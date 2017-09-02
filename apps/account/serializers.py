@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 from django.contrib.auth import get_user_model
+from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
 from common.rest.serializers import ActiveModelSerializer, StatePrimaryKeyRelatedField
@@ -185,6 +186,6 @@ class PartnerSerializer(ActiveModelSerializer):
             'id', 'name', 'phone', 'is_active', 'address',
             'default_send_address', 'usual_send_addresses',
             'usual_send_addresses_detail',
-            'managers','managers_detail',
-            'is_company','sale_able','purchase_able'
+            'managers', 'managers_detail',
+            'is_company', 'sale_able', 'purchase_able'
         )
