@@ -8,7 +8,7 @@ from common.notice import Notice,Talk,Response
 from common.consumer import http_login_required
 from channels import Group, Channel
 from channels.generic.websockets import WebsocketConsumer
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext as _
 
 online_group = 'online_users'
 

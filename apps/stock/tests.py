@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-#-*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 
 from . import models
 from decimal import Decimal as D
 from common.tests import EnvSetUpTestCase
 from common.exceptions import NotInStates
 
-class ItemTestCase(EnvSetUpTestCase):
 
+class ItemTestCase(EnvSetUpTestCase):
     def setUp(self):
         self.accountSetUp()
         self.productSetUp()
@@ -15,74 +15,71 @@ class ItemTestCase(EnvSetUpTestCase):
         self.cls = models.Item
 
     def test_states(self):
-        self.assertEqual(self.product.item.instance,self.product)
+        self.assertEqual(self.product.item.instance, self.product)
         self.assertTrue(self.product.item.check_states('active'))
         self.assertTrue(self.product.item.check_states('product'))
         self.assertFalse(self.product.item.check_states('package_node'))
 
     def test_get_quantity(self):
         cache = self.item.cache
-        for usage in models.Zone.States.USAGE_STATES.keys():
-            self.assertEqual(cache.get_quantity(usage,quantity_type='all'), 0)
-            self.assertEqual(cache.get_quantity(usage,quantity_type='lock'), 0)
-            self.assertEqual(cache.get_quantity(usage,quantity_type='now'), 0)
-            cache.refresh(usage,1)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='all'), 1)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='lock'), 0)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='now'), 1)
-            cache.refresh(usage, 1)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='all'), 2)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='lock'), 0)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='now'), 2)
-            cache.lock(usage, 1)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='all'), 2)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='lock'), 1)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='now'), 1)
-            cache.lock(usage, 1)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='all'), 2)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='lock'), 2)
-            self.assertEqual(cache.get_quantity(usage, quantity_type='now'), 0)
-
+        for zone in models.Location.States.ZONE_STATES.keys():
+            self.assertEqual(cache.get_quantity(zone, quantity_type='all'), 0)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='lock'), 0)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='now'), 0)
+            cache.refresh(zone, 1)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='all'), 1)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='lock'), 0)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='now'), 1)
+            cache.refresh(zone, 1)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='all'), 2)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='lock'), 0)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='now'), 2)
+            cache.lock(zone, 1)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='all'), 2)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='lock'), 1)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='now'), 1)
+            cache.lock(zone, 1)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='all'), 2)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='lock'), 2)
+            self.assertEqual(cache.get_quantity(zone, quantity_type='now'), 0)
 
 
 class CacheLocationTestCase(EnvSetUpTestCase):
-
     def setUp(self):
         self.accountSetUp()
         self.productSetUp()
         self.stockSetUp()
 
     def test_fresh(self):
-        for usage,explain in models.Zone.LAYOUT_USAGE:
-            location = getattr(self,'location_{}'.format(usage))
-            cache = location.cache
-            cache.sync()
-            cache.refresh(self.item,1)
-            self.assertEqual(location.get_item_quantity(self.item),1)
-            self.assertEqual(location.get_item_quantity(self.item,quantity_type='lock'), 0)
-            cache.lock(self.item,1)
-            self.assertEqual(location.get_item_quantity(self.item),0)
-            self.assertEqual(location.get_item_quantity(self.item,quantity_type='lock'), 1)
-            cache.lock(self.item,-1)
-            self.assertEqual(location.get_item_quantity(self.item), 1)
-            self.assertEqual(location.get_item_quantity(self.item,quantity_type='lock'), 0)
-            cache.refresh(self.item,-1)
-            self.assertEqual(location.get_item_quantity(self.item), 0)
-            self.assertEqual(location.get_item_quantity(self.item,quantity_type='lock'), 0)
-            cache.lock(self.item,5)
-            self.assertEqual(location.get_item_quantity(self.item),-5)
-            self.assertEqual(location.get_item_quantity(self.item,quantity_type='lock'), 5)
-            cache.refresh(self.item,1)
-            self.assertEqual(location.get_item_quantity(self.item),-4)
-            self.assertEqual(location.get_item_quantity(self.item,quantity_type='lock'), 5)
-            cache.free_all(self.item)
-            self.assertEqual(location.get_item_quantity(self.item), 1)
-            self.assertEqual(location.get_item_quantity(self.item,quantity_type='lock'), 0)
-
+        for usage, explain in models.Location.ZONE:
+            if usage != 'root':
+                location = getattr(self, 'location_{}'.format(usage))
+                cache = location.cache
+                cache.sync()
+                cache.refresh(self.item, 1)
+                self.assertEqual(location.get_item_quantity(self.item), 1)
+                self.assertEqual(location.get_item_quantity(self.item, quantity_type='lock'), 0)
+                cache.lock(self.item, 1)
+                self.assertEqual(location.get_item_quantity(self.item), 0)
+                self.assertEqual(location.get_item_quantity(self.item, quantity_type='lock'), 1)
+                cache.lock(self.item, -1)
+                self.assertEqual(location.get_item_quantity(self.item), 1)
+                self.assertEqual(location.get_item_quantity(self.item, quantity_type='lock'), 0)
+                cache.refresh(self.item, -1)
+                self.assertEqual(location.get_item_quantity(self.item), 0)
+                self.assertEqual(location.get_item_quantity(self.item, quantity_type='lock'), 0)
+                cache.lock(self.item, 5)
+                self.assertEqual(location.get_item_quantity(self.item), -5)
+                self.assertEqual(location.get_item_quantity(self.item, quantity_type='lock'), 5)
+                cache.refresh(self.item, 1)
+                self.assertEqual(location.get_item_quantity(self.item), -4)
+                self.assertEqual(location.get_item_quantity(self.item, quantity_type='lock'), 5)
+                cache.free_all(self.item)
+                self.assertEqual(location.get_item_quantity(self.item), 1)
+                self.assertEqual(location.get_item_quantity(self.item, quantity_type='lock'), 0)
 
 
 class RouteTestCase(EnvSetUpTestCase):
-
     def setUp(self):
         self.accountSetUp()
         self.productSetUp()
@@ -91,53 +88,52 @@ class RouteTestCase(EnvSetUpTestCase):
 
     def test_get_default_route(self):
         for route_type in self.cls.ROUTE_TYPE:
-            route = self.cls.get_default_route(self.warehouse,route_type[0])
-            self.assertEqual(route.length,2)
-            self.assertEqual(route.initial_zone,route.initial_setting.zone)
-            self.assertEqual(route.end_zone,route.end_setting.zone)
-            self.assertEqual(route.initial_zone,getattr(self,'zone_{}'.format(route.route_type.split('_')[0])))
-            self.assertEqual(route.end_zone,getattr(self,'zone_{}'.format(route.route_type.split('_')[1])))
+            route = self.cls.get_default_route(self.warehouse, route_type[0])
+            self.assertEqual(route.length, 2)
+            self.assertEqual(route.warehouse, route.initial_setting.location.warehouse)
+            self.assertEqual(route.warehouse, route.end_setting.location.warehouse)
+            self.assertEqual(route.initial_setting.location.zone, route_type[0].split('_')[0])
+            self.assertEqual(route.end_setting.location.zone, route_type[0].split('_')[1])
 
-    def test_next_zone_setting(self):
-        now_zone_setting = None
-        next_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting)
-        previous_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting, reverse=True)
-        self.assertEqual(next_zone_setting.zone, self.zone_produce)
-        self.assertEqual(previous_zone_setting.zone, self.zone_stock)
+    def test_next_route_setting(self):
+        now_route_setting = None
+        next_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting)
+        previous_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting, reverse=True)
+        self.assertEqual(next_route_setting.location.zone, 'produce')
+        self.assertEqual(previous_route_setting.location.zone, 'stock')
         # now is produce zone
-        now_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting)
-        next_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting)
-        previous_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting,reverse=True)
-        self.assertEqual(next_zone_setting.zone,self.zone_pack)
-        self.assertIsNone(previous_zone_setting)
+        now_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting)
+        next_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting)
+        previous_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting, reverse=True)
+        self.assertEqual(next_route_setting.location.zone, 'pack')
+        self.assertIsNone(previous_route_setting)
         # now is pack zone
-        now_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting)
-        next_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting)
-        previous_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting, reverse=True)
-        self.assertEqual(next_zone_setting.zone, self.zone_check)
-        self.assertEqual(previous_zone_setting.zone, self.zone_produce)
+        now_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting)
+        next_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting)
+        previous_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting, reverse=True)
+        self.assertEqual(next_route_setting.location.zone, 'check')
+        self.assertEqual(previous_route_setting.location.zone, 'produce')
         # now is check zone
-        now_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting)
-        next_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting)
-        previous_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting, reverse=True)
-        self.assertEqual(next_zone_setting.zone, self.zone_wait)
-        self.assertEqual(previous_zone_setting.zone, self.zone_pack)
+        now_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting)
+        next_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting)
+        previous_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting, reverse=True)
+        self.assertEqual(next_route_setting.location.zone, 'wait')
+        self.assertEqual(previous_route_setting.location.zone, 'pack')
         # now is wait zone
-        now_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting)
-        next_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting)
-        previous_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting, reverse=True)
-        self.assertEqual(next_zone_setting.zone, self.zone_stock)
-        self.assertEqual(previous_zone_setting.zone, self.zone_check)
+        now_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting)
+        next_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting)
+        previous_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting, reverse=True)
+        self.assertEqual(next_route_setting.location.zone, 'stock')
+        self.assertEqual(previous_route_setting.location.zone, 'check')
         # now is stock zone
-        now_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting)
-        next_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting)
-        previous_zone_setting = self.route.next_zone_setting(now_zone_setting=now_zone_setting, reverse=True)
-        self.assertIsNone(next_zone_setting)
-        self.assertEqual(previous_zone_setting.zone, self.zone_wait)
+        now_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting)
+        next_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting)
+        previous_route_setting = self.route.next_route_setting(now_route_setting=now_route_setting, reverse=True)
+        self.assertIsNone(next_route_setting)
+        self.assertEqual(previous_route_setting.location.zone, 'wait')
 
 
 class CacheItemTestCase(EnvSetUpTestCase):
-
     def setUp(self):
         self.accountSetUp()
         self.productSetUp()
@@ -146,22 +142,20 @@ class CacheItemTestCase(EnvSetUpTestCase):
 
     def test_refresh(self):
         cache = self.item.cache
-        self.assertEqual(cache.all(),0)
-        self.assertEqual(cache.settled(),0)
-        self.assertEqual(cache.transporting(),0)
-        self.assertEqual(cache.scrap(),0)
-        self.assertEqual(cache.closeout(),0)
+        self.assertEqual(cache.all(), 0)
+        self.assertEqual(cache.settled(), 0)
+        self.assertEqual(cache.transporting(), 0)
+        self.assertEqual(cache.scrap(), 0)
+        self.assertEqual(cache.closeout(), 0)
 
-        for usage in models.Zone.LAYOUT_USAGE:
-            self.assertEqual(cache.refresh(usage[0], 1),1)
-            self.assertEqual(cache.get_quantity(usage[0]),1)
-            self.assertEqual(cache.refresh(usage[0], -1),0)
-            self.assertEqual(cache.get_quantity(usage[0]), 0)
+        for zone in models.Location.ZONE:
+            self.assertEqual(cache.refresh(zone[0], 1), 1)
+            self.assertEqual(cache.get_quantity(zone[0]), 1)
+            self.assertEqual(cache.refresh(zone[0], -1), 0)
+            self.assertEqual(cache.get_quantity(zone[0]), 0)
 
 
 class LocationTestCase(EnvSetUpTestCase):
-
-
     def setUp(self):
         self.accountSetUp()
         self.productSetUp()
@@ -170,13 +164,11 @@ class LocationTestCase(EnvSetUpTestCase):
     def test_location_tree(self):
         self.assertTrue(self.location_stock.all_parent_nodes)
         self.assertFalse(self.location_stock.all_child_nodes)
-        self.assertEqual(self.location_stock.root_node,self.zone_stock.root_location)
-        self.assertEqual(self.location_stock.all_parent_nodes.first(),self.zone_stock.root_location)
-        self.assertEqual(self.zone_stock.root_location.all_child_nodes.first(),self.location_stock)
+        self.assertEqual(self.location_stock.root_node.zone, 'root')
+        self.assertTrue(self.warehouse.root_location in self.location_stock.all_parent_nodes)
         self.assertFalse(self.location_stock.sibling_nodes)
 
 class PackOrderTestCase(EnvSetUpTestCase):
-
     def setUp(self):
         self.accountSetUp()
         self.productSetUp()
@@ -192,6 +184,7 @@ class PackOrderTestCase(EnvSetUpTestCase):
             quantity=1
         )
 
+
     def test_confirm_to_done(self):
         self.assertTrue(self.pack_order.check_states('draft'))
         self.assertFalse(self.pack_order.check_states('confirmed'))
@@ -201,9 +194,9 @@ class PackOrderTestCase(EnvSetUpTestCase):
             self.assertEqual(self.location_closeout.get_item_quantity(product.item), 0)
         self.assertEqual(self.location_pack.get_item_quantity(self.package_node.item), 0)
         self.assertEqual(self.location_closeout.get_item_quantity(self.package_node.item), 0)
-        self.assertEqual(self.pack_order.state,'draft')
+        self.assertEqual(self.pack_order.state, 'draft')
 
-        self.assertEqual(self.pack_order.confirm(),self.pack_order)
+        self.assertEqual(self.pack_order.confirm(), self.pack_order)
         self.assertFalse(self.pack_order.check_states('draft'))
         self.assertTrue(self.pack_order.check_states('confirmed'))
         self.assertFalse(self.pack_order.check_states('done'))
@@ -227,7 +220,6 @@ class PackOrderTestCase(EnvSetUpTestCase):
 
 
 class ScrapOrderTestCase(EnvSetUpTestCase):
-
     def setUp(self):
         self.accountSetUp()
         self.productSetUp()
@@ -251,7 +243,7 @@ class ScrapOrderTestCase(EnvSetUpTestCase):
             item=self.item,
             quantity=1
         )
-        self.scrap_order_pack= models.ScrapOrder.objects.create(
+        self.scrap_order_pack = models.ScrapOrder.objects.create(
             location=self.location_pack,
             create_user=self.super_user
 
@@ -261,7 +253,7 @@ class ScrapOrderTestCase(EnvSetUpTestCase):
             item=self.item,
             quantity=1
         )
-        self.scrap_order_repair= models.ScrapOrder.objects.create(
+        self.scrap_order_repair = models.ScrapOrder.objects.create(
             location=self.location_repair,
             create_user=self.super_user
 
@@ -271,7 +263,7 @@ class ScrapOrderTestCase(EnvSetUpTestCase):
             item=self.item,
             quantity=1
         )
-        self.scrap_order_check= models.ScrapOrder.objects.create(
+        self.scrap_order_check = models.ScrapOrder.objects.create(
             location=self.location_check,
             create_user=self.super_user
 
@@ -288,9 +280,9 @@ class ScrapOrderTestCase(EnvSetUpTestCase):
         self.assertFalse(self.scrap_order_produce.check_states('done'))
         self.assertEqual(self.location_scrap.get_item_quantity(self.item), 0)
         self.assertEqual(self.location_produce.get_item_quantity(self.item), 0)
-        self.assertEqual(self.scrap_order_produce.state,'draft')
+        self.assertEqual(self.scrap_order_produce.state, 'draft')
 
-        self.assertEqual(self.scrap_order_produce.confirm(),self.scrap_order_produce)
+        self.assertEqual(self.scrap_order_produce.confirm(), self.scrap_order_produce)
         self.scrap_produce_move = self.scrap_order_produce.scraporderline_set.first().detail.doing_move
         self.assertFalse(self.scrap_order_produce.check_states('draft'))
         self.assertTrue(self.scrap_order_produce.check_states('confirmed'))
@@ -308,7 +300,7 @@ class ScrapOrderTestCase(EnvSetUpTestCase):
         self.assertEqual(self.location_scrap.get_item_quantity(self.item), 1)
         self.assertEqual(self.location_produce.get_item_quantity(self.item), -1)
         self.assertTrue(self.scrap_order_produce.procurement.check_states('done'))
-        
+
     def test_stock_confirm_to_done(self):
         self.assertTrue(self.scrap_order_stock.check_states('draft'))
         self.assertFalse(self.scrap_order_stock.check_states('confirmed'))
@@ -362,7 +354,7 @@ class ScrapOrderTestCase(EnvSetUpTestCase):
         self.assertEqual(self.location_scrap.get_item_quantity(self.item), 1)
         self.assertEqual(self.location_pack.get_item_quantity(self.item), -1)
         self.assertTrue(self.scrap_order_pack.procurement.check_states('done'))
-        
+
     def test_repair_confirm_to_done(self):
         self.assertTrue(self.scrap_order_check.check_states('draft'))
         self.assertFalse(self.scrap_order_check.check_states('confirmed'))
@@ -393,28 +385,38 @@ class ScrapOrderTestCase(EnvSetUpTestCase):
 
 
 class CloseoutOrderTestCase(EnvSetUpTestCase):
-
     def setUp(self):
         self.accountSetUp()
         self.productSetUp()
         self.stockSetUp()
-        self.closeout_order = models.CloseoutOrder.objects.create(
+        self.stock_order = models.CloseoutOrder.objects.create(
             location=self.location_stock,
             create_user=self.super_user
         )
         models.CloseoutOrderLine.objects.create(
-            order=self.closeout_order,
+            order=self.stock_order,
             item=self.item,
             quantity=1
         )
 
-class WarehouseTestCase(EnvSetUpTestCase):
+    def test_confirm(self):
+        self.assertEqual(self.location_stock.get_item_quantity(self.item),0)
+        self.assertEqual(self.location_closeout.get_item_quantity(self.item),0)
+        self.stock_order.confirm()
+        self.assertEqual(self.location_stock.get_item_quantity(self.item), -1)
+        self.assertEqual(self.location_closeout.get_item_quantity(self.item), 1)
 
+
+
+
+
+
+class WarehouseTestCase(EnvSetUpTestCase):
     def setUp(self):
         self.accountSetUp()
         self.productSetUp()
         self.stockSetUp()
-        self.procurement = models.Procurement.objects.create(user=self.super_user)
+        self.procurement = models.Procurement.objects.create(warehouse=self.warehouse, user=self.super_user)
         self.procurement_detail = models.ProcurementDetail.objects.create(
             item=self.item,
             procurement=self.procurement,
@@ -422,27 +424,28 @@ class WarehouseTestCase(EnvSetUpTestCase):
             route=self.route
         )
         self.procurement.confirm()
-        self.procurement_detail.start(self.location_produce)
+        self.procurement_detail.start()
         self.move = self.procurement_detail.move_set.first()
 
-    def test_get_default_location(self):
-        for usage in models.Zone.INDIVISIBLE_USAGE:
-            self.assertEqual(self.warehouse.get_default_location(usage).zone.usage,usage)
+    def test_get_root_location(self):
+        for usage in models.Location.INDIVISIBLE_USAGE:
+            self.assertEqual(self.warehouse.get_root_location(usage).zone, usage)
+            self.assertFalse(self.warehouse.get_root_location(usage).is_virtual)
 
     def test_move_transfer(self):
-        self.move.to_location=self.location_pack
+        self.move.to_location = self.location_pack
         self.move.save()
         print(self.move)
         # at produce lock 5
-        self.assertEqual(self.location_produce.get_item_quantity(self.item),D('-5'))
-        self.assertEqual(self.location_pack.get_item_quantity(self.item),D('0'))
-        self.assertEqual(self.location_check.get_item_quantity(self.item),D('0'))
+        self.assertEqual(self.location_produce.get_item_quantity(self.item), D('-5'))
+        self.assertEqual(self.location_pack.get_item_quantity(self.item), D('0'))
+        self.assertEqual(self.location_check.get_item_quantity(self.item), D('0'))
         self.assertEqual(self.location_wait.get_item_quantity(self.item), D('0'))
         self.assertEqual(self.location_stock.get_item_quantity(self.item), D('0'))
-        self.assertEqual(self.item.cache.all(),D('0'))
-        self.assertEqual(self.item.cache.settled(),D('0'))
-        self.assertEqual(self.item.cache.transporting(),D('0'))
-        self.assertEqual(self.move.done(),self.move)
+        self.assertEqual(self.item.cache.all(), D('0'))
+        self.assertEqual(self.item.cache.settled(), D('0'))
+        self.assertEqual(self.item.cache.transporting(), D('0'))
+        self.assertEqual(self.move.done(), self.move)
         # at pack lock 0
         self.assertFalse(self.procurement.check_states('done'))
         with self.assertRaises(NotInStates):
@@ -461,7 +464,8 @@ class WarehouseTestCase(EnvSetUpTestCase):
         self.assertEqual(self.item.cache.all(), D('5'))
         self.assertEqual(self.item.cache.settled(), D('0'))
         self.assertEqual(self.item.cache.transporting(), D('5'))
-        self.assertEqual(self.next_move.done(),self.next_move)
+        print(self.next_move.to_location, self.next_move.from_route_setting.location)
+        self.assertEqual(self.next_move.done(), self.next_move)
         # at check lock 0
         self.assertFalse(self.procurement.check_states('done'))
         with self.assertRaises(NotInStates):
@@ -480,7 +484,7 @@ class WarehouseTestCase(EnvSetUpTestCase):
         self.assertEqual(self.item.cache.all(), D('5'))
         self.assertEqual(self.item.cache.settled(), D('0'))
         self.assertEqual(self.item.cache.transporting(), D('5'))
-        self.assertEqual(self.next_move.done(),self.next_move)
+        self.assertEqual(self.next_move.done(), self.next_move)
         # at pick lock 0
         self.assertFalse(self.procurement.check_states('done'))
         with self.assertRaises(NotInStates):
@@ -500,8 +504,8 @@ class WarehouseTestCase(EnvSetUpTestCase):
         self.assertEqual(self.item.cache.settled(), D('0'))
         self.assertEqual(self.item.cache.transporting(), D('5'))
 
-        self.assertEqual(self.procurement.cancel(),self.procurement)
-        self.assertEqual(self.next_move.done(),self.next_move)
+        self.assertEqual(self.procurement.cancel(), self.procurement)
+        self.assertEqual(self.next_move.done(), self.next_move)
         # at stock lock 0
         self.assertFalse(self.procurement.check_states('done'))
         self.assertTrue(self.procurement.check_states('cancel'))
@@ -521,7 +525,7 @@ class WarehouseTestCase(EnvSetUpTestCase):
         self.assertEqual(self.item.cache.all(), D('5'))
         self.assertEqual(self.item.cache.settled(), D('0'))
         self.assertEqual(self.item.cache.transporting(), D('0'))
-        self.assertEqual(self.next_move.done(),self.next_move)
+        self.assertEqual(self.next_move.done(), self.next_move)
         # at pick lock 0
         self.assertTrue(self.procurement.check_states('cancel'))
         with self.assertRaises(NotInStates):
@@ -540,7 +544,7 @@ class WarehouseTestCase(EnvSetUpTestCase):
         self.assertEqual(self.item.cache.all(), D('5'))
         self.assertEqual(self.item.cache.settled(), D('0'))
         self.assertEqual(self.item.cache.transporting(), D('5'))
-        self.assertEqual(self.next_move.done(),self.next_move)
+        self.assertEqual(self.next_move.done(), self.next_move)
         # at check lock 0
         self.assertTrue(self.procurement.check_states('cancel'))
         with self.assertRaises(NotInStates):
@@ -559,7 +563,7 @@ class WarehouseTestCase(EnvSetUpTestCase):
         self.assertEqual(self.item.cache.all(), D('5'))
         self.assertEqual(self.item.cache.settled(), D('0'))
         self.assertEqual(self.item.cache.transporting(), D('5'))
-        self.assertEqual(self.next_move.done(),self.next_move)
+        self.assertEqual(self.next_move.done(), self.next_move)
         # at pack lock 0
         self.assertTrue(self.procurement.check_states('cancel'))
         with self.assertRaises(NotInStates):
@@ -578,7 +582,7 @@ class WarehouseTestCase(EnvSetUpTestCase):
         self.assertEqual(self.item.cache.all(), D('5'))
         self.assertEqual(self.item.cache.settled(), D('0'))
         self.assertEqual(self.item.cache.transporting(), D('5'))
-        self.assertEqual(self.next_move.done(),self.next_move)
+        self.assertEqual(self.next_move.done(), self.next_move)
         # at produce lock 0
         self.assertTrue(self.procurement.check_states('cancel'))
         with self.assertRaises(NotInStates):

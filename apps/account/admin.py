@@ -92,7 +92,7 @@ class ProfileAdmin(admin.ModelAdmin):
         'user', 'sex', 'phone', 'online_notice', 'mail_notice', 'language',
         'address', 'default_send_address',
     )
-    list_display_links = ('user')
+    list_display_links = ('user',)
     list_filter = (
         'sex', 'online_notice', 'mail_notice'
     )

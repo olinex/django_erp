@@ -4,7 +4,7 @@
 class JsonSerializer(object):
     STATUS_TYPES=('success','info','warning','error')
     def check_status(self):
-        if status not in self.STATUS_TYPES:
+        if self.status not in self.STATUS_TYPES:
             raise AttributeError(
                 'status must be a string of {}'.format(
                     '/'.join(self.STATUS_TYPES)))

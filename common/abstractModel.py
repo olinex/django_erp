@@ -99,11 +99,11 @@ class TreeModel(models.Model,StateMachine):
         _('tree index'),
         null=False,
         blank=True,
-        default='',
+        default='-',
         max_length=190,
         help_text=_(
             '''
-            tree index of the node,like "a-b-c-",enumerate all of the parent node,
+            tree index of the node,like "-a-b-c-",enumerate all of the parent node,
             if this node is the root node of tree,the index will be empty string
             '''
         )
@@ -117,8 +117,8 @@ class TreeModel(models.Model,StateMachine):
 
     @property
     def level(self):
-        if self.index != '':
-            return len(self.index.split('-')) - 1
+        if self.index != '-':
+            return len(self.index.split('-')) - 2
         else:
             return 0
 
@@ -130,7 +130,7 @@ class TreeModel(models.Model,StateMachine):
         '''
         if self.index != '':
             return self.__class__.objects.get(
-                pk=int(self.index.split('-')[0])
+                pk=int(self.index.split('-')[1])
             )
         return self
 
@@ -151,7 +151,7 @@ class TreeModel(models.Model,StateMachine):
         :return: common.TreeModel Queryset
         '''
         return self.__class__.objects.filter(
-            pk__in=[int(node_pk) for node_pk in self.index.split('-')[:-1]]
+            pk__in=[int(node_pk) for node_pk in self.index.split('-')[1:-1]]
         )
 
     @property
@@ -174,7 +174,7 @@ class TreeModel(models.Model,StateMachine):
         '''
         return cls.objects.filter(
             parent_node=None,
-            index=''
+            index='-'
         )
 
     def change_parent_node(self, parent):
@@ -191,7 +191,7 @@ class TreeModel(models.Model,StateMachine):
                 new_index = '{}{}-'.format(node.index, str(node.pk))
             else:
                 node=None
-                new_index = ''
+                new_index = '-'
             old_index = self.index
             self.all_child_nodes.select_for_update().update(
                 index=Func(F('index'), Value(new_index), Value(old_index), function='replace')

@@ -7,13 +7,6 @@ from common.admin import CommonAdmin, CommonTabInLine
 from . import models
 
 
-class ZoneInline(CommonTabInLine):
-    model = models.Zone
-    fieldsets = (
-        (None, {'fields': ('usage',)}),
-    )
-
-
 class LocationInline(CommonTabInLine):
     model = models.Location
     fieldsets = (
@@ -39,38 +32,15 @@ class RouteSettingInline(CommonTabInLine):
     )
 
 
-class PackageTypeSettingInline(CommonTabInLine):
-    model = models.PackageTypeSetting
-    fieldsets = (
-        (None, {'fields': ('item', 'max_quantity')}),
-    )
-
-
-class PackageTemplateSettingInline(CommonTabInLine):
-    model = models.PackageTemplateSetting
-    fieldsets = (
-        (None, {'fields': ('type_setting', 'quantity')}),
-    )
-
-
 @admin.register(models.Warehouse)
 class WarehouseAdmin(CommonAdmin):
     list_display = ('name', 'manager', 'address')
     search_fields = ('name',)
     list_editable = ('name',)
     inlines = (
-        ZoneInline,
-    )
-
-
-@admin.register(models.Zone)
-class ZoneAdmin(CommonAdmin):
-    list_display = ('warehouse', 'usage', 'root_location')
-    list_filter = ('warehouse', 'usage')
-    list_editable = ('usage',)
-    inlines = (
         LocationInline,
     )
+
 
 
 @admin.register(models.Location)
@@ -91,15 +61,16 @@ class LocationAdmin(CommonAdmin):
 class MoveAdmin(CommonAdmin):
     list_display = (
         'from_location', 'to_location', 'to_move',
-        'quantity', 'is_return', 'state'
+        'from_route_setting', 'to_route_setting', 'quantity', 'state'
     )
-    list_filter = ('state', 'is_return')
+    list_filter = ('state',)
     list_editable = list_filter
     fieldsets = (
         (None, {'fields': (
             ('from_location', 'to_location'),
+            ('from_route_setting', 'to_route_setting'),
             'to_move', 'procurement_detail'
-            'quantity', 'is_return', 'state'
+            'quantity', 'state'
         )}),
     )
 
@@ -120,39 +91,6 @@ class RouteAdmin(CommonAdmin):
     )
 
 
-@admin.register(models.PackageType)
-class PackageTypeAdmin(CommonAdmin):
-    search_fields = list_editable = list_display = ('name',)
-    fieldsets = (
-        (None, {'fields': ('name',)}),
-    )
-    inlines = (
-        PackageTypeSettingInline,
-    )
-
-
-@admin.register(models.PackageTemplate)
-class PackageTemplateAdmin(CommonAdmin):
-    list_display = ('name', 'package_type')
-    list_filter = ('package_type',)
-    list_editable = ('name',)
-    search_fields = list_editable
-    fieldsets = (
-        (None, {'fields': ('name', 'package_type')}),
-    )
-    inlines = (
-        PackageTemplateSettingInline,
-    )
-
-
-@admin.register(models.PackageNode)
-class PackageNodeAdmin(admin.ModelAdmin):
-    list_display = ('id', 'parent_node', 'template', 'index')
-    fieldsets = (
-        (None, {'fields': ('parent_node', 'template')}),
-    )
-
-
 @admin.register(models.Procurement)
 class ProcurementAdmin(CommonAdmin):
     list_display = ('user', 'state')
@@ -169,13 +107,4 @@ class ProcurementDetailAdmin(CommonAdmin):
     list_filter = ('direct_return',)
     fieldsets = (
         (None, {'fields': ('procurement', 'direct_return', 'route', ('item', 'quantity'))}),
-    )
-
-
-@admin.register(models.Item)
-class ItemAdmin(CommonAdmin):
-    list_display = ('content_type', 'object_id', 'instance')
-    list_filter = ('content_type',)
-    fieldsets = (
-        (None, {'fields': ('content_type', 'object_id')})
     )

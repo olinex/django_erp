@@ -6,6 +6,11 @@ from rest_framework import serializers
 from common.rest.serializers import ActiveModelSerializer, StatePrimaryKeyRelatedField
 from . import models
 
+class ItemSerializer(ActiveModelSerializer):
+    class Meta:
+        model = models.Item
+        fields = ('content_type', 'object_id')
+
 
 class ProductCategorySerializer(ActiveModelSerializer):
     class Meta:
@@ -29,6 +34,24 @@ class UOMSerializer(ActiveModelSerializer):
             'id', 'name', 'symbol', 'decimal_places',
             'round_method', 'ratio', 'category'
         )
+
+
+class ValidateActionSerializer(ActiveModelSerializer):
+    symbol = serializers.ReadOnlyField()
+    uom = serializers.ReadOnlyField()
+
+    class Meta:
+        model = models.ValidateAction
+        fields = ('symbol', 'name', 'uom', 'explain')
+
+
+class ValidationSerializer(ActiveModelSerializer):
+    actions = StatePrimaryKeyRelatedField(models.ValidateAction, 'active', many=True)
+    actions_detail = ValidateActionSerializer(source='actions', read_only=True, many=True)
+
+    class Meta:
+        model = models.Validation
+        fields = ('name', 'actions', 'actions_detail')
 
 
 class ProductTemplateSerializer(ActiveModelSerializer):
@@ -84,20 +107,71 @@ class LotSerializer(ActiveModelSerializer):
         model = models.Lot
         fields = ('name', 'product')
 
-
-class ValidateActionSerializer(ActiveModelSerializer):
-    symbol = serializers.ReadOnlyField()
-    uom = serializers.ReadOnlyField()
-
-    class Meta:
-        model = models.ValidateAction
-        fields = ('symbol', 'name', 'uom', 'explain')
-
-
-class ValidationSerializer(ActiveModelSerializer):
-    actions = StatePrimaryKeyRelatedField(models.ValidateAction, 'active', many=True)
-    actions_detail = ValidateActionSerializer(source='actions', read_only=True, many=True)
+class PackageTypeSettingSerializer(serializers.ModelSerializer):
+    package_type = StatePrimaryKeyRelatedField(models.PackageType, 'active')
+    item = StatePrimaryKeyRelatedField(models.Item, 'active')
+    item_detail = ItemSerializer(source='item', read_only=True)
 
     class Meta:
-        model = models.Validation
-        fields = ('name', 'actions', 'actions_detail')
+        model = models.PackageTypeSetting
+        fields = (
+            'package_type', 'item', 'item_detail', 'max_quantity'
+        )
+
+
+class PackageTypeSerializer(ActiveModelSerializer):
+    item_settings = PackageTypeSettingSerializer(
+        source='packagetypesetting_set',
+        read_only=True,
+        many=True
+    )
+
+    class Meta:
+        model = models.PackageType
+        fields = ('name', 'item_settings')
+
+
+class PackageTemplateSettingSerializer(serializers.ModelSerializer):
+    package_template = StatePrimaryKeyRelatedField(models.PackageTemplate, 'active')
+    type_setting_detail = PackageTypeSettingSerializer(
+        source='type_setting',
+        read_only=True,
+        many=True
+    )
+
+    class Meta:
+        model = models.PackageTemplateSetting
+        fields = (
+            'package_template', 'type_setting', 'quantity', 'type_setting_detail'
+        )
+
+
+class PackageTemplateSerializer(ActiveModelSerializer):
+    package_type = StatePrimaryKeyRelatedField(models.PackageType, 'active')
+    item_settings = PackageTemplateSettingSerializer(
+        source='packagetemplatesetting_set',
+        read_only=True,
+        many=True
+    )
+
+    class Meta:
+        model = models.PackageTemplate
+        fields = (
+            'name', 'package_type', 'item_settings'
+        )
+
+
+class PackageNodeSerializer(serializers.ModelSerializer):
+    index = serializers.ReadOnlyField()
+    template = StatePrimaryKeyRelatedField(models.PackageTemplate, 'active')
+    template_detail = PackageTemplateSerializer(
+        source='template',
+        read_only=True
+    )
+
+    class Meta:
+        model = models.PackageNode
+        fields = (
+            'name', 'parent_node', 'template', 'template_detail',
+            'quantity', 'index'
+        )

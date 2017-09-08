@@ -13,6 +13,7 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+import debug_toolbar
 from django.conf import settings
 from django.conf.urls import url, include
 from django.conf.urls.static import static
@@ -28,6 +29,7 @@ urlpatterns = [
     url(r'^product/', include('apps.product.urls', namespace='product', app_name='product')),
     url(r'^stock/', include('apps.stock.urls', namespace='stock', app_name='stock')),
     url(r'^test/', include('apps.djangoperm.urls', namespace='djangoperm', app_name='djangoperm')),
+    url(r'^__debug__/',include(debug_toolbar.urls,namespace='debug',app_name='debug_toolbar')),
     url(r'^$', first_request, name='first_request'),
 ]
 

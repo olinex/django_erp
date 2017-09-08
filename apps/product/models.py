@@ -1,18 +1,237 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-from decimal import Decimal as D
+from .utils import QuantityField
 
 from django.db import transaction
-from django.db.models import Manager
+from django.db.models import Manager, Q
+from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from apps.djangoperm import models
 from common.state import Statement, StateMachine
-from common.abstractModel import BaseModel
-from common.fields import (
-    ActiveLimitForeignKey, ActiveLimitManyToManyField, ActiveLimitOneToOneField
-)
+from common.abstractModel import BaseModel, TreeModel
+from common.fields import ActiveLimitForeignKey, ActiveLimitManyToManyField
+
+User = get_user_model()
+
+
+class PackageType(BaseModel):
+    '''
+    the type of package which define it name,the name must be unique
+    '''
+
+    name = models.CharField(
+        _('name'),
+        null=False,
+        blank=False,
+        unique=True,
+        max_length=90,
+        help_text=_("the type name of package")
+    )
+
+    items = models.ManyToManyField(
+        'product.Item',
+        blank=False,
+        through='product.PackageTypeSetting',
+        through_fields=('package_type', 'item'),
+        verbose_name=_('items'),
+        help_text=_('the packable items of package')
+    )
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = _('package type')
+        verbose_name_plural = _('package types')
+
+
+class PackageTypeSetting(models.Model, StateMachine):
+    '''
+    Constraint sets the maximum number of packages
+    '''
+
+    package_type = ActiveLimitForeignKey(
+        'product.PackageType',
+        null=False,
+        blank=False,
+        verbose_name=_('package type'),
+        help_text=_('the type of package which settings belongs to')
+    )
+
+    item = ActiveLimitForeignKey(
+        'product.Item',
+        null=False,
+        blank=False,
+        verbose_name=_('item'),
+        help_text=_('the item which can be packed in this type of package')
+    )
+
+    max_quantity = QuantityField(
+        _('max quantity'),
+        null=False,
+        blank=False,
+        uom='item.instance.uom',
+        validators=[MinValueValidator(0)],
+        help_text=_('the max quantity of item can be packed into package')
+    )
+
+    def __str__(self):
+        return '{}-{}({})'.format(
+            self.package_type,
+            self.item,
+            str(self.max_quantity)
+        )
+
+    class Meta:
+        verbose_name = _('setting of package type')
+        verbose_name_plural = _('settings of package type')
+        unique_together = (
+            ('package_type', 'item'),
+        )
+
+    class States:
+        product_setting = Statement(
+            Q(item__content_type__app_label='product') &
+            Q(item__content_type__model='Product')
+        )
+
+
+class PackageTemplate(BaseModel):
+    '''
+    the template of package type
+    '''
+
+    name = models.CharField(
+        _('name'),
+        null=False,
+        blank=False,
+        unique=True,
+        max_length=90,
+        help_text=_('the name of package template')
+    )
+
+    package_type = ActiveLimitForeignKey(
+        'product.PackageType',
+        null=False,
+        blank=False,
+        verbose_name=_('package type'),
+        help_text=_('the package type of this template,constraint max number of item')
+    )
+
+    type_settings = models.ManyToManyField(
+        'product.PackageTypeSetting',
+        blank=False,
+        through='product.PackageTemplateSetting',
+        through_fields=('package_template', 'type_setting'),
+        verbose_name=_('the type settings of package'),
+        help_text=_('the type settings of package which constraint max number of item')
+    )
+
+    def __str__(self):
+        return str(self.package_type)
+
+    class Meta:
+        verbose_name = _('package template')
+        verbose_name_plural = _('package templates')
+
+
+class PackageTemplateSetting(models.Model):
+    '''
+    the setting which set the number of item in the package
+    '''
+
+    package_template = ActiveLimitForeignKey(
+        'product.PackageTemplate',
+        null=False,
+        blank=False,
+        verbose_name=_('package template'),
+        help_text=_('the package template which setting belongs to')
+    )
+
+    type_setting = models.ForeignKey(
+        'product.PackageTypeSetting',
+        null=False,
+        blank=False,
+        verbose_name=_('package type setting'),
+        help_text=_('the package type setting will constraint the max number of item of this template setting')
+    )
+
+    quantity = QuantityField(
+        _('quantity'),
+        null=False,
+        blank=False,
+        uom='type_setting.uom',
+        validators=[MinValueValidator(0)],
+        help_text=_('the quantity of item in package template')
+    )
+
+    def __str__(self):
+        return '{}-{}({})'.format(
+            self.package_template,
+            self.type_setting,
+            str(self.quantity)
+        )
+
+    class Meta:
+        verbose_name = _('package template setting')
+        verbose_name_plural = _('package template settings')
+        unique_together = (
+            ('package_template', 'type_setting'),
+        )
+
+
+class PackageNode(TreeModel, StateMachine):
+    '''
+    package node,every node contain an package template
+    '''
+
+    template = ActiveLimitForeignKey(
+        'product.PackageTemplate',
+        null=False,
+        blank=False,
+        verbose_name=_('package template'),
+        help_text=_('package template in the package tree')
+    )
+
+    quantity = models.PositiveSmallIntegerField(
+        _('quantity'),
+        null=False,
+        blank=False,
+        help_text=_('the quantity of the template in this node')
+    )
+
+    items = GenericRelation('product.Item')
+
+    @property
+    def item(self):
+        if not hasattr(self, '__item'):
+            self.__item = self.items.first()
+        return self.__item
+
+    @property
+    def child_quantity_dict(self):
+        '''
+        return the dict of all childs pk and quantity dict,
+        and an empty string with itself's quantity
+        :return: dict
+        '''
+        result = dict(self.all_child_nodes.values_list('pk', 'quantity'))
+        return result
+
+    def __str__(self):
+        return self.template.name
+
+    class Meta:
+        verbose_name = _('package node')
+        verbose_name_plural = _('package nodes')
+        unique_together = (
+            ('parent_node', 'template'),
+        )
+
 
 
 class ProductCategory(BaseModel):
@@ -138,10 +357,15 @@ class Product(BaseModel):
         help_text=_('True means product can be rented')
     )
 
-    items = GenericRelation('stock.Item')
+    items = GenericRelation('product.Item')
 
     @property
     def item(self):
+        '''
+        get the relate item about itself,in the product.Item,it constraint the ccontent type and instance id,
+        so it must have the only one item
+        :return: product.Item instance
+        '''
         if not hasattr(self, '__item'):
             self.__item = self.items.first()
         return self.__item
@@ -597,6 +821,48 @@ class Lot(BaseModel):
 
     def __str__(self):
         return self.name
+
+
+class Item(BaseModel):
+        '''
+        stock item is project what can be stock and move
+        '''
+
+        content_type = models.ForeignKey(
+            ContentType,
+            null=False,
+            blank=False,
+            verbose_name=_('content type'),
+            help_text=_('the type of content reflect to the model')
+        )
+
+        object_id = models.PositiveIntegerField(
+            _('item id'),
+            null=False,
+            blank=False,
+            help_text=_('the primary key for the project')
+        )
+
+        instance = GenericForeignKey('content_type', 'object_id')
+
+        def __str__(self):
+            return str(self.instance)
+
+        class Meta:
+            verbose_name = _('stock item')
+            verbose_name_plural = _('stock items')
+            unique_together = ('content_type', 'object_id')
+
+        class States(BaseModel.States):
+            active = BaseModel.States.active
+            product = Statement(
+                Q(content_type__app_label='product') & Q(content_type__model='product'),
+                inherits=active
+            )
+            package_node = Statement(
+                Q(content_type__app_label='stock') & Q(content_type__model='packagenode'),
+                inherits=active
+            )
 
 
 # class Barcode(BaseModel):

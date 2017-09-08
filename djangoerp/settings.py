@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+#-*- coding:utf-8 -*-
+
 """
 Django settings for djangoerp project.
 
@@ -15,7 +18,6 @@ import random, string
 from . import get_environ
 from . import privates
 from django.core.urlresolvers import reverse_lazy
-
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -46,6 +48,7 @@ INSTALLED_APPS = [
     'channels',
     'rest_framework',
     'django_extensions',
+    'debug_toolbar',
 
     'apps.noderp',
     'apps.djangoperm',
@@ -55,6 +58,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
@@ -157,7 +161,37 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'collectstatics')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Third part package params
+# mail
+DEFAULT_FROM_EMAIL = get_environ('DEFAULT_FROM_EMAIL')
+EMAIL_HOST = get_environ('EMAIL_HOST')
+EMAIL_PORT = get_environ('EMAIL_PORT')
+EMAIL_HOST_USER = get_environ('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = get_environ('EMAIL_HOST_PASSWORD')
+EMAIL_USE_LTS = True
+
+# cache
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': get_environ('REDIS_CACHE_LOCATION'),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'PASSWORD': get_environ('REDIS_CONF_PASSWORD'),
+            'MAX_ENTRIES': 1000
+        },
+        'TIMEOUT': 3600,
+        'KEY_PREFIX': 'DJANGO_ERP_DEFAULT_CACHE',
+    }
+}
+
+# session
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_CACHE_ALIAS = 'default'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+
+# ------------------------------------------Third part package params--------------------------------------------------
+
 PERM_NOT_ALLOW_NOTICE = ''
 
 REST_FRAMEWORK = {
@@ -202,7 +236,8 @@ CHANNEL_LAYERS = {
 REDIS_CONF = {
     'host': get_environ('REDIS_CONF_HOST'),
     'port': get_environ('REDIS_CONF_PORT'),
-    'db':   get_environ('REDIS_CONF_DB'),
+    'db': get_environ('REDIS_CONF_DB'),
+    'password': get_environ('REDIS_CONF_PASSWORD')
 }
 
 # Celery
@@ -214,10 +249,8 @@ CELERY_ENABLE_UTC = USE_TZ
 CELERY_BROKER_URL = get_environ('CELERY_BROKER_URL')
 CELERY_RESULT_BACKEND = get_environ('CELERY_RESULT_BACKEND')
 
-# mail
-DEFAULT_FROM_EMAIL = get_environ('DEFAULT_FROM_EMAIL')
-EMAIL_HOST = get_environ('EMAIL_HOST')
-EMAIL_PORT = get_environ('EMAIL_PORT')
-EMAIL_HOST_USER = get_environ('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = get_environ('EMAIL_HOST_PASSWORD')
-EMAIL_USE_LTS = True
+# debug toolbar settings
+INTERNAL_IPS = ['127.0.0.1']
+DEBUG_TOOLBAR_CONFIG = {
+    'JQUERY_URL': 'http://code.jquery.com/jquery-2.1.1.min.js'
+}
