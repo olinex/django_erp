@@ -1,3 +1,3 @@
 sudo -H pip install -r .pip
-cd ./noderp
+cd ./apps/dva
 sudo -H npm install

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-from apps.djangoperm import models
+from apps.django_perm import models
 from common.validators import ActiveStateValidator
 
 

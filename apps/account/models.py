@@ -6,7 +6,7 @@ from django.db.models import Manager
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth import get_user_model
 
-from apps.djangoperm import models
+from apps.django_perm import models
 from common.abstractModel import BaseModel, TreeModel
 from common.fields import ActiveLimitForeignKey, ActiveLimitOneToOneField, ActiveLimitManyToManyField
 

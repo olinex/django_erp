@@ -1,1 +1,1 @@
-celery -A djangoerp worker -l info
+celery -A django_erp worker -l info

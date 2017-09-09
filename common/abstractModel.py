@@ -5,7 +5,7 @@ from django.db import transaction
 from django.db.models import F, Value, Func, Q
 from django.utils.translation import ugettext_lazy as _
 
-from apps.djangoperm import models
+from apps.django_perm import models
 from . import state
 from .state import StateMachine,Statement
 

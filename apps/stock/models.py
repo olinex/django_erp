@@ -19,7 +19,7 @@ from common.fields import ActiveLimitForeignKey, ActiveLimitOneToOneField, Cance
 from common.state import Statement, StateMachine
 from common.validators import NotZeroValidator, StateInstanceValidator
 
-from apps.djangoperm import models
+from apps.django_perm import models
 from apps.product.utils import QuantityField
 from apps.product.models import Item as SuperItem
 from apps.product.models import PackageNode as SuperPackageNode

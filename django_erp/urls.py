@@ -1,4 +1,4 @@
-"""djangoerp URL Configuration
+"""django_erp URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.11/topics/http/urls/
@@ -28,7 +28,7 @@ urlpatterns = [
     url(r'^account/', include('apps.account.urls', namespace='account', app_name='account')),
     url(r'^product/', include('apps.product.urls', namespace='product', app_name='product')),
     url(r'^stock/', include('apps.stock.urls', namespace='stock', app_name='stock')),
-    url(r'^test/', include('apps.djangoperm.urls', namespace='djangoperm', app_name='djangoperm')),
+    url(r'^test/', include('apps.django_perm.urls', namespace='django_perm', app_name='django_perm')),
     url(r'^__debug__/',include(debug_toolbar.urls,namespace='debug',app_name='debug_toolbar')),
     url(r'^$', first_request, name='first_request'),
 ]

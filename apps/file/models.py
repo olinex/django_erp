@@ -3,7 +3,7 @@
 
 from django.conf import settings
 
-from apps.djangoperm import models
+from apps.django_perm import models
 from common.abstractModel import BaseModel
 from common.fields import ActiveLimitForeignKey
 

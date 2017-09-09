@@ -10,7 +10,7 @@ from django.core.validators import MinValueValidator
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
-from apps.djangoperm import models
+from apps.django_perm import models
 from common.state import Statement, StateMachine
 from common.abstractModel import BaseModel, TreeModel
 from common.fields import ActiveLimitForeignKey, ActiveLimitManyToManyField

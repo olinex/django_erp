@@ -102,8 +102,9 @@ apps/account/migrations/0*.py
 apps/staticfile/migrations/0*.py
 apps/stock/migrations/0*.py
 apps/djangoperm/migrations/0*.py
-noderp
-djangoperm
+dva/
+django_perm/
+node_modules/
 
 # Windows:
 Thumbs.db
@@ -112,5 +113,5 @@ Desktop.ini
 
 # Pycharm
 collectstatics/
-mode_modules/
+node_modules/
 .idea/

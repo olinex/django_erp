@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from common.abstractModel import BaseModel
 from common.fields import ActiveLimitForeignKey,ActiveLimitOneToOneField
-from apps.djangoperm.db import models
+from apps.django_perm.db import models
 
 # Create your models here.
 

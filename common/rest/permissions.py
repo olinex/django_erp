@@ -3,7 +3,7 @@
 
 from rest_framework import permissions
 
-from apps.djangoperm.utils import has_view_perm
+from apps.django_perm.utils import has_view_perm
 
 
 class ViewAccess(permissions.BasePermission):
