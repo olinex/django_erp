@@ -1,0 +1,175 @@
+
+- model: account.Province
+  fields:
+    country: China
+    name: 北京
+
+- model: account.Province
+  fields:
+    country: China
+    name: 天津
+
+- model: account.Province
+  fields:
+    country: China
+    name: 河北
+
+- model: account.Province
+  fields:
+    country: China
+    name: 山西
+
+- model: account.Province
+  fields:
+    country: China
+    name: 内蒙古
+
+- model: account.Province
+  fields:
+    country: China
+    name: 辽宁
+
+- model: account.Province
+  fields:
+    country: China
+    name: 吉林
+
+- model: account.Province
+  fields:
+    country: China
+    name: 黑龙江
+
+- model: account.Province
+  fields:
+    country: China
+    name: 上海
+
+- model: account.Province
+  fields:
+    country: China
+    name: 江苏
+
+- model: account.Province
+  fields:
+    country: China
+    name: 浙江
+
+- model: account.Province
+  fields:
+    country: China
+    name: 安徽
+
+- model: account.Province
+  fields:
+    country: China
+    name: 福建
+
+- model: account.Province
+  fields:
+    country: China
+    name: 江西
+
+- model: account.Province
+  fields:
+    country: China
+    name: 山东
+
+- model: account.Province
+  fields:
+    country: China
+    name: 河南
+
+- model: account.Province
+  fields:
+    country: China
+    name: 湖北
+
+- model: account.Province
+  fields:
+    country: China
+    name: 湖南
+
+- model: account.Province
+  fields:
+    country: China
+    name: 广东
+
+- model: account.Province
+  fields:
+    country: China
+    name: 广西
+
+- model: account.Province
+  fields:
+    country: China
+    name: 海南
+
+- model: account.Province
+  fields:
+    country: China
+    name: 重庆
+
+- model: account.Province
+  fields:
+    country: China
+    name: 四川
+
+- model: account.Province
+  fields:
+    country: China
+    name: 贵州
+
+- model: account.Province
+  fields:
+    country: China
+    name: 云南
+
+- model: account.Province
+  fields:
+    country: China
+    name: 西藏
+
+- model: account.Province
+  fields:
+    country: China
+    name: 陕西
+
+- model: account.Province
+  fields:
+    country: China
+    name: 甘肃
+
+- model: account.Province
+  fields:
+    country: China
+    name: 青海
+
+- model: account.Province
+  fields:
+    country: China
+    name: 宁夏
+
+- model: account.Province
+  fields:
+    country: China
+    name: 新疆
+
+- model: account.Province
+  fields:
+    country: China
+    name: 台湾
+
+- model: account.Province
+  fields:
+    country: China
+    name: 澳门
+
+- model: account.Province
+  fields:
+    country: China
+    name: 香港
+
+- model: account.Province
+  fields:
+    country: China
+    name: 钓鱼岛
