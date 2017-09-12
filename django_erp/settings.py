@@ -23,7 +23,7 @@ from django.core.urlresolvers import reverse_lazy
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = get_environ('DEBUG')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
@@ -50,15 +50,15 @@ INSTALLED_APPS = [
     'django_extensions',
     'debug_toolbar',
 
-    'apps.api',
-    'apps.file',
-    'apps.dva',
-    'apps.django_perm',
-    'apps.account',
-    'apps.product',
-    'apps.purchase',
-    'apps.stock',
-    'apps.sale',
+    'django_dva',
+    'django_perm',
+    'django_account',
+    'django_product',
+    'django_file',
+    'django_stock',
+    'django_purchase',
+    'django_sale',
+    'django_api',
 ]
 
 MIDDLEWARE = [
@@ -74,7 +74,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'django_erp.urls'
-REACT_ROOT = os.path.join(BASE_DIR, 'apps', 'react_erp')
+REACT_ROOT = os.path.join(BASE_DIR, 'django_dva')
 
 TEMPLATES = [
     {
@@ -95,9 +95,9 @@ TEMPLATES = [
 # authenticate against different sources.
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'apps.account.authentication.EmailAuthBackend',
-    'apps.account.authentication.PhoneNumberBackend',
-    'apps.django_perm.backends.ObjectPermissionBackend',
+    'django_account.authentication.EmailAuthBackend',
+    'django_account.authentication.PhoneNumberBackend',
+    'django_perm.backends.ObjectPermissionBackend',
 )
 
 WSGI_APPLICATION = 'django_erp.wsgi.application'

@@ -20,15 +20,15 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
-from apps.account.views import first_request
+from django_account.views import first_request
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^auth/',include('rest_framework.urls',namespace='rest_framework',app_name='rest_framework')),
-    url(r'^account/', include('apps.account.urls', namespace='account', app_name='account')),
-    url(r'^product/', include('apps.product.urls', namespace='product', app_name='product')),
-    url(r'^stock/', include('apps.stock.urls', namespace='stock', app_name='stock')),
-    url(r'^test/', include('apps.django_perm.urls', namespace='django_perm', app_name='django_perm')),
+    url(r'^account/', include('django_account.urls', namespace='account', app_name='account')),
+    url(r'^product/', include('django_product.urls', namespace='product', app_name='product')),
+    url(r'^stock/', include('django_stock.urls', namespace='stock', app_name='stock')),
+    url(r'^test/', include('django_perm.urls', namespace='django_perm', app_name='django_perm')),
     url(r'^__debug__/',include(debug_toolbar.urls,namespace='debug',app_name='debug_toolbar')),
     url(r'^$', first_request, name='first_request'),
 ]

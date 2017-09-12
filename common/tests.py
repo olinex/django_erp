@@ -12,12 +12,12 @@ from decimal import Decimal as D
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
-from apps.stock.models import (
+from django_stock.models import (
     Warehouse, Location, Route, Procurement, ProcurementDetail,
     RouteSetting,Item
 )
-from apps.account.models import Province, City, Region, Address, Partner
-from apps.product.models import (
+from django_account.models import Province, City, Region, Address, Partner
+from django_product.models import (
     ProductCategory, ProductTemplate, UOM, Attribute, Lot,
     PackageType,PackageTypeSetting,PackageNode,
     PackageTemplate, PackageTemplateSetting

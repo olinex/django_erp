@@ -2,6 +2,7 @@
 #-*- coding:utf-8 -*-
 
 import os
+import json
 import pymysql
 from .celery import app as celery_app
 
@@ -15,9 +16,9 @@ PREFIX = 'DJANGO_ERP'
 def setdefault(key,value):
     os.environ.setdefault(
         '{}_{}'.format(PREFIX,key),
-        value
+        json.dumps(value)
     )
 
-def get_environ(key,):
-    return os.environ.get('{}_{}'.format(PREFIX,key))
+def get_environ(key):
+    return json.loads(os.environ.get('{}_{}'.format(PREFIX,key)))
 

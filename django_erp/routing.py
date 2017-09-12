@@ -3,7 +3,7 @@
 
 from channels.routing import route_class
 
-from apps.account.consumers import Server
+from django_account.consumers import Server
 
 channel_routing = [
     route_class(Server,path=r'^/$'),

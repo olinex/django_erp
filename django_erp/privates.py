@@ -8,6 +8,7 @@
 
 from . import setdefault
 
+setdefault('DEBUG', True)
 setdefault('CHANNEL_HOST','redis://localhost:6379/2')
 setdefault('REDIS_CONF_HOST','localhost')
 setdefault('REDIS_CONF_PORT','6379')

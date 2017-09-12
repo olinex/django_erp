@@ -97,12 +97,17 @@ ENV/
 db.sqlite3
 djangoerp/privates.py
 migrations/0*.py
-apps/product/migrations/0*.py
-apps/account/migrations/0*.py
-apps/staticfile/migrations/0*.py
-apps/stock/migrations/0*.py
-apps/djangoperm/migrations/0*.py
-dva/
+django_account/migrations/0*.py
+django_api/migrations/0*.py
+django_dva/migrations/0*.py
+django_perm/migrations/0*.py
+django_file/migrations/0*.py
+django_manufacture/migrations/0*.py
+django_product/migrations/0*.py
+django_purchase/migrations/0*.py
+django_sale/migrations/0*.py
+django_stock/migrations/0*.py
+django_dva/
 django_perm/
 node_modules/
 
