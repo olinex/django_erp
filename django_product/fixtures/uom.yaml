@@ -1,4 +1,4 @@
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 米
     symbol: m
@@ -9,7 +9,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 厘米
     symbol: cm
@@ -20,7 +20,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 毫米
     symbol: mm
@@ -31,7 +31,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 千米
     symbol: km
@@ -42,7 +42,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 千克
     symbol: kg
@@ -53,7 +53,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 克
     symbol: g
@@ -64,7 +64,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 毫克
     symbol: mg
@@ -75,7 +75,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 秒
     symbol: s
@@ -86,7 +86,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 毫秒
     symbol: ms
@@ -97,7 +97,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 分钟
     symbol: min
@@ -108,7 +108,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 小时
     symbol: h
@@ -119,7 +119,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 日
     symbol: day
@@ -130,7 +130,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 安培
     symbol: A
@@ -141,7 +141,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 毫安
     symbol: mA
@@ -152,7 +152,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 开尔文
     symbol: K
@@ -163,7 +163,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 焦耳
     symbol: J
@@ -174,7 +174,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 平方米
     symbol: m2
@@ -185,7 +185,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 平方厘米
     symbol: cm2
@@ -196,7 +196,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 立方米
     symbol: m3
@@ -207,7 +207,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 立方厘米
     symbol: cm3
@@ -218,7 +218,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 个
     symbol: unit
@@ -229,7 +229,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 半打
     symbol: hdozen
@@ -240,7 +240,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 打
     symbol: dozen
@@ -251,7 +251,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 元
     symbol: yuan
@@ -262,7 +262,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 角
     symbol: jiao
@@ -273,7 +273,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 分
     symbol: fen
@@ -284,7 +284,7 @@
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
-- model: product.UOM
+- model: django_product.UOM
   fields:
     name: 厘
     symbol: li

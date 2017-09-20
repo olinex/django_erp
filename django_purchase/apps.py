@@ -5,6 +5,6 @@ from django.apps import AppConfig
 from django.utils.translation import ugettext_lazy as _
 
 
-class PurchaseConfig(AppConfig):
-    name = 'apps.purchase'
+class DjangoPurchaseConfig(AppConfig):
+    name = 'django_purchase'
     verbose_name = _('purchase')

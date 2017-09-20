@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 
-class ManufactureConfig(AppConfig):
-    name = 'apps.manufacture'
+class DjangoManufactureConfig(AppConfig):
+    name = 'django_manufacture'

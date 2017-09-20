@@ -15,25 +15,25 @@ Including another URLconf
 """
 import debug_toolbar
 from django.conf import settings
-from django.conf.urls import url, include
+from django.conf.urls import url
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-
 from django_account.views import first_request
+from common.utils import include
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^auth/',include('rest_framework.urls',namespace='rest_framework',app_name='rest_framework')),
-    url(r'^account/', include('django_account.urls', namespace='account', app_name='account')),
-    url(r'^product/', include('django_product.urls', namespace='product', app_name='product')),
-    url(r'^stock/', include('django_stock.urls', namespace='stock', app_name='stock')),
-    url(r'^test/', include('django_perm.urls', namespace='django_perm', app_name='django_perm')),
-    url(r'^__debug__/',include(debug_toolbar.urls,namespace='debug',app_name='debug_toolbar')),
+    url(r'^auth/',include('rest_framework.urls',namespace='rest_framework')),
+    url(r'^account/', include('django_account.urls', namespace='django_account')),
+    url(r'^product/', include('django_product.urls', namespace='django_product')),
+    url(r'^stock/', include('django_stock.urls', namespace='django_stock')),
+    url(r'^test/', include('django_perm.urls', namespace='django_perm')),
+
+    url(r'^__debug__/',include(debug_toolbar.urls,namespace='debug')),
     url(r'^$', first_request, name='first_request'),
 ]
-
-urlpatterns += staticfiles_urlpatterns()
-urlpatterns += static(settings.STATIC_URL,document_root=settings.STATIC_ROOT)
+if settings.FILE_SERVICE:
+    urlpatterns += static(settings.STATIC_URL,document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
 
 

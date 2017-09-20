@@ -10,7 +10,7 @@ from django.core.validators import MinValueValidator
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
-from apps.django_perm import models
+from django_perm import models
 from common.state import Statement, StateMachine
 from common.abstractModel import BaseModel, TreeModel
 from common.fields import ActiveLimitForeignKey, ActiveLimitManyToManyField
@@ -33,9 +33,9 @@ class PackageType(BaseModel):
     )
 
     items = models.ManyToManyField(
-        'product.Item',
+        'django_product.Item',
         blank=False,
-        through='product.PackageTypeSetting',
+        through='django_product.PackageTypeSetting',
         through_fields=('package_type', 'item'),
         verbose_name=_('items'),
         help_text=_('the packable items of package')
@@ -55,7 +55,7 @@ class PackageTypeSetting(models.Model, StateMachine):
     '''
 
     package_type = ActiveLimitForeignKey(
-        'product.PackageType',
+        'django_product.PackageType',
         null=False,
         blank=False,
         verbose_name=_('package type'),
@@ -63,7 +63,7 @@ class PackageTypeSetting(models.Model, StateMachine):
     )
 
     item = ActiveLimitForeignKey(
-        'product.Item',
+        'django_product.Item',
         null=False,
         blank=False,
         verbose_name=_('item'),
@@ -95,7 +95,7 @@ class PackageTypeSetting(models.Model, StateMachine):
 
     class States:
         product_setting = Statement(
-            Q(item__content_type__app_label='product') &
+            Q(item__content_type__app_label='django_product') &
             Q(item__content_type__model='Product')
         )
 
@@ -115,7 +115,7 @@ class PackageTemplate(BaseModel):
     )
 
     package_type = ActiveLimitForeignKey(
-        'product.PackageType',
+        'django_product.PackageType',
         null=False,
         blank=False,
         verbose_name=_('package type'),
@@ -123,9 +123,9 @@ class PackageTemplate(BaseModel):
     )
 
     type_settings = models.ManyToManyField(
-        'product.PackageTypeSetting',
+        'django_product.PackageTypeSetting',
         blank=False,
-        through='product.PackageTemplateSetting',
+        through='django_product.PackageTemplateSetting',
         through_fields=('package_template', 'type_setting'),
         verbose_name=_('the type settings of package'),
         help_text=_('the type settings of package which constraint max number of item')
@@ -145,7 +145,7 @@ class PackageTemplateSetting(models.Model):
     '''
 
     package_template = ActiveLimitForeignKey(
-        'product.PackageTemplate',
+        'django_product.PackageTemplate',
         null=False,
         blank=False,
         verbose_name=_('package template'),
@@ -153,7 +153,7 @@ class PackageTemplateSetting(models.Model):
     )
 
     type_setting = models.ForeignKey(
-        'product.PackageTypeSetting',
+        'django_product.PackageTypeSetting',
         null=False,
         blank=False,
         verbose_name=_('package type setting'),
@@ -190,7 +190,7 @@ class PackageNode(TreeModel, StateMachine):
     '''
 
     template = ActiveLimitForeignKey(
-        'product.PackageTemplate',
+        'django_product.PackageTemplate',
         null=False,
         blank=False,
         verbose_name=_('package template'),
@@ -204,7 +204,7 @@ class PackageNode(TreeModel, StateMachine):
         help_text=_('the quantity of the template in this node')
     )
 
-    items = GenericRelation('product.Item')
+    items = GenericRelation('django_product.Item')
 
     @property
     def item(self):
@@ -263,7 +263,7 @@ class ProductCategory(BaseModel):
 class Product(BaseModel):
     '''产品'''
     template = ActiveLimitForeignKey(
-        'product.ProductTemplate',
+        'django_product.ProductTemplate',
         null=False,
         blank=False,
         on_delete=models.PROTECT,
@@ -357,7 +357,7 @@ class Product(BaseModel):
         help_text=_('True means product can be rented')
     )
 
-    items = GenericRelation('product.Item')
+    items = GenericRelation('django_product.Item')
 
     @property
     def item(self):
@@ -402,7 +402,7 @@ class Validation(BaseModel):
     )
 
     actions = ActiveLimitManyToManyField(
-        'product.ValidateAction',
+        'django_product.ValidateAction',
         blank=False,
         verbose_name=_('validate actions'),
         help_text=_('the validate action will be used')
@@ -463,7 +463,7 @@ class ValidateAction(BaseModel):
     )
 
     uom = ActiveLimitForeignKey(
-        'product.UOM',
+        'django_product.UOM',
         null=False,
         blank=False,
         verbose_name=_('uom'),
@@ -520,13 +520,13 @@ class ProductTemplate(BaseModel):
     )
 
     attributes = ActiveLimitManyToManyField(
-        'product.Attribute',
+        'django_product.Attribute',
         verbose_name=_('attributes'),
         help_text=_('the attributes and product relationship')
     )
 
     uom = ActiveLimitForeignKey(
-        'product.UOM',
+        'django_product.UOM',
         null=False,
         blank=False,
         verbose_name=_('uom'),
@@ -568,7 +568,7 @@ class ProductTemplate(BaseModel):
     )
 
     category = ActiveLimitForeignKey(
-        'product.ProductCategory',
+        'django_product.ProductCategory',
         null=True,
         blank=True,
         verbose_name=_('product category'),
@@ -576,7 +576,7 @@ class ProductTemplate(BaseModel):
     )
 
     validation = ActiveLimitForeignKey(
-        'product.Validation',
+        'django_product.Validation',
         null=True,
         blank=False,
         verbose_name=_('validation'),
@@ -808,7 +808,7 @@ class Lot(BaseModel):
     )
 
     product = ActiveLimitForeignKey(
-        'product.Product',
+        'django_product.Product',
         null=False,
         blank=False,
         verbose_name=_('product'),
@@ -856,11 +856,11 @@ class Item(BaseModel):
         class States(BaseModel.States):
             active = BaseModel.States.active
             product = Statement(
-                Q(content_type__app_label='product') & Q(content_type__model='product'),
+                Q(content_type__app_label='django_product') & Q(content_type__model='product'),
                 inherits=active
             )
             package_node = Statement(
-                Q(content_type__app_label='stock') & Q(content_type__model='packagenode'),
+                Q(content_type__app_label='django_product') & Q(content_type__model='packagenode'),
                 inherits=active
             )
 

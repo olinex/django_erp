@@ -6,7 +6,7 @@ from django.db.models import Manager
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.auth import get_user_model
 
-from apps.django_perm import models
+from django_perm import models
 from common.abstractModel import BaseModel, TreeModel
 from common.fields import ActiveLimitForeignKey, ActiveLimitOneToOneField, ActiveLimitManyToManyField
 
@@ -69,7 +69,7 @@ class City(models.Model):
     objects = KeyManager()
 
     province = models.ForeignKey(
-        'account.Province',
+        'django_account.Province',
         null=False,
         blank=False,
         verbose_name=_('province'),
@@ -95,7 +95,7 @@ class City(models.Model):
     def natural_key(self):
         return self.province.natural_key() + (self.name,)
 
-    natural_key.dependencies = ['account.Province']
+    natural_key.dependencies = ['django_account.Province']
 
 
 class Region(models.Model):
@@ -111,7 +111,7 @@ class Region(models.Model):
             )
 
     city = models.ForeignKey(
-        'account.City',
+        'django_account.City',
         null=False,
         blank=False,
         verbose_name=_('city'),
@@ -137,13 +137,13 @@ class Region(models.Model):
     def natural_key(self):
         return self.city.natural_key() + (self.name,)
 
-    natural_key.dependencies = ['account.City']
+    natural_key.dependencies = ['django_account.City']
 
 
 class Address(BaseModel):
     '''the real address'''
     region = models.ForeignKey(
-        'account.Region',
+        'django_account.Region',
         null=False,
         blank=False,
         verbose_name=_('region'),
@@ -212,7 +212,7 @@ class Profile(models.Model):
     )
 
     address = ActiveLimitOneToOneField(
-        'account.Address',
+        'django_account.Address',
         null=True,
         blank=True,
         verbose_name=_("address"),
@@ -221,7 +221,7 @@ class Profile(models.Model):
     )
 
     default_send_address = ActiveLimitForeignKey(
-        'account.Address',
+        'django_account.Address',
         null=True,
         blank=True,
         verbose_name=_('default send address'),
@@ -230,7 +230,7 @@ class Profile(models.Model):
     )
 
     usual_send_addresses = ActiveLimitManyToManyField(
-        'account.Address',
+        'django_account.Address',
         blank=True,
         verbose_name=_('usual send address'),
         related_name='usual_profiles',
@@ -280,7 +280,7 @@ class Partner(BaseModel, TreeModel):
     )
 
     address = ActiveLimitOneToOneField(
-        'account.Address',
+        'django_account.Address',
         null=True,
         blank=True,
         verbose_name=_('partner address'),
@@ -289,7 +289,7 @@ class Partner(BaseModel, TreeModel):
     )
 
     default_send_address = ActiveLimitForeignKey(
-        'account.Address',
+        'django_account.Address',
         null=True,
         blank=True,
         verbose_name=_('default send address'),
@@ -298,7 +298,7 @@ class Partner(BaseModel, TreeModel):
     )
 
     usual_send_addresses = ActiveLimitManyToManyField(
-        'account.Address',
+        'django_account.Address',
         verbose_name=_('usual send addresses'),
         related_name='usual_partners',
         help_text=_("addresses that will be usually use by user")

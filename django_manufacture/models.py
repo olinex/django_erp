@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from common.abstractModel import BaseModel
 from common.fields import ActiveLimitForeignKey,ActiveLimitOneToOneField
-from apps.django_perm.db import models
+from django_perm.db import models
 
 # Create your models here.
 
@@ -14,7 +14,7 @@ class BOM(BaseModel):
     bill of manufacture
     '''
     product = ActiveLimitOneToOneField(
-        'product.Product',
+        'django_product.Product',
         null=False,
         blank=False,
         verbose_name=_('the product for produce'),

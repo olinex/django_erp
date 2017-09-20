@@ -1,4 +1,4 @@
 #!/usr/bin/env python3
 #-*- coding:utf-8 -*-
 
-default_app_config = 'apps.stock.apps.StockConfig'
+default_app_config = 'django_stock.apps.DjangoStockConfig'

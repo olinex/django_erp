@@ -97,10 +97,8 @@ ENV/
 db.sqlite3
 djangoerp/privates.py
 migrations/0*.py
+django_erp/privates.py
 django_account/migrations/0*.py
-django_api/migrations/0*.py
-django_dva/migrations/0*.py
-django_perm/migrations/0*.py
 django_file/migrations/0*.py
 django_manufacture/migrations/0*.py
 django_product/migrations/0*.py
@@ -109,7 +107,6 @@ django_sale/migrations/0*.py
 django_stock/migrations/0*.py
 django_dva/
 django_perm/
-node_modules/
 
 # Windows:
 Thumbs.db
@@ -118,5 +115,4 @@ Desktop.ini
 
 # Pycharm
 collectstatics/
-node_modules/
 .idea/

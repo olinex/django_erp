@@ -51,7 +51,7 @@ class Server(WebsocketConsumer):
         if user.profile.online_notice:
             group.send({'text':notice.to_json()})
         redis.hdel(online_group,str(user.id))
-        response=Response(detail=_('disconnected successsfully'))
+        response=Response(detail=_('disconnected successfully'))
         channel.send({'accept':True,'close':True,'text':response.to_json()})
 
 

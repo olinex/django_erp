@@ -6,9 +6,13 @@
 @time:      2017/8/31 下午9:19
 '''
 
+import random
+import string
 from . import setdefault
 
+setdefault('SECRET_KEY', "".join(random.choice(string.printable) for i in range(255)))
 setdefault('DEBUG', True)
+setdefault('FILE_SERVICE', True)
 setdefault('CHANNEL_HOST','redis://localhost:6379/2')
 setdefault('REDIS_CONF_HOST','localhost')
 setdefault('REDIS_CONF_PORT','6379')

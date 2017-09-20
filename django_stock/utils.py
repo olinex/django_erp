@@ -15,7 +15,7 @@ class LocationForeignKey(models.ForeignKey):
             {'is_delete': False, 'is_active': True, 'is_virtual': False}
         )
         kwargs['on_delete'] = kwargs.get('on_delete', models.PROTECT)
-        kwargs['to'] = 'stock.Location'
+        kwargs['to'] = 'django_stock.Location'
         super(LocationForeignKey, self).__init__(*args, **kwargs)
 
 

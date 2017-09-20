@@ -14,7 +14,6 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
-import random, string
 from . import get_environ
 from . import privates
 from django.core.urlresolvers import reverse_lazy
@@ -24,16 +23,27 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = get_environ('DEBUG')
+FILE_SERVICE = get_environ('FILE_SERVICE')
+
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '[::1]'
+]
+
+ALLOWED_METHODS = ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'OPTIONS', 'DELETE']
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = ("yf#D@epr$b@_fAA03vC(;;vdZEeCC~^@Q l<C1me!&ltpA+w}{/>8&ja%D'3L/eb%YAO24E~pKgrjA,eb+L[X4^.sz"
-              if DEBUG else os.environ.get("SECRET_KEY", "".join(random.choice(string.printable) for i in range(255))))
+SECRET_KEY = (
+    "yf#D@epr$b@_fAA03vC(;;vdZEeCC~^@Q l<C1me!&ltpA+w}{/>8&ja%D'3L/eb%YAO24E~pKgrjA,eb+L[X4^.sz"
+    if DEBUG
+    else get_environ('SECRET_KEY')
+)
 
-ALLOWED_HOSTS = []
-ALLOWED_METHODS = ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'OPTIONS', 'DELETE']
 
 # Application definition
 
@@ -47,8 +57,6 @@ INSTALLED_APPS = [
 
     'channels',
     'rest_framework',
-    'django_extensions',
-    'debug_toolbar',
 
     'django_dva',
     'django_perm',
@@ -61,8 +69,13 @@ INSTALLED_APPS = [
     'django_api',
 ]
 
+if DEBUG:
+    INSTALLED_APPS += [
+        'django_extensions',
+        'debug_toolbar',
+    ]
+
 MIDDLEWARE = [
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
@@ -72,6 +85,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if DEBUG:
+    MIDDLEWARE.insert(0,'debug_toolbar.middleware.DebugToolbarMiddleware')
 
 ROOT_URLCONF = 'django_erp.urls'
 REACT_ROOT = os.path.join(BASE_DIR, 'django_dva')
@@ -194,7 +210,7 @@ SESSION_CACHE_ALIAS = 'default'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 
-# ------------------------------------------Third part package params--------------------------------------------------
+#--------------------------------------------Third part package params-------------------------------------------------#
 
 PERM_NOT_ALLOW_NOTICE = ''
 

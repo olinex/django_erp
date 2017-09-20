@@ -320,7 +320,7 @@ class Warehouse(BaseModel):
     )
 
     address = ActiveLimitForeignKey(
-        'account.Address',
+        'django_account.Address',
         null=False,
         blank=False,
         verbose_name=_('address'),
@@ -328,7 +328,7 @@ class Warehouse(BaseModel):
     )
 
     root_location = ActiveLimitOneToOneField(
-        'stock.Location',
+        'django_stock.Location',
         null=True,
         blank=True,
         verbose_name=_('root location'),
@@ -477,7 +477,7 @@ class Location(BaseModel, TreeModel):
     INDIVISIBLE_USAGE = {'initial', 'closeout'}
 
     warehouse = ActiveLimitForeignKey(
-        'stock.Warehouse',
+        'django_stock.Warehouse',
         null=False,
         blank=False,
         verbose_name=_('warehouse'),
@@ -724,14 +724,14 @@ class Move(BaseModel):
     )
 
     procurement_detail = models.ForeignKey(
-        'stock.ProcurementDetail',
+        'django_stock.ProcurementDetail',
         blank=False,
         verbose_name=_('procurement detail'),
         help_text=_('the procurement detail which create this move')
     )
 
     from_route_setting = models.ForeignKey(
-        'stock.RouteSetting',
+        'django_stock.RouteSetting',
         null=False,
         blank=False,
         verbose_name=_('route zone setting'),
@@ -740,7 +740,7 @@ class Move(BaseModel):
     )
 
     to_route_setting = models.ForeignKey(
-        'stock.RouteSetting',
+        'django_stock.RouteSetting',
         null=False,
         blank=False,
         verbose_name=_('route zone setting'),
@@ -923,7 +923,7 @@ class InitialOrder(BaseModel):
     the order to create item in stock
     '''
     procurement = ActiveLimitOneToOneField(
-        'stock.Procurement',
+        'django_stock.Procurement',
         null=True,
         blank=True,
         verbose_name=_('procurement'),
@@ -931,7 +931,7 @@ class InitialOrder(BaseModel):
     )
 
     location = ActiveLimitForeignKey(
-        'stock.Location',
+        'django_stock.Location',
         null=False,
         blank=False,
         verbose_name=_('location'),
@@ -948,8 +948,8 @@ class InitialOrder(BaseModel):
     )
 
     procurement_details = models.ManyToManyField(
-        'stock.ProcurementDetail',
-        through='stock.InitialOrderLine',
+        'django_stock.ProcurementDetail',
+        through='django_stock.InitialOrderLine',
         through_fields=('order', 'detail'),
         verbose_name=_('procurement details'),
         help_text=_('procurement details about initial operation')
@@ -1015,7 +1015,7 @@ class InitialOrderLine(models.Model, StateMachine):
     order line of initial
     '''
     order = ActiveLimitForeignKey(
-        'stock.InitialOrder',
+        'django_stock.InitialOrder',
         null=False,
         blank=False,
         verbose_name=_('initial order'),
@@ -1023,7 +1023,7 @@ class InitialOrderLine(models.Model, StateMachine):
     )
 
     detail = models.OneToOneField(
-        'stock.ProcurementDetail',
+        'django_stock.ProcurementDetail',
         null=True,
         blank=True,
         verbose_name=_('procurement detail'),
@@ -1031,7 +1031,7 @@ class InitialOrderLine(models.Model, StateMachine):
     )
 
     item = ActiveLimitForeignKey(
-        'stock.Item',
+        'django_stock.Item',
         null=False,
         blank=False,
         verbose_name=_('item'),
@@ -1062,7 +1062,7 @@ class PackOrder(BaseModel):
     '''
 
     procurement = ActiveLimitOneToOneField(
-        'stock.Procurement',
+        'django_stock.Procurement',
         null=True,
         blank=True,
         verbose_name=_('procurement'),
@@ -1070,7 +1070,7 @@ class PackOrder(BaseModel):
     )
 
     location = ActiveLimitForeignKey(
-        'stock.Location',
+        'django_stock.Location',
         null=False,
         blank=False,
         verbose_name=_('location'),
@@ -1093,8 +1093,8 @@ class PackOrder(BaseModel):
     )
 
     package_nodes = models.ManyToManyField(
-        'product.PackageNode',
-        through='stock.PackOrderLine',
+        'django_product.PackageNode',
+        through='django_stock.PackOrderLine',
         through_fields=('order', 'package_node'),
         verbose_name=_('package nodes'),
         help_text=_('all kinds of package node will be pack/unpack')
@@ -1147,7 +1147,7 @@ class PackOrderLine(models.Model, StateMachine):
     '''
 
     order = ActiveLimitForeignKey(
-        'stock.PackOrder',
+        'django_stock.PackOrder',
         null=False,
         blank=False,
         verbose_name=_('pack order'),
@@ -1155,7 +1155,7 @@ class PackOrderLine(models.Model, StateMachine):
     )
 
     package_node = models.ForeignKey(
-        'product.PackageNode',
+        'django_product.PackageNode',
         null=False,
         blank=False,
         verbose_name=_('package node'),
@@ -1171,8 +1171,8 @@ class PackOrderLine(models.Model, StateMachine):
     )
 
     procurement_details = models.ManyToManyField(
-        'stock.ProcurementDetail',
-        through='stock.PackOrderLineSetting',
+        'django_stock.ProcurementDetail',
+        through='django_stock.PackOrderLineSetting',
         through_fields=('line', 'detail'),
         verbose_name=_('procurement details'),
         help_text=_('the procurement details about the package node')
@@ -1283,7 +1283,7 @@ class PackOrderLineSetting(models.Model):
     '''
 
     line = models.ForeignKey(
-        'stock.PackOrderLine',
+        'django_stock.PackOrderLine',
         null=False,
         blank=False,
         verbose_name=_('pack order line'),
@@ -1291,7 +1291,7 @@ class PackOrderLineSetting(models.Model):
     )
 
     detail = models.OneToOneField(
-        'stock.ProcurementDetail',
+        'django_stock.ProcurementDetail',
         null=False,
         blank=False,
         verbose_name=_('procurement detail'),
@@ -1299,7 +1299,7 @@ class PackOrderLineSetting(models.Model):
     )
 
     node = ActiveLimitForeignKey(
-        'product.PackageNode',
+        'django_product.PackageNode',
         null=False,
         blank=False,
         verbose_name=_('package node'),
@@ -1307,7 +1307,7 @@ class PackOrderLineSetting(models.Model):
     )
 
     template_setting = models.ForeignKey(
-        'product.PackageTemplateSetting',
+        'django_product.PackageTemplateSetting',
         null=True,
         blank=True,
         verbose_name=_('package template setting'),
@@ -1328,7 +1328,7 @@ class CloseoutOrder(BaseModel):
     '''
 
     procurement = ActiveLimitOneToOneField(
-        'stock.Procurement',
+        'django_stock.Procurement',
         null=True,
         blank=True,
         verbose_name=_('procurement'),
@@ -1336,7 +1336,7 @@ class CloseoutOrder(BaseModel):
     )
 
     location = ActiveLimitForeignKey(
-        'stock.Location',
+        'django_stock.Location',
         null=False,
         blank=False,
         verbose_name=_('location'),
@@ -1353,8 +1353,8 @@ class CloseoutOrder(BaseModel):
     )
 
     procurement_details = models.ManyToManyField(
-        'stock.ProcurementDetail',
-        through='stock.CloseoutOrderLine',
+        'django_stock.ProcurementDetail',
+        through='django_stock.CloseoutOrderLine',
         through_fields=('order', 'detail'),
         verbose_name=_('procurement details'),
         help_text=_('procurement details about closeout operation')
@@ -1427,7 +1427,7 @@ class CloseoutOrderLine(models.Model, StateMachine):
     order line of closeout
     '''
     order = ActiveLimitForeignKey(
-        'stock.CloseoutOrder',
+        'django_stock.CloseoutOrder',
         null=False,
         blank=False,
         verbose_name=_('closeout order'),
@@ -1435,7 +1435,7 @@ class CloseoutOrderLine(models.Model, StateMachine):
     )
 
     detail = models.OneToOneField(
-        'stock.ProcurementDetail',
+        'django_stock.ProcurementDetail',
         null=True,
         blank=True,
         verbose_name=_('procurement detail'),
@@ -1443,7 +1443,7 @@ class CloseoutOrderLine(models.Model, StateMachine):
     )
 
     item = ActiveLimitForeignKey(
-        'stock.Item',
+        'django_stock.Item',
         null=False,
         blank=False,
         verbose_name=_('item'),
@@ -1473,7 +1473,7 @@ class ScrapOrder(BaseModel):
     '''
 
     procurement = ActiveLimitOneToOneField(
-        'stock.Procurement',
+        'django_stock.Procurement',
         null=True,
         blank=True,
         verbose_name=_('procurement'),
@@ -1481,7 +1481,7 @@ class ScrapOrder(BaseModel):
     )
 
     location = ActiveLimitForeignKey(
-        'stock.Location',
+        'django_stock.Location',
         null=False,
         blank=False,
         verbose_name=_('location'),
@@ -1500,7 +1500,7 @@ class ScrapOrder(BaseModel):
     )
 
     route = ActiveLimitForeignKey(
-        'stock.Route',
+        'django_stock.Route',
         null=True,
         blank=False,
         verbose_name=_('scrap route'),
@@ -1512,8 +1512,8 @@ class ScrapOrder(BaseModel):
     )
 
     procurement_details = models.ManyToManyField(
-        'stock.ProcurementDetail',
-        through='stock.ScrapOrderLine',
+        'django_stock.ProcurementDetail',
+        through='django_stock.ScrapOrderLine',
         through_fields=('order', 'detail'),
         verbose_name=_('procurement details'),
         help_text=_('scrap procurement details makes by this order')
@@ -1576,7 +1576,7 @@ class ScrapOrderLine(models.Model, StateMachine):
     '''
 
     order = ActiveLimitForeignKey(
-        'stock.ScrapOrder',
+        'django_stock.ScrapOrder',
         null=False,
         blank=False,
         verbose_name=_('scrap order'),
@@ -1584,7 +1584,7 @@ class ScrapOrderLine(models.Model, StateMachine):
     )
 
     item = ActiveLimitForeignKey(
-        'stock.Item',
+        'django_stock.Item',
         null=False,
         blank=False,
         verbose_name=_('item'),
@@ -1601,7 +1601,7 @@ class ScrapOrderLine(models.Model, StateMachine):
     )
 
     detail = models.OneToOneField(
-        'stock.ProcurementDetail',
+        'django_stock.ProcurementDetail',
         null=True,
         blank=True,
         verbose_name=_('procurement detail'),
@@ -1622,7 +1622,7 @@ class RepairOrder(BaseModel):
     '''
 
     procurement = ActiveLimitOneToOneField(
-        'stock.Procurement',
+        'django_stock.Procurement',
         null=True,
         blank=True,
         verbose_name=_('procurement'),
@@ -1630,7 +1630,7 @@ class RepairOrder(BaseModel):
     )
 
     location = ActiveLimitForeignKey(
-        'stock.Location',
+        'django_stock.Location',
         null=False,
         blank=False,
         verbose_name=_('location'),
@@ -1641,7 +1641,7 @@ class RepairOrder(BaseModel):
     )
 
     route = ActiveLimitForeignKey(
-        'stock.Route',
+        'django_stock.Route',
         null=False,
         blank=False,
         verbose_name=_('route'),
@@ -1663,8 +1663,8 @@ class RepairOrder(BaseModel):
     )
 
     procurement_details = models.ManyToManyField(
-        'stock.ProcurementDetail',
-        through='stock.RepairOrderLine',
+        'django_stock.ProcurementDetail',
+        through='django_stock.RepairOrderLine',
         through_fields=('order', 'detail'),
         verbose_name=_('procurement details'),
         help_text=_('procurement details about repair operation')
@@ -1729,7 +1729,7 @@ class RepairOrderLine(models.Model, StateMachine):
     order line of repair
     '''
     order = ActiveLimitForeignKey(
-        'stock.RepairOrder',
+        'django_stock.RepairOrder',
         null=False,
         blank=False,
         verbose_name=_('repair order'),
@@ -1737,7 +1737,7 @@ class RepairOrderLine(models.Model, StateMachine):
     )
 
     detail = models.OneToOneField(
-        'stock.ProcurementDetail',
+        'django_stock.ProcurementDetail',
         null=True,
         blank=True,
         verbose_name=_('procurement detail'),
@@ -1745,7 +1745,7 @@ class RepairOrderLine(models.Model, StateMachine):
     )
 
     item = ActiveLimitForeignKey(
-        'stock.Item',
+        'django_stock.Item',
         null=False,
         blank=False,
         verbose_name=_('item'),
@@ -1774,7 +1774,7 @@ class PickOrder(BaseModel):
     ''''''
 
     procurement = ActiveLimitOneToOneField(
-        'stock.Procurement',
+        'django_stock.Procurement',
         null=True,
         blank=True,
         verbose_name=_('procurement'),
@@ -1782,7 +1782,7 @@ class PickOrder(BaseModel):
     )
 
     location = ActiveLimitForeignKey(
-        'stock.Location',
+        'django_stock.Location',
         null=False,
         blank=False,
         verbose_name=_('location'),
@@ -1802,7 +1802,7 @@ class PickOrder(BaseModel):
     )
 
     route = ActiveLimitForeignKey(
-        'stock.Route',
+        'django_stock.Route',
         null=True,
         blank=False,
         verbose_name=_('scrap route'),
@@ -1821,8 +1821,8 @@ class PickOrder(BaseModel):
     )
 
     procurement_details = models.ManyToManyField(
-        'stock.ProcurementDetail',
-        through='stock.PickOrderLine',
+        'django_stock.ProcurementDetail',
+        through='django_stock.PickOrderLine',
         through_fields=('order', 'detail'),
         verbose_name=_('procurement details'),
         help_text=_('scrap procurement details makes by this order')
@@ -1850,7 +1850,7 @@ class PickOrderLine(models.Model, StateMachine):
     inner order line for make moving according inner route
     '''
     order = ActiveLimitForeignKey(
-        'stock.PickOrder',
+        'django_stock.PickOrder',
         null=False,
         blank=False,
         verbose_name=_('inner order'),
@@ -1858,7 +1858,7 @@ class PickOrderLine(models.Model, StateMachine):
     )
 
     detail = models.OneToOneField(
-        'stock.ProcurementDetail',
+        'django_stock.ProcurementDetail',
         null=False,
         blank=False,
         verbose_name=_('procurement detail'),
@@ -1997,7 +1997,7 @@ class Route(BaseModel):
     )
 
     warehouse = ActiveLimitForeignKey(
-        'stock.Warehouse',
+        'django_stock.Warehouse',
         null=False,
         blank=False,
         verbose_name=_('warehouse'),
@@ -2014,8 +2014,8 @@ class Route(BaseModel):
     )
 
     locations = models.ManyToManyField(
-        'stock.Location',
-        through='stock.RouteSetting',
+        'django_stock.Location',
+        through='django_stock.RouteSetting',
         through_fields=('route', 'location'),
         blank=False,
         verbose_name=_('locations'),
@@ -2024,7 +2024,7 @@ class Route(BaseModel):
     )
 
     initial_setting = ActiveLimitOneToOneField(
-        'stock.RouteSetting',
+        'django_stock.RouteSetting',
         null=True,
         blank=True,
         verbose_name=_('initial setting'),
@@ -2033,7 +2033,7 @@ class Route(BaseModel):
     )
 
     end_setting = ActiveLimitOneToOneField(
-        'stock.RouteSetting',
+        'django_stock.RouteSetting',
         null=True,
         blank=True,
         verbose_name=_('end setting'),
@@ -2187,7 +2187,7 @@ class RouteSetting(models.Model, StateMachine):
     )
 
     route = ActiveLimitForeignKey(
-        'stock.Route',
+        'django_stock.Route',
         null=False,
         blank=False,
         verbose_name=_('route'),
@@ -2195,7 +2195,7 @@ class RouteSetting(models.Model, StateMachine):
     )
 
     location = ActiveLimitForeignKey(
-        'stock.Location',
+        'django_stock.Location',
         null=False,
         blank=False,
         verbose_name=_('limit location'),
@@ -2237,7 +2237,7 @@ class Procurement(BaseModel):
     it makes a series of move according to the route
     '''
     warehouse = ActiveLimitForeignKey(
-        'stock.Warehouse',
+        'django_stock.Warehouse',
         null=False,
         blank=False,
         verbose_name=_('warehouse'),
@@ -2318,7 +2318,7 @@ class ProcurementDetail(models.Model, StateMachine):
     the detail of procurement config what item user want to move
     '''
     initial_location = ActiveLimitForeignKey(
-        'stock.Location',
+        'django_stock.Location',
         null=True,
         blank=True,
         verbose_name=_('initial location'),
@@ -2328,7 +2328,7 @@ class ProcurementDetail(models.Model, StateMachine):
     )
 
     end_location = ActiveLimitForeignKey(
-        'stock.Location',
+        'django_stock.Location',
         null=True,
         blank=True,
         verbose_name=_('initial location'),
@@ -2338,7 +2338,7 @@ class ProcurementDetail(models.Model, StateMachine):
     )
 
     item = ActiveLimitForeignKey(
-        'stock.Item',
+        'django_stock.Item',
         null=False,
         blank=False,
         verbose_name=_('item'),
@@ -2349,13 +2349,13 @@ class ProcurementDetail(models.Model, StateMachine):
         _('quantity'),
         null=False,
         blank=False,
-        uom='product.template.uom',
+        uom='django_product.template.uom',
         validators=[MinValueValidator(0)],
         help_text=_('the quantity of item will be move')
     )
 
     procurement = ActiveLimitForeignKey(
-        'stock.Procurement',
+        'django_stock.Procurement',
         null=False,
         blank=False,
         verbose_name=_('procurement'),
@@ -2363,7 +2363,7 @@ class ProcurementDetail(models.Model, StateMachine):
     )
 
     route = ActiveLimitForeignKey(
-        'stock.Route',
+        'django_stock.Route',
         null=False,
         blank=False,
         verbose_name=_('route'),
