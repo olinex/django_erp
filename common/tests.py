@@ -16,7 +16,7 @@ from django_stock.models import (
     Warehouse, Location, Route, Procurement, ProcurementDetail,
     RouteSetting,Item
 )
-from django_account.models import Province, City, Region, Address, Partner
+from django_base.models import Province, City, Region, Address, Partner
 from django_product.models import (
     ProductCategory, ProductTemplate, UOM, Attribute, Lot,
     PackageType,PackageTypeSetting,PackageNode,

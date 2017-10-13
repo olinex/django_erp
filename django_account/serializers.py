@@ -5,50 +5,12 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
+from django_base.models import Address
+from django_base.serializers import AddressSerializer
 from common.rest.serializers import ActiveModelSerializer, StatePrimaryKeyRelatedField
 from . import models
 
 User = get_user_model()
-
-
-class ProvinceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Province
-        fields = ('id', 'country', 'name')
-
-
-class CitySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.City
-        fields = ('id', 'province', 'name')
-
-
-class RegionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Region
-        fields = ('id', 'city', 'name')
-
-
-class AddressSerializer(ActiveModelSerializer):
-    province_detail = ProvinceSerializer(
-        source='region.city.province',
-        read_only=True
-    )
-    city_detail = CitySerializer(
-        source='region.city',
-        read_only=True
-    )
-    region_detail = RegionSerializer(
-        source='region',
-        read_only=True
-    )
-
-    class Meta:
-        model = models.Address
-        fields = (
-            'id', 'region', 'name', 'is_active',
-            'province_detail', 'city_detail', 'region_detail'
-        )
 
 
 class PasswordSerializer(serializers.ModelSerializer):
@@ -83,9 +45,11 @@ class ProfileSerializer(serializers.ModelSerializer):
         read_only=True,
         many=True
     )
-    address = StatePrimaryKeyRelatedField(models.Address, 'active')
-    default_send_address = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
-    usual_send_addresses = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
+    mail_notice = serializers.ReadOnlyField()
+    online_notice = serializers.ReadOnlyField()
+    address = StatePrimaryKeyRelatedField(Address, 'active')
+    default_send_address = StatePrimaryKeyRelatedField(Address, 'active', many=True)
+    usual_send_addresses = StatePrimaryKeyRelatedField(Address, 'active', many=True)
 
     class Meta:
         model = models.Profile
@@ -145,6 +109,18 @@ class UserSerializer(serializers.ModelSerializer):
         return obj.get_all_permissions()
 
 
+class MailNoticeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Profile
+        fields = ('mail_notice',)
+
+
+class OnlineNoticeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Profile
+        fields = ('online_notice',)
+
+
 class LoginSerializer(serializers.ModelSerializer):
     username = serializers.CharField
     password = serializers.CharField
@@ -172,9 +148,9 @@ class PartnerSerializer(ActiveModelSerializer):
         read_only=True,
         many=True
     )
-    address = StatePrimaryKeyRelatedField(models.Address, 'active')
-    default_send_address = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
-    usual_send_addresses = StatePrimaryKeyRelatedField(models.Address, 'active', many=True)
+    address = StatePrimaryKeyRelatedField(Address, 'active')
+    default_send_address = StatePrimaryKeyRelatedField(Address, 'active', many=True)
+    usual_send_addresses = StatePrimaryKeyRelatedField(Address, 'active', many=True)
     managers = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(is_active=True, is_superuser=False, is_staff=False),
         many=True

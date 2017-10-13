@@ -24,6 +24,7 @@ from common.utils import include
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^auth/',include('rest_framework.urls',namespace='rest_framework')),
+    url(r'^base/', include('django_base.urls', namespace='django_base')),
     url(r'^account/', include('django_account.urls', namespace='django_account')),
     url(r'^product/', include('django_product.urls', namespace='django_product')),
     url(r'^stock/', include('django_stock.urls', namespace='django_stock')),

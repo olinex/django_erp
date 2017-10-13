@@ -5,8 +5,9 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
-from django_account.models import Address
-from django_account.serializers import UserSerializer, AddressSerializer
+from django_base.models import Address
+from django_base.serializers import AddressSerializer
+from django_account.serializers import UserSerializer
 from common.rest.serializers import ActiveModelSerializer, StatePrimaryKeyRelatedField
 from . import models
 

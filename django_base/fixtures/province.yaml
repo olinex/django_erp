@@ -1,175 +1,175 @@
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 北京
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 天津
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 河北
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 山西
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 内蒙古
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 辽宁
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 吉林
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 黑龙江
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 上海
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 江苏
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 浙江
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 安徽
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 福建
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 江西
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 山东
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 河南
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 湖北
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 湖南
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 广东
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 广西
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 海南
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 重庆
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 四川
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 贵州
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 云南
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 西藏
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 陕西
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 甘肃
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 青海
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 宁夏
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 新疆
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 台湾
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 澳门
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 香港
 
-- model: django_account.Province
+- model: django_base.Province
   fields:
     country: China
     name: 钓鱼岛

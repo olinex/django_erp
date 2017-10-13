@@ -320,7 +320,7 @@ class Warehouse(BaseModel):
     )
 
     address = ActiveLimitForeignKey(
-        'django_account.Address',
+        'django_base.Address',
         null=False,
         blank=False,
         verbose_name=_('address'),

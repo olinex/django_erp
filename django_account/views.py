@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-from django.contrib.auth import get_user_model
 from django.shortcuts import render
+from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import status, permissions
-from rest_framework.decorators import list_route, detail_route
+from rest_framework.decorators import list_route
 from rest_framework.response import Response
+from django_perm.utils import view_perm_required
 
 from common.rest.viewsets import BaseViewSet, PermMethodViewSet
 from . import models
 from . import serializers
+from . import filters
 
 User = get_user_model()
 
@@ -22,12 +24,15 @@ def first_request(request):
 class UserViewSet(PermMethodViewSet):
     serializer_class = serializers.UserSerializer
     allow_actions = ('create', 'list', 'retrieve', 'update')
+    filter_class = filters.UserFilter
+    ordering_fields = ('id','username','first_name','last_name','email')
 
     def get_queryset(self):
         if self.request.user.is_superuser:
             return User.objects.all()
         return User.objects.filter(pk=self.request.user.id)
 
+    @view_perm_required
     @list_route(['get'])
     def myself(self, request):
         '''
@@ -35,6 +40,7 @@ class UserViewSet(PermMethodViewSet):
         '''
         return Response(self.get_serializer(instance=request.user).data)
 
+    @view_perm_required
     @list_route(
         ['post'],
         permission_classes=[permissions.AllowAny],
@@ -56,56 +62,28 @@ class UserViewSet(PermMethodViewSet):
             status=status.HTTP_401_UNAUTHORIZED
         )
 
+    @view_perm_required
     @list_route(['get'], serializer_class=None)
     def logout(self, request):
         '''
-        通过ajax登出
-        :param request: 
-        :return: 
+        logout through ajax
         '''
         from django.contrib.auth import logout
         logout(request)
         return Response({'detail': _('logout successfully')})
 
-    @detail_route(
-        ['post'],
-        serializer_class=serializers.ResetPasswordSerializer
-    )
-    def password(self, request, pk=None):
-        instance = self.get_object()
+    @view_perm_required
+    @list_route(['post'], serializer_class=serializers.ResetPasswordSerializer)
+    def password(self, request):
         serializer = self.get_serializer(
-            instance=instance,
+            instance=request.user,
             data=request.data
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
             {'detail': _('password changed successfully')},
-            status=status.HTTP_202_ACCEPTED
         )
-
-
-class ProvinceViewSet(PermMethodViewSet):
-    model = models.Province
-    allow_actions = ('create', 'list', 'retrieve', 'update')
-    serializer_class = serializers.ProvinceSerializer
-
-
-class CityViewSet(PermMethodViewSet):
-    model = models.City
-    allow_actions = ('create', 'list', 'retrieve', 'update')
-    serializer_class = serializers.CitySerializer
-
-
-class RegionViewSet(PermMethodViewSet):
-    model = models.Region
-    allow_actions = ('create', 'list', 'retrieve', 'update')
-    serializer_class = serializers.RegionSerializer
-
-
-class AddressViewSet(BaseViewSet):
-    model = models.Address
-    serializer_class = serializers.AddressSerializer
 
 
 class PartnerViewSet(BaseViewSet):
@@ -122,3 +100,29 @@ class ProfileViewSet(PermMethodViewSet):
     model = models.Profile
     allow_actions = ('create', 'list', 'retrieve', 'update')
     serializer_class = serializers.ProfileSerializer
+
+    @view_perm_required
+    @list_route(['post'], serializer_class=serializers.MailNoticeSerializer)
+    def mail_notice(self, request):
+        serializers = self.get_serializer(
+            instance=request.user.profile,
+            data=request.data
+        )
+        serializers.is_valid(raise_exception=True)
+        serializers.save()
+        return Response(
+            {'detail': _('mail notice status changed successfully')},
+        )
+
+    @view_perm_required
+    @list_route(['post'], serializer_class=serializers.OnlineNoticeSerializer)
+    def online_notice(self, request):
+        serializers = self.get_serializer(
+            instance=request.user.profile,
+            data=request.data
+        )
+        serializers.is_valid(raise_exception=True)
+        serializers.save()
+        return Response(
+            {'detail': _('online notice status changed successfully')},
+        )

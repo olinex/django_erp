@@ -23,6 +23,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = get_environ('DEBUG')
+SETUP_TOOLS = get_environ('SETUP_TOOLS')
 FILE_SERVICE = get_environ('FILE_SERVICE')
 
 ALLOWED_HOSTS = [
@@ -57,7 +58,9 @@ INSTALLED_APPS = [
 
     'channels',
     'rest_framework',
+    'django_filters',
 
+    'django_base',
     'django_dva',
     'django_perm',
     'django_account',
@@ -66,10 +69,9 @@ INSTALLED_APPS = [
     'django_stock',
     'django_purchase',
     'django_sale',
-    'django_api',
 ]
 
-if DEBUG:
+if SETUP_TOOLS:
     INSTALLED_APPS += [
         'django_extensions',
         'debug_toolbar',
@@ -86,11 +88,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-if DEBUG:
+if SETUP_TOOLS:
     MIDDLEWARE.insert(0,'debug_toolbar.middleware.DebugToolbarMiddleware')
 
 ROOT_URLCONF = 'django_erp.urls'
 REACT_ROOT = os.path.join(BASE_DIR, 'django_dva')
+
 
 TEMPLATES = [
     {
@@ -234,10 +237,11 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend',
     ),
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '10/min',
-        'user': '60/min',
+        'anon': '60/min',
+        'user': '120/min',
     },
-    'PAGE_SIZE': 10,
+    'ORDERING_PARAM': 'ordering',
+    'DEFAULT_PAGINATION_CLASS': 'django_base.paginations.DefaultPagination'
 }
 
 CHANNEL_LAYERS = {
