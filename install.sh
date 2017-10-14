@@ -1,3 +1,3 @@
 sudo -H pip install -r .pip
-cd ./apps/dva
+cd ./django_dva
 sudo -H npm install

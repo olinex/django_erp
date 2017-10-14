@@ -32,20 +32,20 @@ class UserViewSet(PermMethodViewSet):
             return User.objects.all()
         return User.objects.filter(pk=self.request.user.id)
 
-    @view_perm_required
     @list_route(['get'])
+    @view_perm_required
     def myself(self, request):
         '''
         get user's self information
         '''
         return Response(self.get_serializer(instance=request.user).data)
 
-    @view_perm_required
     @list_route(
         ['post'],
         permission_classes=[permissions.AllowAny],
         serializer_class=serializers.LoginSerializer
     )
+    @view_perm_required
     def login(self, request):
         '''
         ajax login api
@@ -62,8 +62,8 @@ class UserViewSet(PermMethodViewSet):
             status=status.HTTP_401_UNAUTHORIZED
         )
 
-    @view_perm_required
     @list_route(['get'], serializer_class=None)
+    @view_perm_required
     def logout(self, request):
         '''
         logout through ajax
@@ -72,8 +72,8 @@ class UserViewSet(PermMethodViewSet):
         logout(request)
         return Response({'detail': _('logout successfully')})
 
-    @view_perm_required
     @list_route(['post'], serializer_class=serializers.ResetPasswordSerializer)
+    @view_perm_required
     def password(self, request):
         serializer = self.get_serializer(
             instance=request.user,
@@ -101,8 +101,8 @@ class ProfileViewSet(PermMethodViewSet):
     allow_actions = ('create', 'list', 'retrieve', 'update')
     serializer_class = serializers.ProfileSerializer
 
-    @view_perm_required
     @list_route(['post'], serializer_class=serializers.MailNoticeSerializer)
+    @view_perm_required
     def mail_notice(self, request):
         serializers = self.get_serializer(
             instance=request.user.profile,
@@ -114,8 +114,8 @@ class ProfileViewSet(PermMethodViewSet):
             {'detail': _('mail notice status changed successfully')},
         )
 
-    @view_perm_required
     @list_route(['post'], serializer_class=serializers.OnlineNoticeSerializer)
+    @view_perm_required
     def online_notice(self, request):
         serializers = self.get_serializer(
             instance=request.user.profile,

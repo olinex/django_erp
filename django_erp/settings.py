@@ -29,8 +29,8 @@ FILE_SERVICE = get_environ('FILE_SERVICE')
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '[::1]'
-]
+    '[::1]',
+] + get_environ('PRIVATE_HOSTS')
 
 ALLOWED_METHODS = ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'OPTIONS', 'DELETE']
 
@@ -75,6 +75,11 @@ if SETUP_TOOLS:
     INSTALLED_APPS += [
         'django_extensions',
         'debug_toolbar',
+    ]
+
+if not DEBUG:
+    INSTALLED_APPS += [
+        'gunicorn',
     ]
 
 MIDDLEWARE = [
@@ -124,7 +129,7 @@ WSGI_APPLICATION = 'django_erp.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-DATABASES = {
+DATABASES = get_environ('DATABASES') or {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
