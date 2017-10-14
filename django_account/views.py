@@ -30,7 +30,8 @@ class UserViewSet(PermMethodViewSet):
     def get_queryset(self):
         queryset = User.objects.select_related(
             'profile','profile__address',
-            'profile__default_send_address',
+            'profile__default_send_address'
+        ).prefetch_related(
             'profile__usual_send_addresses'
         )
         if self.request.user.is_superuser:
