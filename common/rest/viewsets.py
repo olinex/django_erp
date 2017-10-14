@@ -18,6 +18,7 @@ class PermMethodViewSet(
     def get_queryset(self):
         return self.queryset if self.queryset else self.model.objects.all()
 
+
     def create(self,request,*args,**kwargs):
         if 'create' in self.allow_actions and has_view_perm(request):
             return super(PermMethodViewSet,self).create(request,*args,**kwargs)

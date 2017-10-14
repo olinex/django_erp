@@ -95,9 +95,8 @@ ENV/
 
 # Django settings
 db.sqlite3
-djangoerp/privates.py
-migrations/0*.py
 django_erp/privates.py
+migrations/0*.py
 django_account/migrations/0*.py
 django_file/migrations/0*.py
 django_manufacture/migrations/0*.py
