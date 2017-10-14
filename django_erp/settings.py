@@ -217,6 +217,11 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 SESSION_CACHE_ALIAS = 'default'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
+#csrftoken
+CSRF_COOKIE_NAME = 'csrftoken'
+CSRF_COOKIE_PATH = '/'
+CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
+
 
 #--------------------------------------------Third part package params-------------------------------------------------#
 
