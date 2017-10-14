@@ -28,13 +28,14 @@ class UserViewSet(PermMethodViewSet):
     ordering_fields = ('id','username','first_name','last_name','email')
 
     def get_queryset(self):
-        if self.request.user.is_superuser:
-            return User.objects.all()
-        return User.objects.filter(pk=self.request.user.id).select_related(
+        queryset = User.objects.select_related(
             'profile','profile__address',
             'profile__default_send_address',
             'profile__usual_send_addresses'
         )
+        if self.request.user.is_superuser:
+            return queryset.all()
+        return queryset.filter(pk=self.request.user.id)
 
     @list_route(['get'])
     @view_perm_required
