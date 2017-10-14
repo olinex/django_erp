@@ -32,8 +32,9 @@ class StateMachine(object):
             Q(pk=self.pk) &
             self.__get_states_query(*states)
         ).exists()
-        if not result and raise_exception:
-            raise self.raise_state_exceptions(*states)
+        if raise_exception:
+            if not result:
+                raise self.raise_state_exceptions(*states)
         return result
 
     def set_state(self, state):
@@ -61,7 +62,7 @@ class StateMachine(object):
                 Q(pk=self.pk) &
                 self.__get_states_query(*check_states)
             )
-            if instance:
+            if instance.exists():
                 instance.update(**set_statement.kwargs)
                 self.refresh_from_db()
                 return True

@@ -51,7 +51,6 @@ class UserViewSet(PermMethodViewSet):
         permission_classes=[permissions.AllowAny],
         serializer_class=serializers.LoginSerializer
     )
-    @view_perm_required
     def login(self, request):
         '''
         ajax login api
@@ -69,7 +68,6 @@ class UserViewSet(PermMethodViewSet):
         )
 
     @list_route(['get'], serializer_class=None)
-    @view_perm_required
     def logout(self, request):
         '''
         logout through ajax
