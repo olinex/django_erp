@@ -743,7 +743,7 @@ class UOM(BaseModel):
         _('category'),
         null=False,
         blank=False,
-        max_length=5,
+        max_length=10,
         choices=UOM_CATEGORY,
         help_text=_("""
         the category of the uom,uom value can be converted to other uom value only when their in the same category
