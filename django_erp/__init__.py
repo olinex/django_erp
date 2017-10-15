@@ -3,9 +3,12 @@
 
 import os
 import json
+import pymysql
 from .celery import app as celery_app
 
 __all__ = ('celery_app','setdefault','get_environ')
+
+pymysql.install_as_MySQLdb()
 
 PREFIX = 'DJANGO_ERP'
 
