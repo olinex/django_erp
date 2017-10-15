@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding:utf-8 -*-
+
 from django_perm import models
 from django.db.models import Manager
 from django.contrib.auth import get_user_model

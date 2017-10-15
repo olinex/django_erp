@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#-*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 
 class JsonSerializer(object):
     STATUS_TYPES=('success','info','warning','error')

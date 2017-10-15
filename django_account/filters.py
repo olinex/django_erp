@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#-*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 
 from . import models
 from common.filters import TEXT_FILTER_TYPE,NUMBER_FILTER_TYPE,BOOLEAN_FILTER_TYPE

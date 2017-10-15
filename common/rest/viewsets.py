@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-#-*- coding:utf-8 -*-
+# -*- coding:utf-8 -*-
 
 from .mixin import IsActiveModelMixin,IsDeleteModelMixin
 from rest_framework import mixins,exceptions,viewsets
