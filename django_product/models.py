@@ -721,7 +721,7 @@ class UOM(BaseModel):
         _('round method'),
         null=False,
         blank=False,
-        max_length=10,
+        max_length=20,
         choices=ROUND_METHOD,
         default='ROUND_CEILING',
         help_text=_("the method will be used when the value of uom was rounding")
