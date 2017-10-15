@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
+import json
 from .exceptions import NotInStates
 
 from django.db import transaction
@@ -18,7 +19,7 @@ class StateMachine(object):
     def raise_state_exceptions(cls,*states):
         if len(states) > 1:
             error_dict = {state:cls.get_statement(state).error_message for state in states}
-            return NotInStates('multi',"不处于状态{}".format(','.join(states)))
+            return NotInStates('multi',json.dumps(error_dict))
         return NotInStates(states[0],cls.get_statement(states[0]).error_message)
 
     def check_states(self,*states,raise_exception=False):
@@ -28,7 +29,7 @@ class StateMachine(object):
         :return: True/False
         '''
 
-        result = self.__class__.objects.select_for_update().filter(
+        result = self.__class__.objects.filter(
             Q(pk=self.pk) &
             self.__get_states_query(*states)
         ).exists()
