@@ -33,9 +33,9 @@ class UserViewSet(PermMethodViewSet):
             'profile__default_send_address'
         ).prefetch_related(
             'profile__usual_send_addresses'
-        )
+        ).order_by('id')
         if self.request.user.is_superuser:
-            return queryset.all()
+            return queryset.all().order_by('id')
         return queryset.filter(pk=self.request.user.id)
 
     @list_route(['get'])
