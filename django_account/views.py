@@ -33,9 +33,9 @@ class UserViewSet(PermMethodViewSet):
             'profile__default_send_address'
         ).prefetch_related(
             'profile__usual_send_addresses'
-        ).order_by('id')
+        ).order_by('-pk')
         if self.request.user.is_superuser:
-            return queryset.all().order_by('id')
+            return queryset.all().order_by('-pk')
         return queryset.filter(pk=self.request.user.id)
 
     @list_route(['get'])
@@ -64,7 +64,7 @@ class UserViewSet(PermMethodViewSet):
             return Response(serializers.UserSerializer(instance=user).data)
         return Response(
             {'detail': _('authentication failed')},
-            status=status.HTTP_401_UNAUTHORIZED
+            status=status.HTTP_403_FORBIDDEN
         )
 
     @list_route(['get'], serializer_class=None)
@@ -98,7 +98,7 @@ class PartnerViewSet(BaseViewSet):
 class ProfileViewSet(PermMethodViewSet):
     def get_queryset(self):
         if self.request.user.is_superuser:
-            return models.Profile.objects.all()
+            return models.Profile.objects.all().order_by('-pk')
         return models.Profile.objects.filter(user=self.request.user)
 
     model = models.Profile
