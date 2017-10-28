@@ -1089,7 +1089,7 @@ class PackOrder(BaseModel):
     is_pack = models.BooleanField(
         _('pack status'),
         default=True,
-        help_text=_('True means the operation is packing,False means the operation is unpacking')
+        help_text=_('True means the operation is packed,False means the operation is unpacking')
     )
 
     package_nodes = models.ManyToManyField(
