@@ -3,10 +3,11 @@
 
 from django_perm import models
 from common.validators import ActiveStateValidator
+from django.utils.translation import ugettext_lazy as _
 
 
 class ActiveLimitForeignKey(models.ForeignKey):
-    '''可用外键约束'''
+    """the foreignkey to instance that are active"""
 
     def __init__(self, *args, **kwargs):
         kwargs['limit_choices_to'] = kwargs.get('limit_choices_to', {'is_delete': False, 'is_active': True})
@@ -16,7 +17,7 @@ class ActiveLimitForeignKey(models.ForeignKey):
 
 
 class ActiveLimitOneToOneField(models.OneToOneField):
-    '''可用外键约束'''
+    """the one to one field to instance that are active"""
 
     def __init__(self, *args, **kwargs):
         kwargs['limit_choices_to'] = kwargs.get('limit_choices_to', {'is_delete': False, 'is_active': True})
@@ -25,16 +26,8 @@ class ActiveLimitOneToOneField(models.OneToOneField):
         super(ActiveLimitOneToOneField, self).__init__(*args, **kwargs)
 
 
-class ActiveLimitManyToManyField(models.ManyToManyField):
-    '''可用外键约束'''
-
-    def __init__(self, *args, **kwargs):
-        kwargs['limit_choices_to'] = kwargs.get('limit_choices_to', {'is_delete': False, 'is_active': True})
-        super(ActiveLimitManyToManyField, self).__init__(*args, **kwargs)
-
-
 class MD5CharField(models.CharField):
-    '''md5字符串字段,自动将输入的utf8字符串转换为md5值并保存'''
+    """the char field will automatically convert string to md5 string"""
 
     def get_prep_value(self, value):
         from hashlib import md5
@@ -42,21 +35,54 @@ class MD5CharField(models.CharField):
         m.update(value.encode('utf8'))
         return m.hexdigest()
 
+class OrderStateCharField(models.CharField):
+    def __init__(self, *args, **kwargs):
+        kwargs['choices'] = kwargs.get(
+            'choices',
+            (
+                ('draft', _('draft')),
+                ('confirmed', _('confirmed')),
+                ('done', _('done'))
+            )
+        )
+        kwargs['null'] = kwargs.get('null', False)
+        kwargs['blank'] = kwargs.get('blank', False)
+        kwargs['default'] = 'draft'
+        kwargs['max_length'] = kwargs.get('max_length', 10)
+        super(OrderStateCharField, self).__init__(*args, **kwargs)
+
+
+class AuditStateCharField(models.CharField):
+    def __init__(self, *args, **kwargs):
+        kwargs['choices'] = kwargs.get(
+            'choices',
+            (
+                ('draft', _('draft')),
+                ('confirmed', _('confirmed')),
+                ('reject', _('reject'))
+            )
+        )
+        kwargs['null'] = kwargs.get('null', False)
+        kwargs['blank'] = kwargs.get('blank', False)
+        kwargs['default'] = 'draft'
+        kwargs['max_length'] = kwargs.get('max_length', 10)
+        super(AuditStateCharField, self).__init__(*args, **kwargs)
+
 
 class SimpleStateCharField(models.CharField):
     def __init__(self, *args, **kwargs):
         kwargs['choices'] = kwargs.get(
             'choices',
             (
-                ('draft', '草稿'),
-                ('confirmed', '已确定'),
-                ('done', '已完成')
+                ('draft', _('draft')),
+                ('confirmed', _('confirmed')),
+                ('done', _('done'))
             )
         )
-        kwargs['null'] = kwargs.get('null',False)
-        kwargs['blank'] = kwargs.get('blank',False)
+        kwargs['null'] = kwargs.get('null', False)
+        kwargs['blank'] = kwargs.get('blank', False)
         kwargs['default'] = 'draft'
-        kwargs['max_length'] = kwargs.get('max_length',10)
+        kwargs['max_length'] = kwargs.get('max_length', 10)
         super(SimpleStateCharField, self).__init__(*args, **kwargs)
 
 
@@ -65,16 +91,16 @@ class CancelableSimpleStateCharField(models.CharField):
         kwargs['choices'] = kwargs.get(
             'choices',
             (
-                ('draft', '草稿'),
-                ('confirmed', '已确定'),
-                ('done', '已完成'),
-                ('cancel','取消'),
+                ('draft', _('draft')),
+                ('confirmed', _('confirmed')),
+                ('done', _('done')),
+                ('cancel', _('cancel')),
             )
         )
-        kwargs['null'] = kwargs.get('null',False)
-        kwargs['blank'] = kwargs.get('blank',False)
+        kwargs['null'] = kwargs.get('null', False)
+        kwargs['blank'] = kwargs.get('blank', False)
         kwargs['default'] = 'draft'
-        kwargs['max_length'] = kwargs.get('max_length',10)
+        kwargs['max_length'] = kwargs.get('max_length', 10)
         super(CancelableSimpleStateCharField, self).__init__(*args, **kwargs)
 
 
@@ -83,11 +109,11 @@ class BaseStateCharField(models.CharField):
         kwargs['choices'] = kwargs.get(
             'choices',
             (
-                ('draft', '草稿'),
-                ('confirmed', '已确定'),
-                ('assigned', '已指派'),
-                ('accepted', '已接受'),
-                ('done', '已完成')
+                ('draft', _('draft')),
+                ('confirmed', _('confirmed')),
+                ('assigned', _('assigned')),
+                ('accepted', _('accepted')),
+                ('done', _('done'))
             )
         )
         kwargs['null'] = kwargs.get('null', False)
@@ -101,13 +127,13 @@ class FullStateCharField(models.CharField):
         kwargs['choices'] = kwargs.get(
             'choices',
             (
-                ('draft', '草稿'),
-                ('confirmed', '已确定'),
-                ('assigned', '已指派'),
-                ('accepted', '已接受'),
-                ('approving','审批中'),
-                ('approved', '已审批'),
-                ('done', '已完成')
+                ('draft', _('draft')),
+                ('confirmed', _('confirmed')),
+                ('assigned', _('assigned')),
+                ('accepted', _('accepted')),
+                ('approved', _('approved')),
+                ('approving', _('approving')),
+                ('done', _('done')),
             )
         )
         kwargs['null'] = kwargs.get('null', False)

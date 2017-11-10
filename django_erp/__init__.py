@@ -5,7 +5,7 @@ import os
 import json
 from .celery import app as celery_app
 
-__all__ = ('celery_app','setdefault','get_environ')
+__all__ = ['celery_app','setdefault','get_environ']
 
 PREFIX = 'DJANGO_ERP'
 

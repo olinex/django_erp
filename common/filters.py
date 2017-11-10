@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-'''
+"""
 @author:    olinex
 @time:      2017/9/29 上午9:01
-'''
+"""
 
 TEXT_FILTER_TYPE = ['contains','icontains','exact','iexact']
 NUMBER_FILTER_TYPE = ['exact','lt','lte','gt','gte']

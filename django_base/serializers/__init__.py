@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-'''
+"""
 @author:    olinex
 @time:      2017/9/26 下午1:23
-'''
+"""
 
 from rest_framework import serializers
 
 from common.rest.serializers import ActiveModelSerializer
-from . import models
+from .. import models
 
 class ProvinceSerializer(serializers.ModelSerializer):
     class Meta:

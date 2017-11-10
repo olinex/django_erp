@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-'''
+"""
 @author:    olinex
 @time:      2017/7/19 下午5:35
-'''
+"""
 
 from celery import shared_task
 from django.conf import settings
@@ -17,7 +17,7 @@ def send_email(
         auth_password=settings.EMAIL_HOST_PASSWORD,
         fail_silently=False,context=None
 ):
-    '''send email by using celery with broken'''
+    """send email by using celery with broken"""
     from django.core.mail import send_mail
     from django.template import loader
     default = {'title':title,'message':message,'username':username}

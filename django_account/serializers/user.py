@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
+"""
+@author:    olinex
+@time:      2017/11/9 上午11:56
+"""
+
+__all__ = [
+    'PasswordSerializer',
+    'ResetPasswordSerializer',
+    'UserSerializer',
+    'LoginSerializer'
+]
+
 from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
-
-from django_base.models import Address
-from django_base.serializers import AddressSerializer
-from common.rest.serializers import ActiveModelSerializer, StatePrimaryKeyRelatedField
-from . import models
+from .profile import ProfileSerializer
 
 User = get_user_model()
 
@@ -35,29 +43,6 @@ class PasswordSerializer(serializers.ModelSerializer):
             self.validated_data['password2']
         )
         self.instance.save()
-
-
-class ProfileSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(read_only=True)
-    phone = serializers.ReadOnlyField()
-    usual_send_addresses_detail = AddressSerializer(
-        source='usual_send_addresses',
-        read_only=True,
-        many=True
-    )
-    mail_notice = serializers.ReadOnlyField()
-    online_notice = serializers.ReadOnlyField()
-    address = StatePrimaryKeyRelatedField(Address, 'active')
-    default_send_address = StatePrimaryKeyRelatedField(Address, 'active', many=True)
-    usual_send_addresses = StatePrimaryKeyRelatedField(Address, 'active', many=True)
-
-    class Meta:
-        model = models.Profile
-        fields = (
-            'user', 'sex', 'phone', 'language', 'mail_notice', 'online_notice',
-            'address', 'default_send_address', 'usual_send_addresses',
-            'usual_send_addresses_detail'
-        )
 
 
 class ResetPasswordSerializer(serializers.ModelSerializer):
@@ -101,24 +86,12 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
     def get_permissions(self, obj):
-        '''
+        """
         获取用户的所有权限
-        '''
+        """
         if obj.is_superuser:
             return {'__all__'}
         return obj.get_all_permissions()
-
-
-class MailNoticeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Profile
-        fields = ('mail_notice',)
-
-
-class OnlineNoticeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Profile
-        fields = ('online_notice',)
 
 
 class LoginSerializer(serializers.ModelSerializer):
@@ -135,33 +108,3 @@ class CaptchaSerializer(serializers.Serializer):
 
     def validate_code(self, val):
         pass
-
-
-class PartnerSerializer(ActiveModelSerializer):
-    usual_send_addresses_detail = AddressSerializer(
-        source='usual_send_addresses',
-        read_only=True,
-        many=True
-    )
-    managers_detail = UserSerializer(
-        source='managers',
-        read_only=True,
-        many=True
-    )
-    address = StatePrimaryKeyRelatedField(Address, 'active')
-    default_send_address = StatePrimaryKeyRelatedField(Address, 'active', many=True)
-    usual_send_addresses = StatePrimaryKeyRelatedField(Address, 'active', many=True)
-    managers = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.filter(is_active=True, is_superuser=False, is_staff=False),
-        many=True
-    )
-
-    class Meta:
-        model = models.Partner
-        fields = (
-            'id', 'name', 'phone', 'is_active', 'address',
-            'default_send_address', 'usual_send_addresses',
-            'usual_send_addresses_detail',
-            'managers', 'managers_detail',
-            'is_company', 'sale_able', 'purchase_able'
-        )

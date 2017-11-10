@@ -10,9 +10,9 @@ from django_perm.db import models
 # Create your models here.
 
 class BOM(BaseModel):
-    '''
+    """
     bill of manufacture
-    '''
+    """
     product = ActiveLimitOneToOneField(
         'django_product.Product',
         null=False,

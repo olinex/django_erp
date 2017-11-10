@@ -3,9 +3,10 @@
 
 
 from common.rest.viewsets import BaseViewSet, PermMethodViewSet
-from . import models
-from . import serializers
-from . import filters
+from .. import models
+from .. import serializers
+from .. import filters
+
 
 class ProvinceViewSet(PermMethodViewSet):
     model = models.Province

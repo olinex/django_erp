@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-'''
+"""
 @author:    olinex
 @time:      2017/8/29 上午12:52
-'''
+"""
 
 import random
 import string
@@ -14,20 +14,20 @@ from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
 from django_account.models import Partner
 from django_stock.models import (
-    Warehouse, Location, Route, Procurement, ProcurementDetail,
-    RouteSetting,Item
+    Warehouse, Location, Route,
+    RouteSetting, Item
 )
 from django_base.models import Province, City, Region, Address
 from django_product.models import (
     ProductCategory, ProductTemplate, UOM, Attribute, Lot,
-    PackageType,PackageTypeSetting,PackageNode,
+    PackageType, PackageTypeSetting, PackageNode,
     PackageTemplate, PackageTemplateSetting
 )
 
-User=get_user_model()
+User = get_user_model()
+
 
 class EnvSetUpTestCase(TestCase):
-
     def accountSetUp(self):
         self.password = ''.join(random.sample(string.ascii_letters, 10))
         self.super_user = User.objects.create_superuser(
@@ -224,5 +224,5 @@ class EnvSetUpTestCase(TestCase):
                 sequence=index + 1
             ) for index, location in enumerate(['location_pack', 'location_check', 'location_wait'])
         ])
-        RouteSetting.objects.create(name='initial',route=self.route,location=self.location_produce,sequence=0)
-        RouteSetting.objects.create(name='end',route=self.route,location=self.location_stock,sequence=10)
+        RouteSetting.objects.create(name='initial', route=self.route, location=self.location_produce, sequence=0)
+        RouteSetting.objects.create(name='end', route=self.route, location=self.location_stock, sequence=10)

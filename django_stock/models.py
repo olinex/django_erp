@@ -27,9 +27,9 @@ from .utils import LocationForeignKey, INITIAL_ROUTE_SEQUENCE, END_ROUTE_SEQUENC
 User = get_user_model()
 
 class Item(SuperItem):
-    '''
+    """
     proxy class that provide the cache
-    '''
+    """
     class Meta:
         proxy = True
 
@@ -41,34 +41,34 @@ class Item(SuperItem):
 
     @property
     def now_item_name(self):
-        '''
+        """
         get item key name
         :return: string
-        '''
+        """
         return CacheItem.item_name(self)
 
     @property
     def lock_item_name(self):
-        '''
+        """
         get item lock key name
         :return: string
-        '''
+        """
         return CacheItem.item_name(self, quantity_type='lock')
 
     @property
     def lock_item_name(self):
-        '''
+        """
         get item all key name
         :return: string
-        '''
+        """
         return CacheItem.item_name(self, quantity_type='all')
 
 
 class CacheItem(object):
-    '''
+    """
     object reflect to stock item.
     as a manager which have all methods to control the quantity of item
-    '''
+    """
     ALL = {'stock', 'check', 'pack', 'wait', 'deliver'}
     SETTLED = {'customer'}
     TRANSPORTING = {'check', 'pack', 'wait', 'deliver'}
@@ -82,33 +82,33 @@ class CacheItem(object):
     QUANTITY_TYPE = {'now', 'lock', 'all'}
 
     def __init__(self, item):
-        '''
+        """
         :param item: stock.Item instance
-        '''
+        """
         self.item = item
 
     @classmethod
     def item_name(cls, item, quantity_type='now'):
-        '''
+        """
         class method will return the key of item
         :param item: stock.Item instance
         :return: string
-        '''
+        """
         return getattr(cls, '{}_ITEM_NAME_TEMPLATE'.format(quantity_type.upper())).format(item.pk)
 
     def cache_name(self, quantity_type='now'):
-        '''
+        """
         the name for redis as the key,each warehouse has it own cache name
         :return: string
-        '''
+        """
         return self.item_name(self.item, quantity_type)
 
     def get_quantity(self, *zones, quantity_type='now'):
-        '''
+        """
         sum of item quantities figure out by set of v
         :param zones: set or string
         :return: decimal
-        '''
+        """
 
         redis = Redis()
         zones_set = set(zones)
@@ -118,55 +118,55 @@ class CacheItem(object):
         raise NotInStates(_('zone'), _('unknown zone'))
 
     def all(self, quantity_type='now'):
-        '''
+        """
         sum of item in all zones
         :return: decimal
-        '''
+        """
         return self.get_quantity(*self.ALL, quantity_type=quantity_type)
 
     def settled(self, quantity_type='now'):
-        '''
+        """
         sum of item in settled zones
         :return: decimal
-        '''
+        """
         return self.get_quantity(*self.SETTLED, quantity_type=quantity_type)
 
     def transporting(self, quantity_type='now'):
-        '''
+        """
         sum of item in transporting zones
         :return: decimal
-        '''
+        """
         return self.get_quantity(*self.TRANSPORTING, quantity_type=quantity_type)
 
     def scrap(self, quantity_type='now'):
-        '''
+        """
         sum of item in scrap zones
         :return: decimal
-        '''
+        """
         return self.get_quantity(*self.SCRAP, quantity_type=quantity_type)
 
     def repair(self, quantity_type='now'):
-        '''
+        """
         sum of item in repair zones
         :return: decimal
-        '''
+        """
         return self.get_quantity(*self.REPAIR, quantity_type=quantity_type)
 
     def closeout(self, quantity_type='now'):
-        '''
+        """
         sum of item in closeout zones
         :return: decimal
-        '''
+        """
         return self.get_quantity(*self.CLOSEOUT, quantity_type=quantity_type)
 
     def _change(self, zone, quantity, quantity_type, pipe=None):
-        '''
+        """
         increase of decrease the quantity of item in the zone
         :param zone: string
         :param quantity: decimal
         :param pipe: pipeline of redis
         :return: 0 or 1
-        '''
+        """
         if zone in Location.States.ZONE_STATES.keys():
             if quantity_type in ('all', 'lock'):
                 redis = pipe or Redis()
@@ -186,10 +186,10 @@ class CacheItem(object):
         return self._change(zone, quantity, quantity_type='lock', pipe=pipe)
 
     def sync(self):
-        '''
+        """
         refresh all zones item quantity in the warehouse
         :return: self
-        '''
+        """
         redis = Redis()
         pipe = redis.pipeline()
         watch_keys = Warehouse.leaf_child_locations_cache_name
@@ -215,44 +215,44 @@ class CacheItem(object):
         return self
 
 class CacheLocation(object):
-    '''
+    """
     object reflect to stock location.
     as a manager which have all methods to control the quantity of item in the location
-    '''
+    """
     LOCATION_NAME_TEMPLATE = 'location_{}'
 
     def __init__(self, location):
-        '''
+        """
         :param location: stock.Location instance
-        '''
+        """
         self.location = location
 
     @classmethod
     def location_name(cls, location):
-        '''
+        """
         the name of location in redis as key
         :param location: stock.Location
         :return: string
-        '''
+        """
         return cls.LOCATION_NAME_TEMPLATE.format(location.pk)
 
     @property
     def cache_name(self):
-        '''
+        """
         the name of location in redis as key
         :return: string
-        '''
+        """
         return self.location_name(self.location)
 
     def _change(self, item, quantity, quantity_type, pipe=None):
-        '''
+        """
         increase of decrease the quantity of item in the location
         :param item: stock.Item instance
         :param quantity: decimal
         :param quantity_type: string
         :param pipe: redis pipeline
         :return: 0 or 1
-        '''
+        """
         redis = pipe or Redis()
         return redis.zincrby(
             self.cache_name,
@@ -267,12 +267,12 @@ class CacheLocation(object):
         return self._change(item, quantity, quantity_type='lock', pipe=pipe)
 
     def free_all(self, item, pipe=None):
-        '''
+        """
         delete the item score from location
         :param item: stock.Item instance
         :param pipe: redis pipeline
         :return: 0 or 1
-        '''
+        """
         redis = pipe or Redis()
         return redis.zrem(
             self.cache_name,
@@ -280,10 +280,10 @@ class CacheLocation(object):
         )
 
     def sync(self):
-        '''
+        """
         refresh all item quantity in the location
         :return: self
-        '''
+        """
         if self.location.check_states('no_virtual'):
             redis = Redis()
             pipe = redis.pipeline()
@@ -299,9 +299,9 @@ class CacheLocation(object):
 
 
 class Warehouse(BaseModel):
-    '''
+    """
     warehouse have different zones
-    '''
+    """
 
     name = models.CharField(
         _('name'),
@@ -337,11 +337,11 @@ class Warehouse(BaseModel):
     )
 
     def get_root_location(self, zone):
-        '''
+        """
         get root location of the zone
         :param zone: string
         :return: stock.Location instance
-        '''
+        """
         return Location.objects.get(
             warehouse=self,
             parent_node=self.root_location,
@@ -350,18 +350,18 @@ class Warehouse(BaseModel):
 
     @property
     def initial_location(self):
-        '''
+        """
         the default location of initial zone
         :return: stock.Location instance
-        '''
+        """
         return self.get_root_location('initial')
 
     @property
     def closeout_location(self):
-        '''
+        """
         the default location of closeout zone
         :return: stock.Location instance
-        '''
+        """
         return self.get_root_location('closeout')
 
     def __str__(self):
@@ -372,10 +372,10 @@ class Warehouse(BaseModel):
         verbose_name_plural = _('warehouses')
 
     def create_zones_and_routes(self):
-        '''
+        """
         create all zones of this warehouse,generally be called by create action in signal
         :return: self
-        '''
+        """
         with transaction.atomic():
             self.root_location = Location.objects.create(
                 warehouse=self,
@@ -418,27 +418,27 @@ class Warehouse(BaseModel):
 
     @property
     def leaf_child_locations(self):
-        '''
+        """
         get all not virtual child locations of this warehouse
         :return: stock.Location queryset
-        '''
+        """
         return Location.get_state_queryset('no_virtual').filter(warehouse=self)
 
     @property
     def leaf_child_locations_cache_name(self):
-        '''
+        """
         get all not virtual child location's cache name
         :return: list
-        '''
+        """
         return [location.cache.cache_name for location in self.leaf_child_locations]
 
     def get_item_quantity(self, item, zone, quantity_type='now', pipe=None):
-        '''
+        """
         return the item quantity in zone
         :param item: stock.Item instance
         :param zone: string of zone or 'all'
         :return: decimal
-        '''
+        """
         if zone == 'root':
             return self.root_location.get_item_quantity(
                 item=item,
@@ -456,9 +456,9 @@ class Warehouse(BaseModel):
 
 
 class Location(BaseModel, TreeModel):
-    '''
+    """
     the location in warehouse
-    '''
+    """
     ZONE = (
         ('stock', _('keep stock zone')),
         ('check', _('zone for checking')),
@@ -526,10 +526,10 @@ class Location(BaseModel, TreeModel):
 
     @property
     def location_name(self):
-        '''
+        """
         get the name of location key in redis
         :return: string
-        '''
+        """
         return CacheLocation.location_name(self)
 
     def __str__(self):
@@ -582,13 +582,13 @@ class Location(BaseModel, TreeModel):
         }
 
     def change_parent_node(self, node):
-        '''
+        """
         change this location's parent location
         the parent location must be virtual
         this location must be active
         :param node: stock.Location instance
         :return: self
-        '''
+        """
         if self.zone == node.zone and self.warehouse == node.warehouse:
             node.check_states('virtual', raise_exception=True)
             self.check_states('active', raise_exception=True)
@@ -597,35 +597,35 @@ class Location(BaseModel, TreeModel):
 
     @property
     def leaf_child_locations(self):
-        '''
+        """
         get all no virtual location
         :return: stock.Location instance
-        '''
+        """
         return self.__class__.get_state_queryset('no_virtual', self.all_child_nodes)
 
     @property
     def leaf_child_location_cache_name(self):
-        '''
+        """
         get the list of all not virtual child location's cache name
         :return: list
-        '''
+        """
         return [location.location_name for location in self.leaf_child_locations]
 
     @property
     def cache(self):
-        '''
+        """
         :return: stock.CacheLocation instance
-        '''
+        """
         if not hasattr(self, '__cache'):
             self.__cache = CacheLocation(location=self)
         return self.__cache
 
     def in_sum(self, item):
-        '''
+        """
         get move in number of item to this location
         :param item: stock.Item instance
         :return: decimal
-        '''
+        """
         from django.db.models import Sum
         return Move.get_state_queryset('done').filter(
             to_location=self,
@@ -633,11 +633,11 @@ class Location(BaseModel, TreeModel):
         ).aggregate(in_sum=Sum('quantity'))['in_sum'] or D(0)
 
     def out_sum(self, item):
-        '''
+        """
         get move out number of item from this location
         :param item: stock.Item instance
         :return: decimal
-        '''
+        """
         from django.db.models import Sum
         return Move.get_state_queryset('done').filter(
             from_location=self,
@@ -646,13 +646,13 @@ class Location(BaseModel, TreeModel):
 
     @classmethod
     def get_item_quantity_by_name(cls, name, item, quantity_type='now', pipe=None):
-        '''
+        """
         get the quantity of item in type by name
         :param name: string
         :param item: stock.Item instance
         :param quantity_type: string
         :return: decimal
-        '''
+        """
         redis = pipe or Redis()
         if quantity_type != 'now':
             result = redis.zscore(
@@ -674,12 +674,12 @@ class Location(BaseModel, TreeModel):
             return all_result - lock_result
 
     def get_item_quantity(self, item, quantity_type='now', pipe=None):
-        '''
+        """
         get the quantity of item in type
         :param item: stock.Item instance
         :param quantity_type: string
         :return: decimal
-        '''
+        """
         redis = pipe or Redis()
         if self.check_states('virtual'):
             redis.zunionstore(
@@ -694,9 +694,9 @@ class Location(BaseModel, TreeModel):
         )
 
 class Move(BaseModel):
-    '''
+    """
     the move recording the start position and end position
-    '''
+    """
 
     from_location = LocationForeignKey(
         null=True,
@@ -798,12 +798,12 @@ class Move(BaseModel):
         cancel = Statement(inherits=active, state='cancel')
 
     def refresh_lock_item_quantity(self, pipe=None, reverse=False):
-        '''
+        """
         increase/decrease the lock number of item in the zone
         :pipe: redis pipeline
         :reverse: boolean
         :return: 0 or 1
-        '''
+        """
         return self.from_location.cache.lock(
             item=self.procurement_detail.item,
             quantity=self.quantity if not reverse else - self.quantity,
@@ -811,10 +811,10 @@ class Move(BaseModel):
         )
 
     def refresh_item_quantity(self):
-        '''
+        """
         increase/decrease the number of item in the zone
         :return: 0 or 1
-        '''
+        """
         redis = Redis().pipeline()
         self.from_location.cache.refresh(
             item=self.procurement_detail.item,
@@ -833,22 +833,22 @@ class Move(BaseModel):
         redis.execute()
 
     def confirm(self, pipe=None):
-        '''
+        """
         change move status from draft to confirmed and increase the lock quantity of item in redis
         :pipe: redis pipeline
         :return: self
-        '''
+        """
         with transaction.atomic():
             self.check_to_set_state('confirm_able', set_state='confirmed', raise_exception=True)
             self.refresh_lock_item_quantity(pipe=pipe)
             return self
 
     def cancel(self, pipe=None):
-        '''
+        """
         change move status from cancel_able to cancel
         :pipe: redis pipeline
         :return:
-        '''
+        """
         with transaction.atomic():
             self.check_to_set_state('cancel_able', set_state='cancel', raise_exception=True)
             self.refresh_lock_item_quantity(reverse=True, pipe=pipe)
@@ -863,10 +863,10 @@ class Move(BaseModel):
             return self
 
     def get_next_move(self,self_cancel,procurement_cancel):
-        '''
+        """
         get the next move of this move
         :return: (stock.Move instance,boolean,boolean)
-        '''
+        """
         route = self.procurement_detail.route
         from_route_setting = self.from_route_setting if self_cancel else self.to_route_setting
         to_route_setting = route.next_route_setting(
@@ -888,7 +888,7 @@ class Move(BaseModel):
         return None
 
     def done(self):
-        '''
+        """
         完成库存移动的动作,并自动根据需求状态和路线指定下一个库存移动
         1 需求尚未完成时,根据当前移动的路线区域获取下一个路线区域,若存在下一个路线区域且传入库位的区域与之相同,则完成移动并创建移动
         2 需求尚未完成时,根据当前移动的路线区域获取下一个路线区域,若存在下一个路线区域且传入库位的区域与之不同,则抛出错误
@@ -897,7 +897,7 @@ class Move(BaseModel):
           则完成移动并检查需求下的所有移动是否均已完成,若完成则将需求置于完成状态
         :pipe: redis pipeline
         :return: self
-        '''
+        """
         with transaction.atomic():
             self.check_to_set_state('done_able', set_state='done', raise_exception=True)
             procurement = self.procurement_detail.procurement
@@ -919,9 +919,9 @@ class Move(BaseModel):
             return self
 
 class InitialOrder(BaseModel):
-    '''
+    """
     the order to create item in stock
-    '''
+    """
     procurement = ActiveLimitOneToOneField(
         'django_stock.Procurement',
         null=True,
@@ -957,10 +957,10 @@ class InitialOrder(BaseModel):
 
     @property
     def state(self):
-        '''
+        """
         the status of order,same as the procurement status
         :return: string
-        '''
+        """
         if self.procurement:
             return self.procurement.state
         return 'draft'
@@ -979,10 +979,10 @@ class InitialOrder(BaseModel):
         done = Statement(Q(procurement__state='done'), inherits=BaseModel.States.active)
 
     def confirm(self):
-        '''
+        """
         change the status of procurement from draft to confirmed
         :return: self
-        '''
+        """
         with transaction.atomic():
             self.check_states('confirm_able', raise_exception=True)
             warehouse = self.location.warehouse
@@ -1011,9 +1011,9 @@ class InitialOrder(BaseModel):
 
 
 class InitialOrderLine(models.Model, StateMachine):
-    '''
+    """
     order line of initial
-    '''
+    """
     order = ActiveLimitForeignKey(
         'django_stock.InitialOrder',
         null=False,
@@ -1057,9 +1057,9 @@ class InitialOrderLine(models.Model, StateMachine):
 
 
 class PackOrder(BaseModel):
-    '''
+    """
     the order to manage packing operation
-    '''
+    """
 
     procurement = ActiveLimitOneToOneField(
         'django_stock.Procurement',
@@ -1102,10 +1102,10 @@ class PackOrder(BaseModel):
 
     @property
     def state(self):
-        '''
+        """
         the status of order,same as the procurement status
         :return: string
-        '''
+        """
         if self.procurement:
             return self.procurement.state
         return 'draft'
@@ -1124,10 +1124,10 @@ class PackOrder(BaseModel):
         done = Statement(Q(procurement__state='done'), inherits=BaseModel.States.active)
 
     def confirm(self):
-        '''
+        """
         change the status of procurement from draft to confirmed
         :return: self
-        '''
+        """
         with transaction.atomic():
             self.check_states('confirm_able', raise_exception=True)
             self.procurement = Procurement.objects.create(
@@ -1142,9 +1142,9 @@ class PackOrder(BaseModel):
 
 
 class PackOrderLine(models.Model, StateMachine):
-    '''
+    """
     the pack order line bind to procurement details
-    '''
+    """
 
     order = ActiveLimitForeignKey(
         'django_stock.PackOrder',
@@ -1180,18 +1180,18 @@ class PackOrderLine(models.Model, StateMachine):
 
     @property
     def package_detail(self):
-        '''
+        """
         the procurement detail about package node
         :return: stock.ProcurementDetail instance
-        '''
+        """
         return self.procurement_details.filter(item=self.package_node.item).first()
 
     @property
     def item_details(self):
-        '''
+        """
         the procurement details about stock item
         :return: stock.ProcurementDetail queryset
-        '''
+        """
         return self.procurement_details.exclude(item=self.package_node.item)
 
     def __str__(self):
@@ -1267,10 +1267,10 @@ class PackOrderLine(models.Model, StateMachine):
             return self
 
     def done(self):
-        '''
+        """
         complete the item procurement detail and package node procurement detail
         :return: self
-        '''
+        """
         with transaction.atomic():
             for detail in self.procurement_details.all():
                 detail.start().done()
@@ -1278,9 +1278,9 @@ class PackOrderLine(models.Model, StateMachine):
 
 
 class PackOrderLineSetting(models.Model):
-    '''
+    """
     config the one to many relationship with pack order line and procurement detail
-    '''
+    """
 
     line = models.ForeignKey(
         'django_stock.PackOrderLine',
@@ -1323,9 +1323,9 @@ class PackOrderLineSetting(models.Model):
 
 
 class CloseoutOrder(BaseModel):
-    '''
+    """
     the order to manage closeout operation
-    '''
+    """
 
     procurement = ActiveLimitOneToOneField(
         'django_stock.Procurement',
@@ -1362,10 +1362,10 @@ class CloseoutOrder(BaseModel):
 
     @property
     def state(self):
-        '''
+        """
         the status of order,same as the procurement status
         :return: string
-        '''
+        """
         if self.procurement:
             return self.procurement.state
         return 'draft'
@@ -1384,10 +1384,10 @@ class CloseoutOrder(BaseModel):
         done = Statement(Q(procurement__state='done'), inherits=BaseModel.States.active)
 
     def confirm(self):
-        '''
+        """
         change the status of procurement from draft to confirmed
         :return: self
-        '''
+        """
         with transaction.atomic():
             self.check_states('confirm_able', raise_exception=True)
             self.procurement = Procurement.objects.create(
@@ -1423,9 +1423,9 @@ class CloseoutOrder(BaseModel):
 
 
 class CloseoutOrderLine(models.Model, StateMachine):
-    '''
+    """
     order line of closeout
-    '''
+    """
     order = ActiveLimitForeignKey(
         'django_stock.CloseoutOrder',
         null=False,
@@ -1468,9 +1468,9 @@ class CloseoutOrderLine(models.Model, StateMachine):
         unique_together = ('order', 'item')
 
 class ScrapOrder(BaseModel):
-    '''
+    """
     the order to manage scrap operation
-    '''
+    """
 
     procurement = ActiveLimitOneToOneField(
         'django_stock.Procurement',
@@ -1521,10 +1521,10 @@ class ScrapOrder(BaseModel):
 
     @property
     def state(self):
-        '''
+        """
         the status of order,same as the procurement status
         :return: string
-        '''
+        """
         if self.procurement:
             return self.procurement.state
         return 'draft'
@@ -1543,10 +1543,10 @@ class ScrapOrder(BaseModel):
         done = Statement(Q(procurement__state='done'), inherits=BaseModel.States.active)
 
     def confirm(self):
-        '''
+        """
         change the status of procurement from draft to confirmed
         :return: self
-        '''
+        """
         with transaction.atomic():
             self.check_states('confirm_able', raise_exception=True)
             self.procurement = Procurement.objects.create(
@@ -1571,9 +1571,9 @@ class ScrapOrder(BaseModel):
 
 
 class ScrapOrderLine(models.Model, StateMachine):
-    '''
+    """
     the scrap order line bind to procurement detail
-    '''
+    """
 
     order = ActiveLimitForeignKey(
         'django_stock.ScrapOrder',
@@ -1617,9 +1617,9 @@ class ScrapOrderLine(models.Model, StateMachine):
         unique_together = ('order', 'item')
 
 class RepairOrder(BaseModel):
-    '''
+    """
     the order of make repair operation of item
-    '''
+    """
 
     procurement = ActiveLimitOneToOneField(
         'django_stock.Procurement',
@@ -1672,10 +1672,10 @@ class RepairOrder(BaseModel):
 
     @property
     def state(self):
-        '''
+        """
         the status of order,same as the procurement status
         :return: string
-        '''
+        """
         if self.procurement:
             return self.procurement.state
         return 'draft'
@@ -1701,10 +1701,10 @@ class RepairOrder(BaseModel):
         done = Statement(Q(procurement__state='done'), inherits=BaseModel.States.active)
 
     def confirm(self):
-        '''
+        """
         change the status of procurement from draft to confirmed
         :return: self
-        '''
+        """
         with transaction.atomic():
             self.check_states('confirm_able', raise_exception=True)
             self.procurement = Procurement.objects.create(
@@ -1725,9 +1725,9 @@ class RepairOrder(BaseModel):
 
 
 class RepairOrderLine(models.Model, StateMachine):
-    '''
+    """
     order line of repair
-    '''
+    """
     order = ActiveLimitForeignKey(
         'django_stock.RepairOrder',
         null=False,
@@ -1771,7 +1771,7 @@ class RepairOrderLine(models.Model, StateMachine):
 
 
 class PickOrder(BaseModel):
-    ''''''
+    """"""
 
     procurement = ActiveLimitOneToOneField(
         'django_stock.Procurement',
@@ -1829,10 +1829,10 @@ class PickOrder(BaseModel):
     )
 
     def confirm(self):
-        '''
+        """
         change the status of procurement from draft to confirmed
         :return: self
-        '''
+        """
         with transaction.atomic():
             self.procurement.confirm()
             return self
@@ -1846,9 +1846,9 @@ class PickOrder(BaseModel):
 
 
 class PickOrderLine(models.Model, StateMachine):
-    '''
+    """
     inner order line for make moving according inner route
-    '''
+    """
     order = ActiveLimitForeignKey(
         'django_stock.PickOrder',
         null=False,
@@ -1873,10 +1873,10 @@ class PickOrderLine(models.Model, StateMachine):
         verbose_name_plural = _('inner order lines')
 
     def start(self):
-        '''
+        """
         start moving the inner procurement detail item
         :return: self
-        '''
+        """
         with transaction.atomic():
             from_location = self.order.scrap_location
             to_location = from_location.warehouse.scrap_location
@@ -1885,9 +1885,9 @@ class PickOrderLine(models.Model, StateMachine):
 
 
 class Route(BaseModel):
-    '''
+    """
     the route of zone to chain together
-    '''
+    """
     ROUTE_TYPE = (
         # initial
         ('initial_stock', _('initial to stock route')),
@@ -2061,10 +2061,10 @@ class Route(BaseModel):
 
     @property
     def length(self):
-        '''
+        """
         the count of route's zones
         :return: int
-        '''
+        """
         return RouteSetting.objects.filter(route=self).count()
 
     class Meta:
@@ -2129,22 +2129,22 @@ class Route(BaseModel):
 
     @classmethod
     def get_default_route(cls, warehouse, route_type):
-        '''
+        """
         get the default route which has the smallest sequence in the warehouse
         :param warehouse: stock.Warehouse instance
         :param route_type: string
         :return: stock.Route instance
-        '''
+        """
         return cls.get_state_instance(route_type, cls.objects.filter(warehouse=warehouse, sequence=0))
 
     def next_route_setting(self, now_route_setting=None, reverse=False):
-        '''
+        """
         get the next zone setting of the route after now zone setting,
         when reverse is True,return the previous zone setting of the route
         :param now_route_setting: stock.RouteSetting instance
         :param reverse: boolean
         :return: stock.RouteSetting instance
-        '''
+        """
         settings = self.routesetting_set.all()
         if not reverse:
             if now_route_setting:
@@ -2174,9 +2174,9 @@ class Route(BaseModel):
 
 
 class RouteSetting(models.Model, StateMachine):
-    '''
+    """
     the setting of location config the route's location chain
-    '''
+    """
 
     name = models.CharField(
         _('name'),
@@ -2232,10 +2232,10 @@ class RouteSetting(models.Model, StateMachine):
 
 
 class Procurement(BaseModel):
-    '''
+    """
     procurement is the requirement of stock item from the location,
     it makes a series of move according to the route
-    '''
+    """
     warehouse = ActiveLimitForeignKey(
         'django_stock.Warehouse',
         null=False,
@@ -2269,10 +2269,10 @@ class Procurement(BaseModel):
 
     @property
     def doing_moves(self):
-        '''
+        """
         get the moves of doing status of this procurement
         :return:
-        '''
+        """
         return Move.get_state_queryset(
             'doing',
             Move.objects.filter(procurement_detail__procurement=self)
@@ -2291,18 +2291,18 @@ class Procurement(BaseModel):
         cancel = Statement(inherits=active, state='cancel')
 
     def confirm(self):
-        '''
+        """
         change the procurement status from draft to confirmed
         :return: self
-        '''
+        """
         self.check_to_set_state('confirm_able', set_state='confirmed', raise_exception=True)
         return self
 
     def cancel(self):
-        '''
+        """
         change the procurement status from draft or confirmed to cancel
         :return: self
-        '''
+        """
         with transaction.atomic():
             self.check_to_set_state('draft', 'confirmed', set_state='cancel', raise_exception=True)
             for move in Move.get_state_queryset(
@@ -2314,9 +2314,9 @@ class Procurement(BaseModel):
 
 
 class ProcurementDetail(models.Model, StateMachine):
-    '''
+    """
     the detail of procurement config what item user want to move
-    '''
+    """
     initial_location = ActiveLimitForeignKey(
         'django_stock.Location',
         null=True,
@@ -2409,18 +2409,18 @@ class ProcurementDetail(models.Model, StateMachine):
 
     @property
     def doing_move(self):
-        '''
+        """
         get all moves that which are create by this procurement detail
         :return: stock.Move instance
-        '''
+        """
         return Move.get_state_queryset('doing').get(procurement_detail=self)
 
     def start(self):
-        '''
+        """
         when procurement status become confirmed,procurement detail can create
         the first move according to the route
         :return: stock.Move instance
-        '''
+        """
         with transaction.atomic():
             self.check_states('start_able', raise_exception=True)
             self.procurement.check_states('confirmed', raise_exception=True)

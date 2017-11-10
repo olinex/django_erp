@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-'''
+"""
 @author:    olinex
 @time:      2017/9/26 下午1:30
-'''
+"""
 
 
 from rest_framework import routers

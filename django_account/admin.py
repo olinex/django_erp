@@ -1,27 +1,32 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-from django.contrib import admin
+"""
+@author:    olinex
+@time:      2017/11/9 上午10:55
+"""
 
-from common.admin import CommonAdmin, CommonTabInLine
+from django.contrib import admin
 from . import models
+
 
 @admin.register(models.Partner)
 class PartnerAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'phone', 'address','is_company','sale_able','purchase_able')
+    list_display = ('id', 'name', 'phone', 'address', 'is_company', 'sale_able', 'purchase_able')
     list_display_links = ('name',)
-    list_filter = ('is_company','sale_able','purchase_able')
+    list_filter = ('is_company', 'sale_able', 'purchase_able')
     search_fields = ('name', 'phone', 'address__name')
-    list_editable = ('phone','is_company','sale_able','purchase_able')
+    list_editable = ('phone', 'is_company', 'sale_able', 'purchase_able')
     fieldsets = (
         (None, {'fields': (
             'name', 'phone', 'address',
             'default_send_address',
             'usual_send_addresses',
-            'is_active','managers',
-            ('is_company','sale_able','purchase_able')
+            'is_active', 'managers',
+            ('is_company', 'sale_able', 'purchase_able')
         )}),
     )
+
 
 @admin.register(models.Profile)
 class ProfileAdmin(admin.ModelAdmin):
@@ -35,11 +40,11 @@ class ProfileAdmin(admin.ModelAdmin):
     )
     search_fields = ('phone', 'user__username')
     list_editable = (
-        'phone', 'sex', 'online_notice', 'mail_notice','language'
+        'phone', 'sex', 'online_notice', 'mail_notice', 'language'
     )
     fieldsets = (
         (None, {'fields': (
             'user', 'sex', 'phone', 'language', ('online_notice', 'mail_notice'),
-            'address','default_send_address','usual_send_addresses',
+            'address', 'default_send_address', 'usual_send_addresses',
         )}),
     )

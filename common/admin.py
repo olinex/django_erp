@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
+__all__ = [
+    'CommonTabInLine',
+    'CommonAdmin'
+]
+
 from django.contrib import admin
 from django.contrib import messages
 from django.utils.translation import ugettext_lazy as _
 
-def active(modeladmin,request,queryset):
+
+def active(modeladmin, request, queryset):
     if queryset.filter(is_delete=True).exists():
         modeladmin.message_user(
             request,
@@ -14,10 +20,16 @@ def active(modeladmin,request,queryset):
         )
     else:
         queryset.update(is_active=True)
-        modeladmin.message_user(request,_('act rows successfully'))
-active.short_description=_('active')
+        modeladmin.message_user(
+            request,
+            _('turn rows to active status successfully')
+        )
 
-def lock(modeladmin,request,queryset):
+
+active.short_description = _('active')
+
+
+def lock(modeladmin, request, queryset):
     if queryset.filter(is_delete=True).exists():
         modeladmin.message_user(
             request,
@@ -26,10 +38,16 @@ def lock(modeladmin,request,queryset):
         )
     else:
         queryset.update(is_active=False)
-        modeladmin.message_user(request,_('lock rows successfully'))
-lock.short_description=_('lock')
+        modeladmin.message_user(
+            request,
+            _('turn rows to lock status successfully')
+        )
 
-def delete(modeladmin,request,queryset):
+
+lock.short_description = _('lock')
+
+
+def delete(modeladmin, request, queryset):
     if queryset.filter(is_active=False).exists():
         modeladmin.message_user(
             request,
@@ -38,8 +56,11 @@ def delete(modeladmin,request,queryset):
         )
     else:
         queryset.update(is_delete=True)
-        modeladmin.message_user(request,'delete rows successfully')
-delete.short_description=_('delete')
+        modeladmin.message_user(request, 'delete rows successfully')
+
+
+delete.short_description = _('delete')
+
 
 class CommonAdmin(admin.ModelAdmin):
     LIST_DISPLAY = (
@@ -62,33 +83,34 @@ class CommonAdmin(admin.ModelAdmin):
 
     def get_list_display(self, request):
         return (
-            super(CommonAdmin,self).get_list_display(request) +
+            super(CommonAdmin, self).get_list_display(request) +
             self.LIST_DISPLAY
         )
 
     def get_list_filter(self, request):
         return (
-            super(CommonAdmin,self).get_list_filter(request) +
+            super(CommonAdmin, self).get_list_filter(request) +
             self.LIST_FILTER
         )
 
     def get_readonly_fields(self, request, obj=None):
         return (
-            super(CommonAdmin,self).get_readonly_fields(request,obj) +
+            super(CommonAdmin, self).get_readonly_fields(request, obj) +
             self.READONLY_FIELDS
         )
 
     list_display_links = ('id',)
     list_per_page = 20
     empty_value_display = _('- empty -')
-    actions = [active,lock,delete]
+    actions = [active, lock, delete]
     save_as = True
     save_on_top = True
 
     def delete_model(self, request, obj):
-        if hasattr(obj,'is_delete') and obj.is_delete is False:
-            obj.is_delete=True
+        if hasattr(obj, 'is_delete') and obj.is_delete is False:
+            obj.is_delete = True
             obj.save()
+
 
 class CommonTabInLine(admin.TabularInline):
     list_display = CommonAdmin.LIST_DISPLAY

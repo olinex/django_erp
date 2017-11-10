@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
+__all__ = [
+    'BaseModel',
+    'CoordinateModel',
+    'TreeModel'
+]
+
 from django.db import transaction
 from django.db.models import F, Value, Func, Q
 from django.utils.translation import ugettext_lazy as _
 
 from django_perm import models
 from . import state
-from .state import StateMachine,Statement
+from .state import StateMachine, Statement
 
 
 class BaseModel(models.Model, state.StateMachine):
-    '''
+    """
     the base model contain the status fields of active and delete,contain all the state method
-    '''
+    """
 
     is_active = models.BooleanField(
         _('status of active'),
@@ -56,9 +62,9 @@ class BaseModel(models.Model, state.StateMachine):
 
 
 class CoordinateModel(models.Model):
-    '''
+    """
     contain fields longitude and latitude
-    '''
+    """
 
     lng = models.DecimalField(
         _('longitude'),
@@ -83,8 +89,9 @@ class CoordinateModel(models.Model):
     class Meta:
         abstract = True
 
-class TreeModel(models.Model,StateMachine):
-    '''the abstract model for tree,contain three fields parent_node,index,level'''
+
+class TreeModel(models.Model, StateMachine):
+    """the abstract model for tree,contain three fields parent_node,index,level"""
 
     parent_node = models.ForeignKey(
         'self',
@@ -102,10 +109,10 @@ class TreeModel(models.Model,StateMachine):
         default='-',
         max_length=190,
         help_text=_(
-            '''
-            tree index of the node,like "-a-b-c-",enumerate all of the parent node,
+            """
+            tree index of the node,like '-a-b-c-',enumerate all of the parent node,
             if this node is the root node of tree,the index will be empty string
-            '''
+            """
         )
     )
 
@@ -124,10 +131,10 @@ class TreeModel(models.Model,StateMachine):
 
     @property
     def root_node(self):
-        '''
+        """
         return the root parent node of this node in the same tree
         :return: common.TreeModel Instance
-        '''
+        """
         if self.index != '':
             return self.__class__.objects.get(
                 pk=int(self.index.split('-')[1])
@@ -136,31 +143,31 @@ class TreeModel(models.Model,StateMachine):
 
     @property
     def all_child_nodes(self):
-        '''
+        """
         return all child node queryset of this node in the same tree
         :return: common.TreeModel Queryset
-        '''
+        """
         return self.__class__.objects.filter(
             index__startswith='{}{}-'.format(self.index, self.id)
         )
 
     @property
     def all_parent_nodes(self):
-        '''
+        """
         return all parent node queryset of this node in the same tree
         :return: common.TreeModel Queryset
-        '''
+        """
         return self.__class__.objects.filter(
             pk__in=[int(node_pk) for node_pk in self.index.split('-')[1:-1]]
         )
 
     @property
     def sibling_nodes(self):
-        '''
+        """
         return the node queryset which belongs to the same parent node,but exclude itself,
         if this node is a root node,will return all other root node
         :return: common.TreeModel Queryset
-        '''
+        """
         return self.__class__.objects.filter(
             index=self.index
         ).exclude(pk=self.pk)
@@ -168,21 +175,21 @@ class TreeModel(models.Model,StateMachine):
     @property
     @classmethod
     def root_nodes(cls):
-        '''
+        """
         return the queryset of all root nodes
         :return: common.TreeModel Queryset
-        '''
+        """
         return cls.objects.filter(
             parent_node=None,
             index='-'
         )
 
     def change_parent_node(self, parent):
-        '''
+        """
         change this node's parent node,and child nodes's index
         :parent: common.TreeModel Instance
         :return: self
-        '''
+        """
         with transaction.atomic():
             if parent == self.parent_node:
                 return None
@@ -190,7 +197,7 @@ class TreeModel(models.Model,StateMachine):
                 node = self.__class__.objects.select_for_update().get(pk=parent.pk)
                 new_index = '{}{}-'.format(node.index, str(node.pk))
             else:
-                node=None
+                node = None
                 new_index = '-'
             old_index = self.index
             self.all_child_nodes.select_for_update().update(

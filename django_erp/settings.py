@@ -27,13 +27,12 @@ SETUP_TOOLS = get_environ('SETUP_TOOLS')
 FILE_SERVICE = get_environ('FILE_SERVICE')
 
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '[::1]',
-] + get_environ('PRIVATE_HOSTS')
+                    'localhost',
+                    '127.0.0.1',
+                    '[::1]',
+                ] + get_environ('PRIVATE_HOSTS')
 
 ALLOWED_METHODS = ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'OPTIONS', 'DELETE']
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
@@ -44,7 +43,6 @@ SECRET_KEY = (
     if DEBUG
     else get_environ('SECRET_KEY')
 )
-
 
 # Application definition
 
@@ -94,11 +92,10 @@ MIDDLEWARE = [
 ]
 
 if SETUP_TOOLS:
-    MIDDLEWARE.insert(0,'debug_toolbar.middleware.DebugToolbarMiddleware')
+    MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
 
 ROOT_URLCONF = 'django_erp.urls'
 REACT_ROOT = os.path.join(BASE_DIR, 'django_dva')
-
 
 TEMPLATES = [
     {
@@ -119,8 +116,8 @@ TEMPLATES = [
 # authenticate against different sources.
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'django_account.authentication.EmailAuthBackend',
-    'django_account.authentication.PhoneNumberBackend',
+    'django_account.authentications.EmailAuthBackend',
+    'django_account.authentications.PhoneAuthBackend',
     'django_perm.backends.ObjectPermissionBackend',
 )
 
@@ -132,7 +129,7 @@ WSGI_APPLICATION = 'django_erp.wsgi.application'
 DATABASES = get_environ('DATABASES') or {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3')
     }
 }
 
@@ -217,13 +214,12 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 SESSION_CACHE_ALIAS = 'default'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
-#csrftoken
+# csrftoken
 CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_COOKIE_PATH = '/'
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
 
-
-#--------------------------------------------Third part package params-------------------------------------------------#
+# --------------------------------------------Third part package params-------------------------------------------------#
 
 PERM_NOT_ALLOW_NOTICE = ''
 
@@ -251,7 +247,7 @@ REST_FRAMEWORK = {
         'user': '120/min',
     },
     'ORDERING_PARAM': 'ordering',
-    'DEFAULT_PAGINATION_CLASS': 'django_base.paginations.DefaultPagination'
+    'DEFAULT_PAGINATION_CLASS': 'django_erp.paginations.DefaultPagination'
 }
 
 CHANNEL_LAYERS = {

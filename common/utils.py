@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-'''
+"""
 @author:    olinex
 @time:      2017/8/24 下午2:30
-'''
+"""
 
-import os
 import json
 from hashlib import md5
 from django.core.serializers.json import DjangoJSONEncoder

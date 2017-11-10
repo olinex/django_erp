@@ -8,7 +8,7 @@ from datetime import datetime
 
 
 class Excel(object):
-    '''excel文件'''
+    """excel文件"""
     models = []
     serializer_classes = []
 

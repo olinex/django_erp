@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-'''
+"""
 @author:    olinex
 @time:      2017/9/28 下午8:41
-'''
+"""
 
 from rest_framework import pagination
 

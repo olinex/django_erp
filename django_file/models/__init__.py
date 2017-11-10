@@ -9,7 +9,7 @@ from common.fields import ActiveLimitForeignKey
 
 
 class File(BaseModel):
-    '''文件虚拟类'''
+    """文件虚拟类"""
     md5 = models.CharField(
         '文件md5值',
         primary_key=True,

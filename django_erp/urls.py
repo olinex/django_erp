@@ -16,13 +16,16 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-import debug_toolbar
+
 from django.conf import settings
 from django.conf.urls import url
 from django.conf.urls.static import static
 from django.contrib import admin
-from django_account.views import first_request
+from django.shortcuts import render
 from common.utils import include
+
+def first_request(request):
+    return render(request, 'index.html')
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -33,7 +36,7 @@ urlpatterns = [
     url(r'^stock/', include('django_stock.urls', namespace='django_stock')),
     url(r'^test/', include('django_perm.urls', namespace='django_perm')),
 
-    url(r'^__debug__/',include(debug_toolbar.urls,namespace='debug')),
+    url(r'^__debug__/',include('debug_toolbar.urls',namespace='debug')),
     url(r'^$', first_request, name='first_request'),
 ]
 if settings.FILE_SERVICE:

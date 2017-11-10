@@ -13,15 +13,15 @@ from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelatio
 from django_perm import models
 from common.state import Statement, StateMachine
 from common.abstractModel import BaseModel, TreeModel
-from common.fields import ActiveLimitForeignKey, ActiveLimitManyToManyField
+from common.fields import ActiveLimitForeignKey
 
 User = get_user_model()
 
 
 class PackageType(BaseModel):
-    '''
+    """
     the type of package which define it name,the name must be unique
-    '''
+    """
 
     name = models.CharField(
         _('name'),
@@ -50,9 +50,9 @@ class PackageType(BaseModel):
 
 
 class PackageTypeSetting(models.Model, StateMachine):
-    '''
+    """
     Constraint sets the maximum number of packages
-    '''
+    """
 
     package_type = ActiveLimitForeignKey(
         'django_product.PackageType',
@@ -101,9 +101,9 @@ class PackageTypeSetting(models.Model, StateMachine):
 
 
 class PackageTemplate(BaseModel):
-    '''
+    """
     the template of package type
-    '''
+    """
 
     name = models.CharField(
         _('name'),
@@ -140,9 +140,9 @@ class PackageTemplate(BaseModel):
 
 
 class PackageTemplateSetting(models.Model):
-    '''
+    """
     the setting which set the number of item in the package
-    '''
+    """
 
     package_template = ActiveLimitForeignKey(
         'django_product.PackageTemplate',
@@ -185,9 +185,9 @@ class PackageTemplateSetting(models.Model):
 
 
 class PackageNode(TreeModel, StateMachine):
-    '''
+    """
     package node,every node contain an package template
-    '''
+    """
 
     template = ActiveLimitForeignKey(
         'django_product.PackageTemplate',
@@ -214,11 +214,11 @@ class PackageNode(TreeModel, StateMachine):
 
     @property
     def child_quantity_dict(self):
-        '''
+        """
         return the dict of all childs pk and quantity dict,
         and an empty string with itself's quantity
         :return: dict
-        '''
+        """
         result = dict(self.all_child_nodes.values_list('pk', 'quantity'))
         return result
 
@@ -235,7 +235,7 @@ class PackageNode(TreeModel, StateMachine):
 
 
 class ProductCategory(BaseModel):
-    '''product category'''
+    """product category"""
     name = models.CharField(
         _('name'),
         primary_key=True,
@@ -261,7 +261,7 @@ class ProductCategory(BaseModel):
 
 
 class Product(BaseModel):
-    '''产品'''
+    """产品"""
     template = ActiveLimitForeignKey(
         'django_product.ProductTemplate',
         null=False,
@@ -361,11 +361,11 @@ class Product(BaseModel):
 
     @property
     def item(self):
-        '''
+        """
         get the relate item about itself,in the product.Item,it constraint the ccontent type and instance id,
         so it must have the only one item
         :return: product.Item instance
-        '''
+        """
         if not hasattr(self, '__item'):
             self.__item = self.items.first()
         return self.__item
@@ -393,7 +393,7 @@ class Product(BaseModel):
 
 
 class Validation(BaseModel):
-    '''产品验货配置'''
+    """产品验货配置"""
     name = models.CharField(
         _('name'),
         max_length=190,
@@ -401,7 +401,7 @@ class Validation(BaseModel):
         help_text=_("validation's name")
     )
 
-    actions = ActiveLimitManyToManyField(
+    actions = models.ManyToManyField(
         'django_product.ValidateAction',
         blank=False,
         verbose_name=_('validate actions'),
@@ -420,11 +420,11 @@ class Validation(BaseModel):
         return {action.symbol: action.validator for action in self.actions}
 
     def is_valid(self, data):
-        '''
+        """
         use the validate actions and check the result,if all the action is valid,then return True
         :param data: dict
         :return: boolean
-        '''
+        """
         validators = self.validators
         if validators.keys() == data.keys():
             self.validated_data = {}
@@ -443,7 +443,7 @@ class Validation(BaseModel):
 
 
 class ValidateAction(BaseModel):
-    '''产品验货动作'''
+    """产品验货动作"""
     symbol = models.CharField(
         _('symbol'),
         null=False,
@@ -493,7 +493,7 @@ class ValidateAction(BaseModel):
 
 
 class ProductTemplate(BaseModel):
-    '''product template'''
+    """product template"""
     STOCK_TYPE = (
         ('service', _('service')),
         ('digital', _('digital')),
@@ -519,7 +519,7 @@ class ProductTemplate(BaseModel):
         help_text=_('the type of product how to stock')
     )
 
-    attributes = ActiveLimitManyToManyField(
+    attributes = models.ManyToManyField(
         'django_product.Attribute',
         verbose_name=_('attributes'),
         help_text=_('the attributes and product relationship')
@@ -617,7 +617,7 @@ class ProductTemplate(BaseModel):
 
 
 class Attribute(BaseModel):
-    '''属性'''
+    """属性"""
     name = models.CharField(
         _('attribute name'),
         null=False,
@@ -659,7 +659,7 @@ class Attribute(BaseModel):
 
 
 class UOM(BaseModel):
-    '''计量单位'''
+    """计量单位"""
 
     class KeyManager(Manager):
         def get_by_natural_key(self, symbol):
@@ -770,11 +770,11 @@ class UOM(BaseModel):
         return (self.symbol,)
 
     def accuracy_convert(self, value):
-        '''
+        """
         convert value's precision to this uom's precision
         :param value: decimal
         :return: decimal
-        '''
+        """
         import decimal
         with decimal.localcontext() as ctx:
             ctx.prec = 24
@@ -784,12 +784,12 @@ class UOM(BaseModel):
             )
 
     def convert(self, value, to_uom):
-        '''
+        """
         convert value as this uom precision and ratio to another uom
         :param value: decimal
         :param to_uom: uom
         :return: decimal
-        '''
+        """
         if self.category == to_uom.category:
             new_value = value * self.ratio / to_uom.ratio
             return to_uom.accuracy_convert(new_value)
@@ -797,7 +797,7 @@ class UOM(BaseModel):
 
 
 class Lot(BaseModel):
-    '''lot number'''
+    """lot number"""
     name = models.CharField(
         _('name'),
         null=False,
@@ -824,9 +824,9 @@ class Lot(BaseModel):
 
 
 class Item(BaseModel):
-        '''
+        """
         stock item is project what can be stock and move
-        '''
+        """
 
         content_type = models.ForeignKey(
             ContentType,
@@ -866,7 +866,7 @@ class Item(BaseModel):
 
 
 # class Barcode(BaseModel):
-#     '''条形码类'''
+#     """条形码类"""
 #     BARCODE_MODE = (
 #         ('Standard39', '标准39'),
 #     )

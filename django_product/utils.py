@@ -5,7 +5,7 @@ from django_perm import models
 
 
 class QuantityField(models.DecimalField):
-    '''数量单位'''
+    """数量单位"""
 
     def __init__(self, *args, uom, **kwargs):
         self.uom = uom
@@ -19,7 +19,7 @@ class QuantityField(models.DecimalField):
         return name, path, args, kwargs
 
 def get_quantity_by_uom(instance,field_name,uom=None):
-    '''获得对象指定单位格式的数量'''
+    """获得对象指定单位格式的数量"""
     from functools import reduce
     quantity = getattr(instance,field_name)
     default_uom = reduce(getattr,[instance] + instance.__class__._meta.fields[field_name].uom.join('.'))

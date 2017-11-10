@@ -1,15 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
+"""
+@author:    olinex
+@time:      2017/11/9 上午11:46
+"""
+__all__ = [
+    'EmailAuthBackend','PhoneAuthBackend'
+]
+
 from django.contrib.auth import get_user_model
 
-User=get_user_model()
+User = get_user_model()
 
 
 class EmailAuthBackend(object):
-    '''
+    """
     Authenticate using e-mail account.
-    '''
+    """
+
     def authenticate(self, username=None, password=None):
         try:
             user = User.objects.get(email=username)
@@ -25,10 +34,12 @@ class EmailAuthBackend(object):
         except User.DoesNotExist:
             return None
 
-class PhoneNumberBackend(object):
-    '''
+
+class PhoneAuthBackend(object):
+    """
     Authenticate using PhoneNumber account.
-    '''
+    """
+
     def authenticate(self, username=None, password=None):
         try:
             user = User.objects.get(profile__phone=username)
@@ -43,5 +54,3 @@ class PhoneNumberBackend(object):
             return User.objects.get(pk=user_id)
         except User.DoesNotExist:
             return None
-
-
