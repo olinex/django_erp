@@ -8,3 +8,6 @@ from django.utils.translation import ugettext_lazy as _
 class DjangoBaseConfig(AppConfig):
     name = 'django_base'
     verbose_name = _('base')
+
+    def ready(self):
+        from . import signals

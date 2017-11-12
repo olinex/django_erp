@@ -3,8 +3,8 @@
 
 from channels.routing import route_class
 
-from django_account.consumers import Base
+from django_base.consumers import Base
 
 channel_routing = [
-    route_class(Base,path=r'^/$'),
+    route_class(Base, path=r'^/$'),
 ]

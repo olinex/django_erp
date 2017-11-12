@@ -4,7 +4,7 @@
 from django.conf import settings
 
 from django_perm import models
-from common.abstractModel import BaseModel
+from common.model import BaseModel
 from common.fields import ActiveLimitForeignKey
 
 

@@ -11,9 +11,10 @@ __all__ = ['Region']
 from django_perm import models
 from django.db.models import Manager
 from django.utils.translation import ugettext_lazy as _
+from django_erp.common.models import DataModel
 
 
-class Region(models.Model):
+class Region(DataModel):
     """region"""
 
     class KeyManager(Manager):
@@ -26,7 +27,7 @@ class Region(models.Model):
             )
 
     city = models.ForeignKey(
-        'django_base.City',
+        'City',
         null=False,
         blank=False,
         verbose_name=_('city'),

@@ -11,9 +11,10 @@ __all__ = ['Province']
 from django_perm import models
 from django.db.models import Manager
 from django.utils.translation import ugettext_lazy as _
+from django_erp.common.models import DataModel
 
 
-class Province(models.Model):
+class Province(DataModel):
     """province"""
 
     COUNTRIES = (

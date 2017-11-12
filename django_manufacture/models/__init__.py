@@ -3,7 +3,7 @@
 
 from django.utils.translation import ugettext_lazy as _
 
-from common.abstractModel import BaseModel
+from common.model import BaseModel
 from common.fields import ActiveLimitForeignKey,ActiveLimitOneToOneField
 from django_perm.db import models
 

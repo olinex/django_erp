@@ -61,12 +61,12 @@ INSTALLED_APPS = [
     'django_base',
     'django_dva',
     'django_perm',
-    'django_account',
-    'django_product',
-    'django_file',
-    'django_stock',
-    'django_purchase',
-    'django_sale',
+    # 'django_account',
+    # 'django_file',
+    # 'django_product',
+    # 'django_stock',
+    # 'django_purchase',
+    # 'django_sale',
 ]
 
 if SETUP_TOOLS:
@@ -116,8 +116,8 @@ TEMPLATES = [
 # authenticate against different sources.
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'django_account.authentications.EmailAuthBackend',
-    'django_account.authentications.PhoneAuthBackend',
+    'django_base.authentications.EmailAuthBackend',
+    'django_base.authentications.PhoneAuthBackend',
     'django_perm.backends.ObjectPermissionBackend',
 )
 
@@ -233,7 +233,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-        'common.rest.permissions.ViewAccess',
+        'django_erp.rest.permissions.ViewAccess',
     ),
     'DEFAULT_THROTTLE_CLASS': (
         'rest_framework.throttling.AnonRateThrottle',
@@ -247,7 +247,7 @@ REST_FRAMEWORK = {
         'user': '120/min',
     },
     'ORDERING_PARAM': 'ordering',
-    'DEFAULT_PAGINATION_CLASS': 'django_erp.paginations.DefaultPagination'
+    'DEFAULT_PAGINATION_CLASS': 'django_erp.rest.paginations.DefaultPagination'
 }
 
 CHANNEL_LAYERS = {
@@ -284,3 +284,12 @@ INTERNAL_IPS = ['127.0.0.1']
 DEBUG_TOOLBAR_CONFIG = {
     'JQUERY_URL': 'http://code.jquery.com/jquery-2.1.1.min.js'
 }
+
+# django filter setting
+TEXT_FILTER_TYPE = ['contains', 'icontains', 'exact', 'iexact']
+NUMBER_FILTER_TYPE = ['exact', 'lt', 'lte', 'gt', 'gte']
+BOOLEAN_FILTER_TYPE = ['exact']
+SELECT_FILTER_TYPE = ['exact']
+DATE_FILTER_TYPE = ['date', 'date__gt', 'date__gte', 'date__lt', 'date__lte']
+TIME_FILTER_TYPE = ['time', 'time__gt', 'time__gte', 'time__lt', 'time__lte']
+DATETIME_FILTER_TYPE = ['exact', 'gt', 'gte', 'lt', 'lte']

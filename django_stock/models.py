@@ -12,7 +12,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
 
 from common import Redis
-from common.abstractModel import BaseModel, TreeModel
+from common.model import BaseModel, TreeModel
 from common.exceptions import NotInStates
 from common.fields import ActiveLimitForeignKey, ActiveLimitOneToOneField, CancelableSimpleStateCharField
 from common.state import Statement, StateMachine

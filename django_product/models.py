@@ -12,7 +12,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django_perm import models
 from common.state import Statement, StateMachine
-from common.abstractModel import BaseModel, TreeModel
+from common.model import BaseModel, TreeModel
 from common.fields import ActiveLimitForeignKey
 
 User = get_user_model()
