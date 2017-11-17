@@ -10,7 +10,7 @@ __all__ = [
     'Partner',
 ]
 
-from django_perm import models
+from django_perm.db import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 from django_erp.common.models import BaseModel

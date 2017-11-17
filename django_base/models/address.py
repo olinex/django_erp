@@ -8,7 +8,7 @@
 
 __all__ = ['Address']
 
-from django_perm import models
+from django_perm.db import models
 from django.utils.translation import ugettext_lazy as _
 
 

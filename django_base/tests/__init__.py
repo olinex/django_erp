@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-from django.test import TestCase
-
-# Create your tests here.
+from .model_argument import *
+from .model_province import *
+from .model_city import *
+from .model_region import *
+from .model_partner import *
+from .abstract_test_case import *
+from .task_send_async_email import *

@@ -10,13 +10,15 @@ __all__ = [
     'PasswordSerializer',
     'ResetPasswordSerializer',
     'UserSerializer',
-    'LoginSerializer'
+    'LoginSerializer',
+    'OnlineNoticeSerializer',
+    'MailNoticeSerializer'
 ]
 
 from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
-from .profile import ProfileSerializer
+from .address import AddressSerializer
 
 User = get_user_model()
 
@@ -69,14 +71,18 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.CharField(read_only=True)
-    profile_detail = ProfileSerializer(source='profile', read_only=True)
+    phone = serializers.ReadOnlyField()
+    mail_notice = serializers.ReadOnlyField()
+    online_notice = serializers.ReadOnlyField()
+    address = AddressSerializer(source='address', read_only=True)
     permissions = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
         fields = (
             'id', 'username', 'first_name', 'last_name',
-            'is_active', 'email', 'profile_detail', 'permissions'
+            'is_active', 'email', 'phone', 'mail_notice',
+            'online_notice', 'address', 'permissions'
         )
 
     def create(self, validated_data):
@@ -87,7 +93,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_permissions(self, obj):
         """
-        获取用户的所有权限
+        the all of the user permissions
         """
         if obj.is_superuser:
             return {'__all__'}
@@ -101,6 +107,18 @@ class LoginSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'password')
+
+
+class MailNoticeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('mail_notice',)
+
+
+class OnlineNoticeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('online_notice',)
 
 
 class CaptchaSerializer(serializers.Serializer):

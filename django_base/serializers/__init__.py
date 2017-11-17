@@ -12,5 +12,4 @@ from .region import *
 from .address import *
 from .talk import *
 from .user import *
-from .profile import *
 from .partner import *

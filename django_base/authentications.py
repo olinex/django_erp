@@ -42,7 +42,7 @@ class PhoneAuthBackend(object):
 
     def authenticate(self, username=None, password=None):
         try:
-            user = User.objects.get(profile__phone=username)
+            user = User.objects.get(phone=username)
             if user.check_password(password):
                 return user
             return None

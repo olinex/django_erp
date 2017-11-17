@@ -121,6 +121,8 @@ AUTHENTICATION_BACKENDS = (
     'django_perm.backends.ObjectPermissionBackend',
 )
 
+AUTH_USER_MODEL = 'django_base.User'
+
 WSGI_APPLICATION = 'django_erp.wsgi.application'
 
 # Database
@@ -216,8 +218,8 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 # csrftoken
 CSRF_COOKIE_NAME = 'csrftoken'
-CSRF_COOKIE_PATH = '/'
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
+
 
 # --------------------------------------------Third part package params-------------------------------------------------#
 
@@ -261,6 +263,8 @@ CHANNEL_LAYERS = {
         "ROUTING": "django_erp.routing.channel_routing",
     },
 }
+
+SOCKET_ONLINE_GROUP_NAME = 'online_users'
 
 # Redis
 REDIS_CONF = {

@@ -31,6 +31,7 @@ class JsonSerializer(object):
         :return: json data string
         """
         import json
+        self.check_status()
         data = self.get_data()
         return json.dumps(data)
 

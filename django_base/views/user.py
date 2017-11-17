@@ -30,14 +30,9 @@ class UserViewSet(PermMethodViewSet):
     ordering_fields = ('id', 'username', 'first_name', 'last_name', 'email')
 
     def get_queryset(self):
-        queryset = User.objects.select_related(
-            'profile', 'profile__address',
-            'profile__default_send_address'
-        ).prefetch_related(
-            'profile__usual_send_addresses'
-        ).order_by('-pk')
+        queryset = User.objects.select_related('address')
         if self.request.user.is_superuser:
-            return queryset.all().order_by('-pk')
+            return queryset.all()
         return queryset.filter(pk=self.request.user.id)
 
     @list_route(['get'])
@@ -89,4 +84,30 @@ class UserViewSet(PermMethodViewSet):
         serializer.save()
         return Response(
             {'detail': _('password changed successfully')},
+        )
+
+    @list_route(['post'], serializer_class=serializers.MailNoticeSerializer)
+    @view_perm_required
+    def mail_notice(self, request):
+        serializer = self.get_serializer(
+            instance=request.user,
+            data=request.data
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {'detail': _('mail notice status changed successfully')},
+        )
+
+    @list_route(['post'], serializer_class=serializers.OnlineNoticeSerializer)
+    @view_perm_required
+    def online_notice(self, request):
+        serializer = self.get_serializer(
+            instance=request.user,
+            data=request.data
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {'detail': _('online notice status changed successfully')},
         )

@@ -16,7 +16,6 @@ router.register(r'city', views.CityViewSet, 'city')
 router.register(r'region', views.RegionViewSet, 'region')
 router.register(r'address', views.AddressViewSet, 'address')
 router.register(r'user', views.UserViewSet, 'user')
-router.register(r'profile', views.ProfileViewSet, 'profile')
 router.register(r'partner', views.PartnerViewSet, 'partner')
 
 urlpatterns = router.urls

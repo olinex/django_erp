@@ -1,0 +1,8 @@
+- model: django_base.Argument
+  fields:
+    name: "add_follower_after_create_message"
+    form: "bool"
+    value: "false"
+    help_text: "decide whether to add self to followers when create a message"
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"

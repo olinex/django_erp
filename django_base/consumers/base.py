@@ -11,8 +11,7 @@ from django_erp.common.consumer import http_login_required
 from channels import Group, Channel
 from channels.generic.websockets import WebsocketConsumer
 from django.utils.translation import ugettext as _
-
-online_group = 'online_users'
+from django.conf import settings
 
 
 class Base(WebsocketConsumer):
@@ -20,20 +19,19 @@ class Base(WebsocketConsumer):
     Basic login server
     """
     http_user = True
+    online_group = settings.SOCKET_ONLINE_GROUP_NAME
 
     @http_login_required
     def connect(self, message, **kwargs):
         channel = message.reply_channel
-        user = message.user
-        redis = Redis()
-        redis.hset(online_group, str(user.id), message.reply_channel.name)
-        if user.profile.online_notice:
+        user = message.user.register_online_group(message=message)
+        if user.online_notice:
             notice = responses.NoticeSocketResponse(
                 user=user,
                 detail=_('online'),
                 content='',
                 status='info')
-            group = Group(online_group)
+            group = Group(self.online_group)
             group.send({'text': notice.to_json()})
             group.add(channel)
         response = responses.SocketResponse(detail=_('connected successfully'))
@@ -43,17 +41,16 @@ class Base(WebsocketConsumer):
     def disconnect(self, message, **kwargs):
         channel = message.reply_channel
         user = message.user
-        redis = Redis()
-        group = Group(online_group)
+        group = Group(self.online_group)
         group.discard(channel)
         notice = responses.NoticeSocketResponse(
             user=user,
             detail=_('leave'),
             content='',
             status='info')
-        if user.profile.online_notice:
+        if user.online_notice:
             group.send({'text': notice.to_json()})
-        redis.hdel(online_group, str(user.id))
+        user.disregister_online_group()
         response = responses.SocketResponse(detail=_('disconnected successfully'))
         channel.send({'accept': True, 'close': True, 'text': response.to_json()})
 
@@ -82,7 +79,7 @@ class Base(WebsocketConsumer):
             })
             return None
         redis = Redis()
-        channel_name = redis.hget(online_group, str(listener))
+        channel_name = redis.hget(self.online_group, str(listener))
         if not channel_name:
             message.reply_channel.send({
                 'accept': False,

@@ -27,13 +27,16 @@ class StateMachine(object):
         """get statement instances list"""
         return getattr(cls.States, state)
 
-    def get_states_query(self, *states):
+    @classmethod
+    def get_states_query(cls, *states):
         """get statement query by list"""
         from functools import reduce
-        return reduce(
-            lambda a, b: a.query | b.query,
-            [self.get_statement(state) for state in states]
-        )
+        if states:
+            return reduce(
+                lambda a, b: a | b,
+                [cls.get_statement(state).query for state in states]
+            )
+        return Q()
 
     @classmethod
     def get_states_queryset(cls, *states, queryset=None):
@@ -58,7 +61,7 @@ class StateMachine(object):
             if raise_exception:
                 raise self.raise_state_exceptions(*states)
             return False
-        return True and states
+        return True and bool(states)
 
     def set_state(self, state):
         """
@@ -161,9 +164,7 @@ class Statement(object):
     @property
     def query(self):
         """return the statement's filter query"""
-        from functools import reduce
-        query = tuple(Q(**{key: value}) for key, value in self.kwargs.items())
-        return reduce(lambda q1, q2: q1 & q1, query)
+        return Q(**self.kwargs)
 
     def check(self, instance):
         for field, value in self.kwargs.items():
@@ -174,6 +175,6 @@ class Statement(object):
         return False
 
     def set(self, instance):
-        for key, value in self.kwargs:
+        for key, value in self.kwargs.items():
             setattr(instance, key, value)
         instance.save(update_fields=self.kwargs.keys())

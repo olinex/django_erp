@@ -9,15 +9,16 @@ __all__ = [
     'OrderStateCharField'
 ]
 
-from django_perm import models
+from django_perm.db import models
 from .validators import ActiveStateValidator
 from django.utils.translation import ugettext_lazy as _
 
 
 class ActiveForeignKey(models.ForeignKey):
     """the foreignkey to instance that are active"""
+
     def __init__(self, *args, **kwargs):
-        kwargs['limit_choices_to'] = kwargs.get('limit_choices_to', {'is_draft': False,'is_active': True})
+        kwargs['limit_choices_to'] = kwargs.get('limit_choices_to', {'is_draft': False, 'is_active': True})
         kwargs['on_delete'] = kwargs.get('on_delete', models.PROTECT)
         kwargs['validators'] = kwargs.get('validators', [ActiveStateValidator])
         super(ActiveForeignKey, self).__init__(*args, **kwargs)
@@ -25,8 +26,9 @@ class ActiveForeignKey(models.ForeignKey):
 
 class ActiveOneToOneField(models.OneToOneField):
     """the one to one field to instance that are active"""
+
     def __init__(self, *args, **kwargs):
-        kwargs['limit_choices_to'] = kwargs.get('limit_choices_to', {'is_draft': False,'is_active': True})
+        kwargs['limit_choices_to'] = kwargs.get('limit_choices_to', {'is_draft': False, 'is_active': True})
         kwargs['on_delete'] = kwargs.get('on_delete', models.PROTECT)
         kwargs['validators'] = kwargs.get('validators', [ActiveStateValidator])
         super(ActiveOneToOneField, self).__init__(*args, **kwargs)
@@ -34,6 +36,7 @@ class ActiveOneToOneField(models.OneToOneField):
 
 class MD5CharField(models.CharField):
     """the char field will automatically convert string to md5 string"""
+
     def get_prep_value(self, value):
         from hashlib import md5
         m = md5()
@@ -65,9 +68,9 @@ class OrderStateCharField(models.CharField):
             'choices',
             (
                 ('waiting', _('waiting')),
-                ('doing', _('doing')),
+                ('confirmed', _('confirmed')),
                 ('done', _('done')),
-                ('cancel', _('cancel'))
+                ('cancelled', _('cancelled'))
             )
         )
         kwargs['null'] = kwargs.get('null', False)
@@ -75,6 +78,3 @@ class OrderStateCharField(models.CharField):
         kwargs['default'] = 'waiting'
         kwargs['max_length'] = kwargs.get('max_length', 10)
         super(OrderStateCharField, self).__init__(*args, **kwargs)
-
-
-

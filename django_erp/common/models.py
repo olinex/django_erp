@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 __all__ = [
+    'HistoryModel',
     'BaseModel',
     'CoordinateModel',
     'TreeModel',
@@ -14,7 +15,7 @@ from django.db import transaction
 from django.db.models import F, Value, Func
 from django.utils.translation import ugettext_lazy as _
 
-from django_perm import models
+from django_perm.db import models
 from .state import StateMachine, Statement
 from .fileds import OrderStateCharField, AuditStateCharField
 
@@ -170,31 +171,18 @@ class TreeModel(models.Model, StateMachine):
 def action_factory(*from_state, to_state, name):
     def action(self, raise_exception=False):
         with transaction.atomic():
-            self.check_states(from_state, raise_exception=raise_exception)
+            self.check_states(*from_state, raise_exception=raise_exception)
             getattr(self, 'before_{}'.format(name))()
             self.set_state(to_state)
             getattr(self, 'after_{}'.format(name))()
+
     return action
 
 
-class BaseModel(models.Model, StateMachine):
+class HistoryModel(models.Model, StateMachine):
     """
-    the base model contain the status fields of active and delete,contain all the state method
+    the base model contain the create time and last modify time
     """
-    is_draft = models.BooleanField(
-        _('status of draft'),
-        blank=False,
-        default=True,
-        help_text=_('True means instance is draft')
-    )
-
-    is_active = models.BooleanField(
-        _('status of active'),
-        blank=False,
-        default=True,
-        help_text=_('the status of active,True means active,False means not active')
-    )
-
     create_time = models.DateTimeField(
         _('create time'),
         null=False,
@@ -213,12 +201,35 @@ class BaseModel(models.Model, StateMachine):
 
     class Meta:
         abstract = True
+        ordering = ['create_time']
+
+
+class BaseModel(HistoryModel):
+    """
+    the base model contain the status fields of active and delete,contain all the state method
+    """
+    is_draft = models.BooleanField(
+        _('status of draft'),
+        blank=False,
+        default=True,
+        help_text=_('True means instance is draft')
+    )
+
+    is_active = models.BooleanField(
+        _('status of active'),
+        blank=False,
+        default=True,
+        help_text=_('the status of active,True means active,False means not active')
+    )
+
+    class Meta:
+        abstract = True
 
     class States:
         draft = Statement(is_draft=True)
-        doing = Statement(is_draft=False)
-        active = Statement(inherits=doing, is_active=True)
-        no_active = Statement(inherits=doing, is_active=False)
+        confirmed = Statement(is_draft=False)
+        active = Statement(inherits=confirmed, is_active=True)
+        locked = Statement(inherits=confirmed, is_active=False)
 
     def before_confirm(self):
         pass
@@ -226,7 +237,7 @@ class BaseModel(models.Model, StateMachine):
     def after_confirm(self):
         pass
 
-    action_confirm = action_factory('draft',to_state='no_draft',name='confirm')
+    action_confirm = action_factory('draft', to_state='confirmed', name='confirm')
 
     def before_lock(self):
         pass
@@ -234,7 +245,7 @@ class BaseModel(models.Model, StateMachine):
     def after_lock(self):
         pass
 
-    action_lock = action_factory('active', to_state='no_active', name='lock')
+    action_lock = action_factory('active', to_state='locked', name='lock')
 
     def before_active(self):
         pass
@@ -242,7 +253,7 @@ class BaseModel(models.Model, StateMachine):
     def after_active(self):
         pass
 
-    action_active = action_factory('no_active', to_state='active', name='active')
+    action_active = action_factory('locked', to_state='active', name='active')
 
     def before_delete(self):
         pass
@@ -291,20 +302,19 @@ class OrderModel(BaseModel):
 
     class States:
         draft = Statement(is_draft=True)
-        doing = Statement(is_draft=False, state='doing')
-        active = Statement(inherits=doing, is_active=True)
-        no_active = Statement(inherits=doing, is_active=False)
-        done = Statement(inherits=no_active, state='done')
-        cancel = Statement(inherits=no_active, state='cancel')
+        confirmed = Statement(is_draft=False, state='confirmed')
+        active = Statement(inherits=confirmed, is_active=True)
+        locked = Statement(inherits=confirmed, is_active=False)
+        done = Statement(inherits=locked, state='done')
+        cancelled = Statement(inherits=locked, state='cancelled')
 
-    def before_done(self):
+    def before_do(self):
         pass
 
-    def after_done(self):
+    def after_do(self):
         pass
 
-    action_done = action_factory('acitve', to_state='done', name='done')
-
+    action_do = action_factory('acitve', to_state='done', name='do')
 
     def before_cancel(self):
         pass
@@ -312,7 +322,7 @@ class OrderModel(BaseModel):
     def after_cancel(self):
         pass
 
-    action_cancel = action_factory('doing', to_state='cancel', name='cancel')
+    action_cancel = action_factory('confirmed', to_state='cancelled', name='cancel')
 
 
 class AuditOrderModel(OrderModel):
@@ -330,14 +340,14 @@ class AuditOrderModel(OrderModel):
 
     class States:
         draft = Statement(is_draft=True)
-        doing = Statement(is_draft=False, state='doing')
-        active = Statement(inherits=doing, is_active=True)
-        no_active = Statement(inherits=doing, is_active=False)
-        audit = Statement(inherits=active, audit_state='auditing')
-        reject = Statement(inherits=active, audit_state='reject')
+        confirmed = Statement(is_draft=False, state='confirmed')
+        active = Statement(inherits=confirmed, is_active=True)
+        locked = Statement(inherits=confirmed, is_active=False)
+        auditing = Statement(inherits=active, audit_state='auditing')
+        rejected = Statement(inherits=active, audit_state='rejected')
         allowed = Statement(inherits=active, audit_state='allowed')
-        done = Statement(inherits=no_active, audit_state='allowed', state='done')
-        cancel = Statement(inherits=no_active, state='cancel')
+        done = Statement(inherits=locked, audit_state='allowed', state='done')
+        cancelled = Statement(inherits=locked, state='cancelled')
 
     def before_audit(self):
         pass
@@ -345,8 +355,7 @@ class AuditOrderModel(OrderModel):
     def after_audit(self):
         pass
 
-    action_audit = action_factory('active', 'reject', to_state='audit', name='audit')
-
+    action_audit = action_factory('active', 'rejected', to_state='auditing', name='audit')
 
     def before_reject(self):
         pass
@@ -354,13 +363,13 @@ class AuditOrderModel(OrderModel):
     def after_reject(self):
         pass
 
-    action_reject = action_factory('audit', to_state='reject', name='reject')
+    action_reject = action_factory('auditing', to_state='rejected', name='reject')
 
-    def before_allowed(self):
+    def before_allow(self):
         pass
 
-    def after_allowed(self):
+    def after_allow(self):
         pass
 
-    action_allowed = action_factory('audit', to_state='allowed', name='allowed')
-    action_done = action_factory('allowed', to_state='done', name='done')
+    action_allow = action_factory('auditing', to_state='allowed', name='allow')
+    action_do = action_factory('allowed', to_state='done', name='do')

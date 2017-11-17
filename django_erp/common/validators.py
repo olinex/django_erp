@@ -10,12 +10,14 @@ __all__ = [
     'StateInstanceValidator',
     'NotZeroValidator',
     'ActiveStateValidator',
-    'NoActiveStateValidator'
+    'NoActiveStateValidator',
+    'IPPortValidator'
 ]
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 from django.utils.deconstruct import deconstructible
+from django.core.validators import MaxValueValidator
 
 
 @deconstructible
@@ -54,6 +56,16 @@ def NotZeroValidator(value):
             _('%(value)s can not equal to zero'),
             params={'value': value}
         )
+
+def IPPortValidator(value):
+    """
+        :param value: int
+        :return: None
+        :raise: ValidationError
+        """
+    if value > 65536:
+        raise ValidationError(_('IP Port can not greater than 65536'))
+
 
 
 ActiveStateValidator = StateInstanceValidator('active')

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 
-# from . import models
-# from django.contrib import admin
-# from django_erp.common.admins import CommonTabInLine
-#
-#
+from . import models
+from django.contrib import admin
+from django_erp.common.admins import CommonTabInLine
+
+
 # class CityInline(admin.TabularInline):
 #     model = models.City
 #     fieldsets = (

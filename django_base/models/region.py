@@ -8,7 +8,7 @@
 
 __all__ = ['Region']
 
-from django_perm import models
+from django_perm.db import models
 from django.db.models import Manager
 from django.utils.translation import ugettext_lazy as _
 from django_erp.common.models import DataModel

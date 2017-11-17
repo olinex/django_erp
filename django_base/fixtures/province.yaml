@@ -1,175 +1,349 @@
-
 - model: django_base.Province
   fields:
     country: China
     name: 北京
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 天津
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 河北
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 山西
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 内蒙古
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 辽宁
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 吉林
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 黑龙江
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 上海
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 江苏
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 浙江
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 安徽
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 福建
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 江西
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 山东
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 河南
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 湖北
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 湖南
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 广东
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 广西
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 海南
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 重庆
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 四川
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 贵州
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 云南
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 西藏
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 陕西
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 甘肃
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 青海
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 宁夏
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 新疆
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 台湾
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 澳门
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 香港
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"
 
 - model: django_base.Province
   fields:
     country: China
     name: 钓鱼岛
+    is_draft: false
+    is_active: true
+    sequence: 1
+    create_time: "2017-12-12T12:00:00.000Z"
+    last_modify_time: "2017-12-12T12:00:00.000Z"

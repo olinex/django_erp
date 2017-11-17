@@ -6,5 +6,4 @@ from .city import *
 from .region import *
 from .address import *
 from .partner import *
-from .profile import *
 from .user import *
