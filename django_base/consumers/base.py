@@ -24,10 +24,10 @@ class Base(WebsocketConsumer):
     @http_login_required
     def connect(self, message, **kwargs):
         channel = message.reply_channel
-        user = message.user.register_online_group(message=message)
-        if user.online_notice:
+        message.user.register_online_group(message=message)
+        if message.user.online_notice:
             notice = responses.NoticeSocketResponse(
-                user=user,
+                user=message.user,
                 detail=_('online'),
                 content='',
                 status='info')

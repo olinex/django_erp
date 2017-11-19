@@ -116,7 +116,7 @@ class User(AbstractUser):
     def socket_user(self, response, close=False, accept=True):
         channel = self.channel
         if channel:
-            self.channel.send({
+            channel.send({
                 'accept': accept,
                 'close': close,
                 'text': response.to_json()})
