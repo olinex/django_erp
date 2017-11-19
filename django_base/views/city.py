@@ -8,10 +8,13 @@
 
 __all__ = ['CityViewSet']
 
-from .. import models
-from .. import serializers
+from .. import models, serializers, filters
 from django_erp.rest.viewsets import DataViewSet
 
 class CityViewSet(DataViewSet):
     model = models.City
     serializer_class = serializers.CitySerializer
+    filter_class = filters.CityFilter
+
+    def get_queryset(self):
+        return self.model.objects.select_related('province').all()

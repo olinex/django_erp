@@ -8,9 +8,7 @@
 
 __all__ = ['ProvinceViewSet']
 
-from .. import models
-from .. import serializers
-from .. import filters
+from .. import models, serializers, filters
 from django_erp.rest.viewsets import DataViewSet
 
 

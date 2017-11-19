@@ -7,13 +7,14 @@
 """
 
 from .. import models
-from django_erp.rest.serializers import DataModelSerializer
 from .province import ProvinceSerializer
 from .city import CitySerializer
 from .region import RegionSerializer
+from rest_framework import serializers
+from django_erp.rest.fields import StatePrimaryKeyRelatedField
 
 
-class AddressSerializer(DataModelSerializer):
+class AddressSerializer(serializers.ModelSerializer):
     province_detail = ProvinceSerializer(
         source='region.city.province',
         read_only=True
@@ -25,6 +26,10 @@ class AddressSerializer(DataModelSerializer):
     region_detail = RegionSerializer(
         source='region',
         read_only=True
+    )
+    region = StatePrimaryKeyRelatedField(
+        'active',
+        model=models.Region
     )
 
     class Meta:

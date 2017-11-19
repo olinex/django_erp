@@ -7,4 +7,3 @@ from .model_city import *
 from .model_region import *
 from .model_partner import *
 from .abstract_test_case import *
-from .task_send_async_email import *

@@ -8,11 +8,11 @@
 
 __all__ = ['PartnerViewSet']
 
-from .. import models
-from .. import serializers
+from .. import models, serializers, filters
 from django_erp.rest.viewsets import BaseViewSet
 
 
 class PartnerViewSet(BaseViewSet):
     model = models.Partner
     serializer_class = serializers.PartnerSerializer
+    filter_class = filters.PartnerFilter

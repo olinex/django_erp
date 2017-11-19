@@ -19,6 +19,7 @@ from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 from .address import AddressSerializer
+from .group import GroupSerializer
 
 User = get_user_model()
 
@@ -74,7 +75,7 @@ class UserSerializer(serializers.ModelSerializer):
     phone = serializers.ReadOnlyField()
     mail_notice = serializers.ReadOnlyField()
     online_notice = serializers.ReadOnlyField()
-    address = AddressSerializer(source='address', read_only=True)
+    address = AddressSerializer(read_only=True)
     permissions = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -82,7 +83,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'username', 'first_name', 'last_name',
             'is_active', 'email', 'phone', 'mail_notice',
-            'online_notice', 'address', 'permissions'
+            'online_notice', 'address', 'permissions','groups'
         )
 
     def create(self, validated_data):
@@ -119,10 +120,3 @@ class OnlineNoticeSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('online_notice',)
-
-
-class CaptchaSerializer(serializers.Serializer):
-    code = serializers.CharField
-
-    def validate_code(self, val):
-        pass

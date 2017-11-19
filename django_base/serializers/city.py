@@ -9,10 +9,12 @@
 __all__ = ['CitySerializer']
 
 from .. import models
+from django_erp.rest.fields import StatePrimaryKeyRelatedField
 from django_erp.rest.serializers import DataModelSerializer
 
 
 class CitySerializer(DataModelSerializer):
+    province = StatePrimaryKeyRelatedField('active',model=models.Province)
     class Meta:
         model = models.City
         fields = '__all__'

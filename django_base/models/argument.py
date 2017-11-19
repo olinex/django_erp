@@ -11,15 +11,14 @@ __all__ = ['Argument']
 import json
 from django_perm.db import models
 from django_erp.common import Redis
-from django_erp.common.models import HistoryModel
+from django_erp.common.models import HistoryModel, SequenceModel
 from django.utils.translation import ugettext_lazy as _
 from django.core.serializers.json import DjangoJSONEncoder
 from rest_framework import serializers
-from ..utils import MessageMachine
+from .message_machine import MessageMachine
 
 
-class Argument(HistoryModel,MessageMachine):
-
+class Argument(HistoryModel, SequenceModel, MessageMachine):
     class KeyManager(models.Manager):
         def get_by_natural_key(self, name):
             return self.get(name=name)
@@ -64,14 +63,6 @@ class Argument(HistoryModel,MessageMachine):
         help_text=_("the help text for user to understand the meaning of the argument")
     )
 
-    sequence = models.PositiveIntegerField(
-        _('sequence'),
-        null=False,
-        blank=True,
-        default=1,
-        help_text=_("the order of the instance")
-    )
-
     class Meta:
         ordering = ['sequence']
         verbose_name = _('argument')
@@ -105,6 +96,7 @@ class CacheArgument(object):
     class Serialzier(serializers.ModelSerializer):
         value = serializers.JSONField()
         followers = serializers.JSONField()
+
         class Meta:
             model = Argument
             fields = '__all__'

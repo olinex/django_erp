@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 __all__ = [
+    'NoneSerializer',
     'BaseModelSerializer',
     'DataModelSerializer',
     'OrderModelSerializer',
@@ -10,14 +11,22 @@ __all__ = [
 
 from rest_framework import serializers
 
+class NoneSerializer(serializers.Serializer):
+    pass
 
-class BaseModelSerializer(serializers.ModelSerializer):
-    is_draft = serializers.ReadOnlyField()
-    is_active = serializers.ReadOnlyField()
+class HistoryModelSerializer(serializers.ModelSerializer):
     create_time = serializers.ReadOnlyField()
     last_modify_time = serializers.ReadOnlyField()
 
-class DataModelSerializer(BaseModelSerializer):
+
+class BaseModelSerializer(HistoryModelSerializer):
+    is_draft = serializers.ReadOnlyField()
+    is_active = serializers.ReadOnlyField()
+
+class SequenceSerializer(serializers.ModelSerializer):
+    sequence = serializers.IntegerField(min_value=0,max_value=32767)
+
+class DataModelSerializer(BaseModelSerializer,SequenceSerializer):
     pass
 
 class OrderModelSerializer(BaseModelSerializer):

@@ -8,10 +8,17 @@
 
 __all__ = ['AddressViewSet']
 
-from .. import models
-from .. import serializers
+from .. import models, serializers, filters
 from django_erp.rest.viewsets import PermMethodViewSet
 
 class AddressViewSet(PermMethodViewSet):
     model = models.Address
     serializer_class = serializers.AddressSerializer
+    filter_class = filters.AddressFilter
+
+    def get_queryset(self):
+        return self.model.objects.select_related(
+            'region',
+            'region__city',
+            'region__city__province'
+        ).all()

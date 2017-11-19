@@ -77,7 +77,7 @@ class DoneModelMixin(object):
     """
 
     @detail_route(['patch'])
-    def done(self, request, pk=None):
+    def do(self, request, pk=None):
         """turn state to done"""
         instance = getattr(self, 'get_object')()
         instance.action_done(raise_exception=True)
@@ -129,8 +129,9 @@ class AllowedModelMixin(object):
     """
 
     @detail_route(['patch'])
-    def allowed(self, request, pk=None):
+    def allow(self, request, pk=None):
         """turn state to allowed"""
         instance = getattr(self, 'get_object')()
         instance.action_allowed(raise_exception=True)
         return Response({'detail': _('allowed successfully')})
+

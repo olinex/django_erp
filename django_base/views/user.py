@@ -19,6 +19,7 @@ from rest_framework.decorators import list_route
 from rest_framework.response import Response
 from django_perm.utils import view_perm_required
 from django_erp.rest.viewsets import PermMethodViewSet
+from django_erp.rest.serializers import NoneSerializer
 
 User = get_user_model()
 
@@ -27,7 +28,6 @@ class UserViewSet(PermMethodViewSet):
     serializer_class = serializers.UserSerializer
     allow_actions = ('create', 'list', 'retrieve', 'update')
     filter_class = filters.UserFilter
-    ordering_fields = ('id', 'username', 'first_name', 'last_name', 'email')
 
     def get_queryset(self):
         queryset = User.objects.select_related('address')
@@ -35,7 +35,7 @@ class UserViewSet(PermMethodViewSet):
             return queryset.all()
         return queryset.filter(pk=self.request.user.id)
 
-    @list_route(['get'])
+    @list_route(['get'], serializer_class=NoneSerializer)
     @view_perm_required
     def myself(self, request):
         """
@@ -64,7 +64,7 @@ class UserViewSet(PermMethodViewSet):
             status=status.HTTP_403_FORBIDDEN
         )
 
-    @list_route(['get'], serializer_class=None)
+    @list_route(['get'], serializer_class=NoneSerializer)
     def logout(self, request):
         """
         logout through ajax
@@ -74,7 +74,6 @@ class UserViewSet(PermMethodViewSet):
         return Response({'detail': _('logout successfully')})
 
     @list_route(['post'], serializer_class=serializers.ResetPasswordSerializer)
-    @view_perm_required
     def password(self, request):
         serializer = self.get_serializer(
             instance=request.user,
@@ -87,7 +86,6 @@ class UserViewSet(PermMethodViewSet):
         )
 
     @list_route(['post'], serializer_class=serializers.MailNoticeSerializer)
-    @view_perm_required
     def mail_notice(self, request):
         serializer = self.get_serializer(
             instance=request.user,
@@ -100,7 +98,6 @@ class UserViewSet(PermMethodViewSet):
         )
 
     @list_route(['post'], serializer_class=serializers.OnlineNoticeSerializer)
-    @view_perm_required
     def online_notice(self, request):
         serializer = self.get_serializer(
             instance=request.user,

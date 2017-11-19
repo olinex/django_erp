@@ -11,9 +11,8 @@ __all__ = ['User']
 from django_perm.db import models
 from django.conf import settings
 from django_erp.common import Redis
-from django_erp.common import responses
 from django.utils.translation import ugettext_lazy as _
-from channels import Channel, Group
+from channels import Channel
 from django.contrib.auth.models import AbstractUser
 from ..tasks import send_async_email
 
@@ -171,3 +170,4 @@ class User(AbstractUser):
             connection=connection,
             fail_silently=fail_silently
         )
+

@@ -6,6 +6,8 @@
 @time:      2017/11/14 下午7:15
 """
 
+__all__ = ['Message']
+
 from django_perm.db import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _

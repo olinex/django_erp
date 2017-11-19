@@ -161,6 +161,10 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.BCryptPasswordHasher',
 ]
 
+PASSWORD_RESET_KEY = get_environ('PASSWORD_RESET_KEY')
+PASSWORD_RESET_SALT = get_environ('PASSWORD_RESET_SALT')
+PASSWORD_RESET_TIMEOUT = get_environ('PASSWORD_RESET_TIMEOUT')
+
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
@@ -288,12 +292,3 @@ INTERNAL_IPS = ['127.0.0.1']
 DEBUG_TOOLBAR_CONFIG = {
     'JQUERY_URL': 'http://code.jquery.com/jquery-2.1.1.min.js'
 }
-
-# django filter setting
-TEXT_FILTER_TYPE = ['contains', 'icontains', 'exact', 'iexact']
-NUMBER_FILTER_TYPE = ['exact', 'lt', 'lte', 'gt', 'gte']
-BOOLEAN_FILTER_TYPE = ['exact']
-SELECT_FILTER_TYPE = ['exact']
-DATE_FILTER_TYPE = ['date', 'date__gt', 'date__gte', 'date__lt', 'date__lte']
-TIME_FILTER_TYPE = ['time', 'time__gt', 'time__gte', 'time__lt', 'time__lte']
-DATETIME_FILTER_TYPE = ['exact', 'gt', 'gte', 'lt', 'lte']

@@ -32,7 +32,7 @@ class MessageMachine(models.Model):
         :param users: user object set
         :return: None
         """
-        followers = set(list(self.followers) + list(user.pk for user in users))
+        followers = set(self.followers) | set(user.pk for user in users)
         if len(followers) != len(self.followers):
             self.followers = list(followers)
             self.save(update_fields=['followers'])
@@ -43,7 +43,7 @@ class MessageMachine(models.Model):
         :param users: user object set
         :return: None
         """
-        followers = set(self.followers).difference_update(set(user.pk for user in users))
+        followers = set(self.followers) ^ set(user.pk for user in users)
         if len(followers) != len(self.followers):
             self.followers = list(followers)
             self.save(update_fields=['followers'])
@@ -56,29 +56,29 @@ class MessageMachine(models.Model):
         self.followers = []
         self.save(update_fields=['followers'])
 
-    def create_message(self, title, text, user):
+    def create_message(self, title, text, creater):
         """
         create message of the instance
         :param title: string
         :param text: string
-        :param user: user object
+        :param creater: user object
         :return: message object
         """
         from ..models import Message
-        from .other import get_argument
+        from ..utils import get_argument
         with transaction.atomic():
             message = Message.objects.create(
                 title=title,
                 text=text,
-                creater=user,
+                creater=creater,
                 instance=self
             )
             redis = Redis()
             if get_argument('add_follower_after_create_message'):
-                self.add_followers(user)
+                self.add_followers(creater)
             for user_id in self.followers:
                 redis.sadd(
-                    user._message_cache_name(user_id),
+                    creater._message_cache_name(user_id),
                     message.pk
                 )
             return message

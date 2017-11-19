@@ -2,10 +2,11 @@
 # -*- coding:utf-8 -*-
 
 __all__ = [
-    'HistoryModel',
-    'BaseModel',
     'CoordinateModel',
     'TreeModel',
+    'HistoryModel',
+    'BaseModel',
+    'SequenceModel',
     'DataModel',
     'OrderModel',
     'AuditOrderModel'
@@ -269,13 +270,11 @@ class BaseModel(HistoryModel):
             self.after_delete()
 
 
-class DataModel(BaseModel):
+class SequenceModel(models.Model):
     """
-    the abstract model for data can be delete when it is draft,
-    and order by sequence defaultly
+    the abstract model for data is order by sequence
     """
-
-    sequence = models.PositiveIntegerField(
+    sequence = models.PositiveSmallIntegerField(
         _('sequence'),
         null=False,
         blank=True,
@@ -283,6 +282,16 @@ class DataModel(BaseModel):
         help_text=_("the order of the instance")
     )
 
+    class Meta:
+        abstract = True
+        ordering = ['sequence']
+
+
+class DataModel(BaseModel,SequenceModel):
+    """
+    the abstract model for data can be delete when it is draft,
+    and order by sequence defaultly
+    """
     class Meta:
         abstract = True
         ordering = ['sequence']
