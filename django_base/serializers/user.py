@@ -10,6 +10,7 @@ __all__ = [
     'PasswordSerializer',
     'ResetPasswordSerializer',
     'UserSerializer',
+    'OnlineUserSerializer',
     'LoginSerializer',
     'OnlineNoticeSerializer',
     'MailNoticeSerializer'
@@ -71,19 +72,20 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    email = serializers.CharField(read_only=True)
-    phone = serializers.ReadOnlyField()
     mail_notice = serializers.ReadOnlyField()
     online_notice = serializers.ReadOnlyField()
-    address = AddressSerializer(read_only=True)
+    is_active = serializers.ReadOnlyField()
+    address_detail = AddressSerializer(read_only=True)
+    groups_detail = GroupSerializer(read_only=True)
     permissions = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
         fields = (
-            'id', 'username', 'first_name', 'last_name',
+            'id', 'username', 'first_name', 'last_name', 'avatar',
             'is_active', 'email', 'phone', 'mail_notice',
-            'online_notice', 'address', 'permissions','groups'
+            'online_notice', 'address', 'address_detail',
+            'permissions','groups', 'groups_detail', 'language'
         )
 
     def create(self, validated_data):
@@ -99,6 +101,14 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.is_superuser:
             return {'__all__'}
         return obj.get_all_permissions()
+
+class OnlineUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = (
+            'id', 'first_name','last_name'
+        )
 
 
 class LoginSerializer(serializers.ModelSerializer):

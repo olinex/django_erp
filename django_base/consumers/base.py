@@ -42,14 +42,14 @@ class Base(WebsocketConsumer):
         channel = message.reply_channel
         user = message.user
         group = Group(self.online_group)
-        group.discard(channel)
-        notice = responses.NoticeSocketResponse(
-            user=user,
-            detail=_('leave'),
-            content='',
-            status='info')
         if user.online_notice:
+            notice = responses.NoticeSocketResponse(
+                user=user,
+                detail=_('leave'),
+                content='',
+                status='info')
             group.send({'text': notice.to_json()})
+        group.discard(channel)
         user.disregister_online_group()
         response = responses.SocketResponse(detail=_('disconnected successfully'))
         channel.send({'accept': True, 'close': True, 'text': response.to_json()})
@@ -57,27 +57,8 @@ class Base(WebsocketConsumer):
     @http_login_required
     def receive(self, text=None, bytes=None, **kwargs):
         data = json.loads(text)
-        request_type = data.get('type', None)
         listener = data.get('to_user', None)
         message = self.message
-        if not listener or not request_type:
-            message.reply_channel.send({
-                'accept': False,
-                'text': responses.SocketResponse(
-                    detail=_('request must have the params "type" and "to_user"'),
-                    status=_('error')
-                ).to_json()
-            })
-            return None
-        if listener == message.user.id:
-            message.reply_channel.send({
-                'accept': False,
-                'text': responses.SocketResponse(
-                    detail=_('request can not be himself'),
-                    status=_('error')
-                ).to_json()
-            })
-            return None
         redis = Redis()
         channel_name = redis.hget(self.online_group, str(listener))
         if not channel_name:
@@ -98,13 +79,14 @@ class Base(WebsocketConsumer):
             message.reply_channel.send({
                 'accept': False,
                 'text': responses.SocketResponse(
-                    detail=_('not valid content'),
+                    detail=_('not valid data'),
                     status=_('warning')
                 ).to_json()
             })
             return None
         talk = responses.TalkSocketResponse(
-            user=message.user,
+            from_user=message.user,
+            to_user_id=listener,
             detail=_('new talk'),
             content=serializer.validated_data['content'],
             status=_('success')

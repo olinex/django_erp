@@ -49,7 +49,7 @@ class MessageModelTestCase(UserModelTestCase):
         self.instance1.create_message(
             title='test',
             text='test message',
-            user=self.super_user
+            creater=self.super_user
         )
         if get_argument('add_follower_after_create_message') is False:
             self.assertFalse(self.super_user.new_messages.exists())
@@ -64,7 +64,7 @@ class MessageModelTestCase(UserModelTestCase):
         message = self.instance1.create_message(
             title='test',
             text='test message',
-            user=self.super_user
+            creater=self.super_user
         )
         if get_argument('add_follower_after_create_message') is False:
             self.assertFalse(self.super_user.new_messages.exists())
@@ -82,7 +82,7 @@ class MessageModelTestCase(UserModelTestCase):
         message = self.instance1.create_message(
             title='test',
             text='test message',
-            user=self.super_user
+            creater=self.super_user
         )
         self.assertEqual(self.normal_user.new_messages.first(), message)
         self.assertEqual(self.normal_user.new_messages.first(), message)

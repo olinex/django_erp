@@ -14,7 +14,7 @@ __all__ = [
 
 from django_filters import rest_framework as filters
 
-CHAR_FILTER_TYPE = ['contains', 'icontains', 'exact', 'iexact']
+CHAR_FILTER_TYPE = ['contains', 'icontains', 'exact', 'iexact','startswith','endswith']
 NUMBER_FILTER_TYPE = ['exact', 'lt', 'lte', 'gt', 'gte']
 BOOLEAN_FILTER_TYPE = ['exact']
 CHOICE_FILTER_TYPE = ['exact']

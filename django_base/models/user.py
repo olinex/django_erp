@@ -25,6 +25,15 @@ class User(AbstractUser):
         ('female', _('female')),
     )
 
+    avatar = models.ImageField(
+        upload_to='image/base/user/avatar',
+        default='image/base/user/avatar/default.png',
+        null=False,
+        blank=False,
+        verbose_name=_('avatar'),
+        help_text=_("the relate path of the user avatar")
+    )
+
     sex = models.CharField(
         _('sex'),
         null=False,
@@ -103,6 +112,14 @@ class User(AbstractUser):
             settings.SOCKET_ONLINE_GROUP_NAME,
             str(self.pk),
             message.reply_channel.name
+        )
+
+    @classmethod
+    def get_oline_users(cls):
+        """get the """
+        redis = Redis()
+        return cls.objects.filter(
+            id__in=redis.hgetall(settings.SOCKET_ONLINE_GROUP_NAME).keys()
         )
 
     def disregister_online_group(self):

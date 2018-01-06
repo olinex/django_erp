@@ -11,7 +11,6 @@ __all__ = ['ArgumentModelTestCase']
 from ..models import Argument
 from django.test import TestCase
 from .abstract_test_case import MessageModelTestCase
-from django_erp.common.tests import DataModelTestCase
 
 
 class ArgumentModelTestCase(TestCase, MessageModelTestCase):

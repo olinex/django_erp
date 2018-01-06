@@ -17,4 +17,6 @@ class CityViewSet(DataViewSet):
     filter_class = filters.CityFilter
 
     def get_queryset(self):
-        return self.model.objects.select_related('province').all()
+        return self.model.objects.select_related(
+            'province'
+        ).all()

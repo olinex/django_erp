@@ -46,8 +46,9 @@ urlpatterns = [
     # url(r'^test/', include('django_perm.urls', namespace='django_perm')),
     url(r'^admin/', admin.site.urls),
     url(r'^auth/', include('rest_framework.urls', namespace='rest_framework')),
-    url(r'^__debug__/', include(debug_toolbar.urls, namespace='debug_toolbar')),
 ]
+if settings.SETUP_TOOLS:
+    urlpatterns.append(url(r'^__debug__/', include(debug_toolbar.urls, namespace='debug_toolbar')))
 if settings.FILE_SERVICE:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

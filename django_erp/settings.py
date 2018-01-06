@@ -27,12 +27,17 @@ SETUP_TOOLS = get_environ('SETUP_TOOLS')
 FILE_SERVICE = get_environ('FILE_SERVICE')
 
 ALLOWED_HOSTS = [
-                    'localhost',
-                    '127.0.0.1',
-                    '[::1]',
-                ] + get_environ('PRIVATE_HOSTS')
+    'localhost',
+    '127.0.0.1'
+]
 
-ALLOWED_METHODS = ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'OPTIONS', 'DELETE']
+CORS_ORIGIN_WHITELIST = [
+    'localhost:8000',
+    '127.0.0.1:8000'
+]
+
+ALLOWED_METHODS =CORS_ALLOW_METHODS = ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'OPTIONS', 'DELETE']
+APPEND_SLASH = False
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
@@ -54,12 +59,13 @@ INSTALLED_APPS = [
     # 'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'corsheaders',
     'channels',
     'rest_framework',
     'django_filters',
 
     'django_base',
-    'django_dva',
+    'django_quasar',
     'django_perm',
     # 'django_account',
     # 'django_file',
@@ -81,6 +87,7 @@ if not DEBUG:
     ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware',
@@ -95,7 +102,7 @@ if SETUP_TOOLS:
     MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
 
 ROOT_URLCONF = 'django_erp.urls'
-REACT_ROOT = os.path.join(BASE_DIR, 'django_dva')
+REACT_ROOT = os.path.join(BASE_DIR, 'django_quasar')
 
 TEMPLATES = [
     {
@@ -223,7 +230,6 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 # csrftoken
 CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
-
 
 # --------------------------------------------Third part package params-------------------------------------------------#
 

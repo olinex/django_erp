@@ -15,6 +15,8 @@ from django_erp.rest.serializers import HistoryModelSerializer
 class ArgumentSerializer(HistoryModelSerializer):
     form = serializers.ReadOnlyField()
     value = serializers.JSONField()
+    name = serializers.ReadOnlyField()
+    help_text = serializers.ReadOnlyField()
 
     class Meta:
         model = models.Argument

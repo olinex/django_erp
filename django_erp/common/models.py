@@ -265,7 +265,7 @@ class BaseModel(HistoryModel):
     def action_delete(self, raise_exception=False):
         with transaction.atomic():
             self.check_states('draft', raise_exception=raise_exception)
-            self.before_active()
+            self.before_delete()
             self.delete()
             self.after_delete()
 

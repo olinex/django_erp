@@ -96,17 +96,10 @@ ENV/
 # Django settings
 db.sqlite3
 django_erp/privates.py
-migrations/0*.py
-django_base/migrations/0*.py
-django_account/migrations/0*.py
-django_file/migrations/0*.py
-django_manufacture/migrations/0*.py
-django_product/migrations/0*.py
-django_purchase/migrations/0*.py
-django_sale/migrations/0*.py
-django_stock/migrations/0*.py
+*/migrations/0*.py
 django_dva/
 django_perm/
+django_quasar/
 
 # Windows:
 Thumbs.db

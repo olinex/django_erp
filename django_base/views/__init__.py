@@ -10,6 +10,7 @@ from .address import *
 from .partner import *
 from .user import *
 from .group import *
+from .permission import *
 from .message import *
 from .email_account import *
 from .mixin import *

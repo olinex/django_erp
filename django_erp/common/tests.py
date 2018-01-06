@@ -7,7 +7,7 @@
 """
 
 __all__ = [
-    'AbstractTestCase'
+    'AbstractTestCase',
     'BaseModelTestCase',
     'DataModelTestCase'
 ]

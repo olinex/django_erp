@@ -3,6 +3,7 @@
 
 __all__ = [
     'NoneSerializer',
+    'IdListSerializer',
     'BaseModelSerializer',
     'DataModelSerializer',
     'OrderModelSerializer',
@@ -13,6 +14,14 @@ from rest_framework import serializers
 
 class NoneSerializer(serializers.Serializer):
     pass
+
+class IdListSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        required=True,
+        min_length=1,
+        max_length=100
+    )
 
 class HistoryModelSerializer(serializers.ModelSerializer):
     create_time = serializers.ReadOnlyField()

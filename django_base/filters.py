@@ -7,14 +7,23 @@
 """
 
 __all__ = [
+    'UserFilter',
+    'PermissionFilter',
     'ProvinceFilter',
-    'UserFilter'
+    'CityFilter',
+    'RegionFilter',
+    'AddressFilter',
+    'ArgumentFilter',
+    'GroupFilter',
+    'MessageFilter',
+    'PartnerFilter',
+
 ]
 
 from . import models
 from django_erp.common import filters
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import ContentType, Group
+from django.contrib.auth.models import ContentType, Group, Permission
 
 User = get_user_model()
 
@@ -31,7 +40,8 @@ class ProvinceFilter(filters.FilterSet):
     class Meta:
         model = models.Province
         fields = {
-            'name':filters.CHAR_FILTER_TYPE
+            'name':filters.CHAR_FILTER_TYPE,
+            'country': filters.CHAR_FILTER_TYPE
         }
         fields.update(filters.data_model_fields)
 
@@ -41,6 +51,8 @@ class CityFilter(filters.FilterSet):
         fields=(
             ('id', 'id'),
             ('province__id', 'province'),
+            ('province__name', 'province__name'),
+            ('province__country', 'province__country'),
             ('name', 'name')
         )
     )
@@ -48,7 +60,10 @@ class CityFilter(filters.FilterSet):
     class Meta:
         model = models.City
         fields = {
-            'name': filters.CHAR_FILTER_TYPE
+            'name': filters.CHAR_FILTER_TYPE,
+            'province': filters.NUMBER_FILTER_TYPE,
+            'province__name': filters.CHAR_FILTER_TYPE,
+            'province__country': filters.CHAR_FILTER_TYPE,
         }
         fields.update(filters.data_model_fields)
 
@@ -57,7 +72,11 @@ class RegionFilter(filters.FilterSet):
     ordering = filters.OrderingFilter(
         fields=(
             ('id', 'id'),
+            ('city__provine__name', 'city__provine__name'),
+            ('city__provine__country', 'city__provine__country'),
+            ('city__provine__id', 'city__province'),
             ('city__id', 'city'),
+            ('city__name', 'city__name'),
             ('name', 'name')
         )
     )
@@ -65,7 +84,12 @@ class RegionFilter(filters.FilterSet):
     class Meta:
         model = models.Region
         fields = {
-            'name': filters.CHAR_FILTER_TYPE
+            'name': filters.CHAR_FILTER_TYPE,
+            'city__province': filters.NUMBER_FILTER_TYPE,
+            'city__province__country': filters.NUMBER_FILTER_TYPE,
+            'city__province__name': filters.CHAR_FILTER_TYPE,
+            'city': filters.NUMBER_FILTER_TYPE,
+            'city__name': filters.CHAR_FILTER_TYPE
         }
         fields.update(filters.data_model_fields)
 
@@ -128,12 +152,27 @@ class GroupFilter(filters.FilterSet):
     ordering = filters.OrderingFilter(
         fields=(
             ('id', 'id'),
-            ('model', 'model')
+            ('name', 'name')
         )
     )
 
     class Meta:
         model = Group
+        fields = {
+            'id': filters.NUMBER_FILTER_TYPE,
+            'name': filters.CHAR_FILTER_TYPE
+        }
+
+class PermissionFilter(filters.FilterSet):
+    ordering = filters.OrderingFilter(
+        fields=(
+            ('id', 'id'),
+            ('name', 'name')
+        )
+    )
+
+    class Meta:
+        model = Permission
         fields = {
             'id': filters.NUMBER_FILTER_TYPE,
             'name': filters.CHAR_FILTER_TYPE

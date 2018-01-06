@@ -17,7 +17,6 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import status, permissions
 from rest_framework.decorators import list_route
 from rest_framework.response import Response
-from django_perm.utils import view_perm_required
 from django_erp.rest.viewsets import PermMethodViewSet
 from django_erp.rest.serializers import NoneSerializer
 
@@ -35,8 +34,7 @@ class UserViewSet(PermMethodViewSet):
             return queryset.all()
         return queryset.filter(pk=self.request.user.id)
 
-    @list_route(['get'], serializer_class=NoneSerializer)
-    @view_perm_required
+    @list_route(['get'])
     def myself(self, request):
         """
         get user's self information
@@ -107,4 +105,14 @@ class UserViewSet(PermMethodViewSet):
         serializer.save()
         return Response(
             {'detail': _('online notice status changed successfully')},
+        )
+
+    @list_route(['get'], serializer_class=serializers.OnlineUserSerializer)
+    def online_user(self, request):
+        serializer = self.get_serializer(
+            instance=request.user.get_oline_users().exclude(id=request.user.id),
+            many=True
+        )
+        return Response(
+            {'result': serializer.data},
         )

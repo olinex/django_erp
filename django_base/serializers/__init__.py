@@ -18,3 +18,4 @@ from .partner import *
 from .argument import *
 from .email_account import *
 from .message import *
+from .permission import *

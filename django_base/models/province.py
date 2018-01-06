@@ -19,6 +19,7 @@ class Province(DataModel):
 
     COUNTRIES = (
         ('China', _('China')),
+        ('French',_('French'))
     )
 
     class KeyManager(Manager):

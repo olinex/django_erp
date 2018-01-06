@@ -8,6 +8,8 @@ __all__ = [
     'TalkSocketResponse'
 ]
 
+from django.utils import timezone
+from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -33,7 +35,7 @@ class JsonSerializer(object):
         import json
         self.check_status()
         data = self.get_data()
-        return json.dumps(data)
+        return json.dumps(data, cls=DjangoJSONEncoder)
 
 
 class SocketResponse(JsonSerializer):
@@ -64,29 +66,39 @@ class NoticeSocketResponse(JsonSerializer):
         self.content = content
         self.status = status
 
-    def update(self, **kwargs):
-        self.user = kwargs.get('user', self.user)
-        self.detail = kwargs.get('detail', self.detail)
-        self.content = kwargs.get('content', self.content)
-        self.status = kwargs.get('status', self.status)
-
     def get_data(self):
         return {
             'user_id': self.user.id,
-            'username': self.user.get_full_name() or self.user.get_username(),
+            'username': self.user.get_full_name() or 'user_{}'.format(self.user.id),
+            'avatar': self.user.avatar.url,
             'type': 'notice',
             'detail': self.detail,
             'content': self.content,
-            'status': self.status
+            'status': self.status,
+            'create_time': timezone.now()
         }
 
 
-class TalkSocketResponse(NoticeSocketResponse):
+class TalkSocketResponse(JsonSerializer):
     """
     the response for return talk
     """
+    def __init__(self, from_user, to_user_id, detail, content, status='success'):
+        self.from_user = from_user
+        self.to_user_id = to_user_id
+        self.detail = detail
+        self.content = content
+        self.status = status
 
     def get_data(self):
-        data = super(TalkSocketResponse, self).get_data()
-        data['type'] = 'talk'
-        return data
+        return {
+            'from_user_id': self.from_user.id,
+            'to_user_id': self.to_user_id,
+            'from_username': self.from_user.get_full_name() or 'user_{}'.format(self.from_user.id),
+            'avatar': self.from_user.avatar.url,
+            'type': 'talk',
+            'detail': self.detail,
+            'content': self.content,
+            'status': self.status,
+            'create_time': timezone.now()
+        }
