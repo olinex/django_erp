@@ -26,15 +26,8 @@ DEBUG = get_environ('DEBUG')
 SETUP_TOOLS = get_environ('SETUP_TOOLS')
 FILE_SERVICE = get_environ('FILE_SERVICE')
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1'
-]
-
-CORS_ORIGIN_WHITELIST = [
-    'localhost:8000',
-    '127.0.0.1:8000'
-]
+ALLOWED_HOSTS = get_environ('ALLOWED_HOSTS')
+CORS_ORIGIN_WHITELIST = get_environ('CORS_ORIGIN_WHITELIST')
 
 ALLOWED_METHODS =CORS_ALLOW_METHODS = ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'OPTIONS', 'DELETE']
 APPEND_SLASH = False
