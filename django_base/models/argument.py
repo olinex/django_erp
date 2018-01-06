@@ -133,7 +133,7 @@ class CacheArgument(object):
         data = self.Serialzier(instance=instance or self.instance).data
         self.redis.set(
             self.cache_name,
-            json.dumps(data, cls=DjangoJSONEncoder)
+            json.dumps(data, cls=DjangoJSONEncoder,sort_keys=True)
         )
 
     def delete(self):

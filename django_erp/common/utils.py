@@ -20,5 +20,5 @@ def md5_hexdigest(object):
     :return: string
     """
     m = md5()
-    m.update(json.dumps(object, cls=DjangoJSONEncoder).encode(('utf8')))
+    m.update(json.dumps(object, cls=DjangoJSONEncoder,sort_keys=True).encode(('utf8')))
     return m.hexdigest()

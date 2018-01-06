@@ -35,7 +35,7 @@ class JsonSerializer(object):
         import json
         self.check_status()
         data = self.get_data()
-        return json.dumps(data, cls=DjangoJSONEncoder)
+        return json.dumps(data, cls=DjangoJSONEncoder,sort_keys=True)
 
 
 class SocketResponse(JsonSerializer):

@@ -13,7 +13,7 @@ PREFIX = 'DJANGO_ERP'
 def setdefault(key, value):
     os.environ.setdefault(
         '{}_{}'.format(PREFIX, key),
-        json.dumps(value)
+        json.dumps(value,sort_keys=True)
     )
 
 
