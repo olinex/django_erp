@@ -78,6 +78,7 @@ class UserSerializer(serializers.ModelSerializer):
     address_detail = AddressSerializer(read_only=True)
     groups_detail = GroupSerializer(read_only=True)
     permissions = serializers.SerializerMethodField(read_only=True)
+    new_messages_count = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = User
@@ -85,7 +86,8 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'username', 'first_name', 'last_name', 'avatar',
             'is_active', 'email', 'phone', 'mail_notice',
             'online_notice', 'address', 'address_detail',
-            'permissions','groups', 'groups_detail', 'language'
+            'permissions','groups', 'groups_detail', 'language',
+            'new_messages_count'
         )
 
     def create(self, validated_data):
@@ -101,6 +103,9 @@ class UserSerializer(serializers.ModelSerializer):
         if obj.is_superuser:
             return {'__all__'}
         return obj.get_all_permissions()
+
+    def get_new_messages_count(self, obj):
+        return obj.new_messages_count
 
 class OnlineUserSerializer(serializers.ModelSerializer):
 

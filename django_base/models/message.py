@@ -72,5 +72,6 @@ class Message(models.Model):
     instance = GenericForeignKey('content_type', 'object_id')
 
     class Meta:
+        ordering = ('-create_time',)
         verbose_name = _('message')
         verbose_name_plural = _('message')

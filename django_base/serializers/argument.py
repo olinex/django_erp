@@ -17,7 +17,8 @@ class ArgumentSerializer(HistoryModelSerializer):
     value = serializers.JSONField()
     name = serializers.ReadOnlyField()
     help_text = serializers.ReadOnlyField()
+    followers = serializers.ReadOnlyField()
 
     class Meta:
         model = models.Argument
-        exclude = ('followers',)
+        fields = '__all__'

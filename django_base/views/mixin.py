@@ -9,6 +9,7 @@
 __all__ = ['MessageModelMixin']
 
 from .. import serializers
+from rest_framework import status
 from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 from django_erp.rest.serializers import NoneSerializer
@@ -23,7 +24,10 @@ class MessageModelMixin(object):
     @detail_route(['get'], serializer_class=serializers.MessageSerializer)
     def message(self, request, pk=None):
         instance = getattr(self, 'get_object')()
-        serializer = getattr(self, 'get_serializer')(instance=instance.messages, many=True)
+        serializer = getattr(self, 'get_serializer')(
+            instance=instance.messages,
+            many=True
+        )
         return Response(
             data=serializer.data
         )
@@ -38,7 +42,10 @@ class MessageModelMixin(object):
                 text=serializer.validated_data.get('text'),
                 creater=request.user
             )
-            return Response({'detail': _('create message success')})
+            return Response(
+                {'detail': _('create message success')},
+                status=status.HTTP_201_CREATED
+            )
 
     @detail_route(['patch'], serializer_class=NoneSerializer)
     def add_follower(self, request, pk=None):

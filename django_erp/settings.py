@@ -29,7 +29,7 @@ FILE_SERVICE = get_environ('FILE_SERVICE')
 ALLOWED_HOSTS = get_environ('ALLOWED_HOSTS')
 CORS_ORIGIN_WHITELIST = get_environ('CORS_ORIGIN_WHITELIST')
 
-ALLOWED_METHODS =CORS_ALLOW_METHODS = ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'OPTIONS', 'DELETE']
+ALLOWED_METHODS = CORS_ALLOW_METHODS = ['GET', 'POST', 'HEAD', 'PUT', 'PATCH', 'OPTIONS', 'DELETE']
 APPEND_SLASH = False
 
 # Quick-start development settings - unsuitable for production

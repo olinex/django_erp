@@ -29,7 +29,7 @@ class Base(WebsocketConsumer):
             notice = responses.NoticeSocketResponse(
                 user=message.user,
                 detail=_('online'),
-                content='',
+                content='online',
                 status='info')
             group = Group(self.online_group)
             group.send({'text': notice.to_json()})
@@ -46,7 +46,7 @@ class Base(WebsocketConsumer):
             notice = responses.NoticeSocketResponse(
                 user=user,
                 detail=_('leave'),
-                content='',
+                content='leave',
                 status='info')
             group.send({'text': notice.to_json()})
         group.discard(channel)

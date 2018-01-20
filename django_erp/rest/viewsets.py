@@ -18,11 +18,11 @@ class PermMethodViewSet(
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
-    mixins.DestroyModelMixin,
+    self_mixins.DeleteModelMixin,
     viewsets.GenericViewSet
 ):
     """check the model have the right to make action"""
-    allow_actions = ('create', 'list', 'retrieve', 'update', 'destroy')
+    allow_actions = ('create', 'list', 'retrieve', 'update', 'delete')
 
     def get_queryset(self):
         return self.queryset if self.queryset else self.model.objects.all()
@@ -47,17 +47,11 @@ class PermMethodViewSet(
             return super(PermMethodViewSet, self).update(request, *args, **kwargs)
         raise exceptions.PermissionDenied
 
-    def destroy(self, request, *args, **kwargs):
-        if 'destroy' in self.allow_actions:
-            return super(PermMethodViewSet, self).destroy(request, *args, **kwargs)
-        raise exceptions.PermissionDenied
-
 
 class BaseViewSet(
     self_mixins.ConfirmModelMixin,
     self_mixins.LockModelMixin,
     self_mixins.ActiveModelMixin,
-    self_mixins.DeleteModelMixin,
     PermMethodViewSet
 ):
     pass

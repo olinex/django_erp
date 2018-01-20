@@ -17,3 +17,4 @@ psycopg2==2.7.3.1
 celery==4.1.0
 argon2-cffi==16.3.0
 pillow==4.3.0
+pypinyin==0.28.0

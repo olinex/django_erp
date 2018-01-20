@@ -20,6 +20,7 @@ __all__ = [
 ]
 
 from .serializers import IdListSerializer
+from rest_framework import exceptions
 from rest_framework.decorators import list_route
 from rest_framework.response import Response
 from django.utils.translation import ugettext_lazy as _
@@ -84,15 +85,20 @@ class DeleteModelMixin(object):
 
     @list_route(['patch'], serializer_class=IdListSerializer)
     def delete(self, request):
-        serializer = getattr(self, 'get_serializer')(
-            data=request.data
-        )
-        serializer.is_valid(raise_exception=True)
-        ids = serializer.validated_data['ids']
-        queryset = getattr(self, 'get_queryset')().filter(id__in=ids)
-        for instance in queryset:
-            instance.action_delete(raise_exception=True)
-        return Response({'detail': _('delete successfully')})
+        if 'delete' in self.allow_actions:
+            serializer = getattr(self, 'get_serializer')(
+                data=request.data
+            )
+            serializer.is_valid(raise_exception=True)
+            ids = serializer.validated_data['ids']
+            queryset = getattr(self, 'get_queryset')().filter(id__in=ids)
+            if hasattr(self.model,'action_delete'):
+                for instance in queryset:
+                    instance.action_delete(raise_exception=True)
+            else:
+                queryset.delete()
+            return Response({'detail': _('delete successfully')})
+        raise exceptions.PermissionDenied
 
 
 class DoneModelMixin(object):

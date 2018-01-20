@@ -76,7 +76,7 @@ class MessageMachine(models.Model):
             redis = Redis()
             if get_argument('add_follower_after_create_message'):
                 self.add_followers(creater)
-            for user_id in self.followers:
+            for user_id in filter(lambda follower: follower != creater.id,self.followers):
                 redis.sadd(
                     creater._message_cache_name(user_id),
                     message.pk

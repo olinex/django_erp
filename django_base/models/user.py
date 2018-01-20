@@ -152,13 +152,22 @@ class User(AbstractUser):
             pk__in=redis.smembers(self.message_cache_name)
         )
 
-    def remove_message(self, message):
+    @property
+    def new_messages_count(self):
+        """
+        get new messages count to redis
+        :return: int
+        """
+        redis = Redis()
+        return redis.scard(self.message_cache_name)
+
+    def remove_message(self, pk):
         """
         remove the message
         :return: None
         """
         redis = Redis()
-        redis.srem(self.message_cache_name, message.pk)
+        redis.srem(self.message_cache_name, pk)
 
     def clear_messages(self):
         """
