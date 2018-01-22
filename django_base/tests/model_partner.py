@@ -25,3 +25,7 @@ class PartnerModelTestCase(TestCase, BaseModelTestCase):
             name='test2',
             phone='123456'
         )
+        self.userSetup()
+
+    def tearDown(self):
+        self.userTearDown()

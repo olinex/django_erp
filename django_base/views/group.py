@@ -8,11 +8,12 @@
 
 __all__ = ['GroupViewSet']
 
-from .. import serializers, filters
+from .. import filters
 from django.contrib.auth.models import Group
 from django_erp.rest.viewsets import PermMethodViewSet
+from django_erp.rest.serializers import GroupSerializer
 
 class GroupViewSet(PermMethodViewSet):
     model = Group
-    serializer_class = serializers.GroupSerializer
+    serializer_class = GroupSerializer
     filter_class = filters.GroupFilter

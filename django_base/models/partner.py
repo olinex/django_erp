@@ -37,35 +37,19 @@ class Partner(BaseModel):
         help_text=_('the phone of the partner')
     )
 
-    address = models.ForeignKey(
-        'Address',
-        null=True,
-        blank=True,
-        verbose_name=_('partner address'),
-        related_name='locale_partners',
-        help_text=_('the location address of the partner')
+    region = models.ForeignKey(
+        'Region',
+        null=False,
+        blank=False,
+        help_text=_("partner's region")
     )
 
-    default_send_address = models.ForeignKey(
-        'Address',
-        null=True,
-        blank=True,
-        verbose_name=_('default send address'),
-        related_name='default_partners',
-        help_text=_('the default address for partner to receive product')
-    )
-
-    usual_send_addresses = models.ManyToManyField(
-        'Address',
-        verbose_name=_('usual send addresses'),
-        related_name='usual_partners',
-        help_text=_("addresses that will be usually use by user")
-    )
-
-    managers = models.ManyToManyField(
-        User,
-        verbose_name=_('managers'),
-        help_text=_('users who are manager of this partner')
+    address = models.CharField(
+        _('address'),
+        null=False,
+        blank=False,
+        max_length=190,
+        help_text=_("partner's address detail")
     )
 
     is_company = models.BooleanField(
@@ -89,7 +73,7 @@ class Partner(BaseModel):
     class Meta:
         verbose_name = _('partner')
         verbose_name_plural = _('partners')
-        unique_together = ('name', 'address')
+        unique_together = ('region', 'address')
 
     def __str__(self):
         return self.name

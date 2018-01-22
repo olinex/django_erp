@@ -5,6 +5,7 @@ __all__ = [
     'JsonSerializer',
     'SocketResponse',
     'NoticeSocketResponse',
+    'MessageSocketResponse',
     'TalkSocketResponse'
 ]
 
@@ -74,6 +75,32 @@ class NoticeSocketResponse(JsonSerializer):
             'type': 'notice',
             'detail': self.detail,
             'content': self.content,
+            'status': self.status,
+            'create_time': timezone.now()
+        }
+
+
+class MessageSocketResponse(JsonSerializer):
+    """
+    the response for return notice
+    """
+
+    def __init__(self, user, title, text, count, status='success'):
+        self.user = user
+        self.title = title
+        self.text = text
+        self.count = count
+        self.status = status
+
+    def get_data(self):
+        return {
+            'user_id': self.user.id,
+            'username': self.user.get_full_name() or 'user_{}'.format(self.user.id),
+            'avatar': self.user.avatar.url,
+            'type': 'message',
+            'title': self.title,
+            'text': self.text,
+            'count': self.count,
             'status': self.status,
             'create_time': timezone.now()
         }

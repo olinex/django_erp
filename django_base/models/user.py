@@ -17,6 +17,16 @@ from django.contrib.auth.models import AbstractUser
 from ..tasks import send_async_email
 
 
+def avatar_upload_to(instance, filename):
+    import os
+    ext = os.path.splitext(filename)[1]
+    return (
+        f'image/base/user/avatar/{instance.id}.{ext}'
+        if ext else
+        f'image/base/user/avatar/{instance.id}'
+    )
+
+
 class User(AbstractUser):
     """customer for the project"""
     SEX_CHOICES = (
@@ -26,7 +36,7 @@ class User(AbstractUser):
     )
 
     avatar = models.ImageField(
-        upload_to='image/base/user/avatar',
+        upload_to=avatar_upload_to,
         default='image/base/user/avatar/default.png',
         null=False,
         blank=False,
@@ -63,11 +73,19 @@ class User(AbstractUser):
         help_text=_("user's mother language")
     )
 
-    address = models.ForeignKey(
-        'Address',
+    region = models.ForeignKey(
+        'Region',
         null=True,
         blank=False,
-        help_text=_("user's address")
+        help_text=_("user's region")
+    )
+
+    address = models.CharField(
+        _('address'),
+        null=True,
+        blank=False,
+        max_length=190,
+        help_text=_("user's address detail")
     )
 
     mail_notice = models.BooleanField(

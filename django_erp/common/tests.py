@@ -195,6 +195,25 @@ class AbstractTestCase(object):
     def setUpTestData(cls):
         pass
 
+    def userSetup(self):
+        import random
+        import string
+        from django.contrib.auth.models import AnonymousUser
+        self.password = ''.join(random.sample(string.ascii_letters, 10))
+        self.super_user = User.objects.create_superuser(
+            username='test_super_user',
+            email='demosuperuser@163.com',
+            password=self.password)
+        self.normal_user = User.objects.create_user(
+            username='test_normal_user',
+            email='demouser@163.com',
+            password=self.password)
+        self.anon_user = AnonymousUser()
+
+    def userTearDown(self):
+        self.super_user.clear_messages()
+        self.normal_user.clear_messages()
+
 
 class BaseModelTestCase(AbstractTestCase):
     model = None
@@ -256,7 +275,7 @@ class BaseModelTestCase(AbstractTestCase):
 
     @tag('buildin')
     def test_action_confirm(self):
-        self.assertIsNone(self.instance1.action_confirm())
+        self.assertIsNone(self.instance1.action_confirm(user=self.super_user))
 
         self.assertFalse(self.instance1.check_states('draft'))
         self.assertTrue(self.instance1.check_states('confirmed'))
@@ -268,12 +287,12 @@ class BaseModelTestCase(AbstractTestCase):
         self.assertFalse(self.instance2.check_states('active'))
         self.assertFalse(self.instance2.check_states('locked'))
         with self.assertRaises(ValidationError):
-            self.instance1.action_confirm(raise_exception=True)
+            self.instance1.action_confirm(user=self.super_user,raise_exception=True)
 
     @tag('buildin')
     def test_action_lock(self):
-        self.assertIsNone(self.instance1.action_confirm())
-        self.assertIsNone(self.instance1.action_lock())
+        self.assertIsNone(self.instance1.action_confirm(user=self.super_user))
+        self.assertIsNone(self.instance1.action_lock(user=self.super_user))
 
         self.assertFalse(self.instance1.check_states('draft'))
         self.assertTrue(self.instance1.check_states('confirmed'))
@@ -285,14 +304,14 @@ class BaseModelTestCase(AbstractTestCase):
         self.assertFalse(self.instance2.check_states('active'))
         self.assertFalse(self.instance2.check_states('locked'))
         with self.assertRaises(ValidationError):
-            self.instance1.action_confirm(raise_exception=True)
-            self.instance1.action_lock(raise_exception=True)
+            self.instance1.action_confirm(user=self.super_user,raise_exception=True)
+            self.instance1.action_lock(user=self.super_user,raise_exception=True)
 
     @tag('buildin')
     def test_action_active(self):
-        self.assertIsNone(self.instance1.action_confirm())
-        self.assertIsNone(self.instance1.action_lock())
-        self.assertIsNone(self.instance1.action_active())
+        self.assertIsNone(self.instance1.action_confirm(user=self.super_user))
+        self.assertIsNone(self.instance1.action_lock(user=self.super_user))
+        self.assertIsNone(self.instance1.action_active(user=self.super_user))
 
         self.assertFalse(self.instance1.check_states('draft'))
         self.assertTrue(self.instance1.check_states('confirmed'))
@@ -304,12 +323,12 @@ class BaseModelTestCase(AbstractTestCase):
         self.assertFalse(self.instance2.check_states('active'))
         self.assertFalse(self.instance2.check_states('locked'))
         with self.assertRaises(ValidationError):
-            self.instance1.action_confirm(raise_exception=True)
-            self.instance1.action_active(raise_exception=True)
+            self.instance1.action_confirm(user=self.super_user,raise_exception=True)
+            self.instance1.action_active(user=self.super_user,raise_exception=True)
 
     @tag('buildin')
     def test_action_delete(self):
-        self.assertIsNone(self.instance1.action_delete())
+        self.assertIsNone(self.instance1.action_delete(user=self.super_user))
         self.assertFalse(self.model.objects.filter(pk=self.instance1.pk).exists())
         self.assertTrue(self.model.objects.filter(pk=self.instance2.pk).exists())
 

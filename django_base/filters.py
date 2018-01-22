@@ -12,12 +12,11 @@ __all__ = [
     'ProvinceFilter',
     'CityFilter',
     'RegionFilter',
-    'AddressFilter',
     'ArgumentFilter',
     'GroupFilter',
     'MessageFilter',
     'PartnerFilter',
-
+    'ChangeFilter'
 ]
 
 from . import models
@@ -33,7 +32,7 @@ class ProvinceFilter(filters.FilterSet):
         fields=(
             ('id', 'id'),
             ('country', 'country'),
-            ('name', 'name')
+            ('name', 'name'),
         )
     )
 
@@ -41,7 +40,7 @@ class ProvinceFilter(filters.FilterSet):
         model = models.Province
         fields = {
             'name':filters.CHAR_FILTER_TYPE,
-            'country': filters.CHAR_FILTER_TYPE
+            'country': filters.CHAR_FILTER_TYPE,
         }
         fields.update(filters.data_model_fields)
 
@@ -72,11 +71,11 @@ class RegionFilter(filters.FilterSet):
     ordering = filters.OrderingFilter(
         fields=(
             ('id', 'id'),
-            ('city__provine__name', 'city__provine__name'),
-            ('city__provine__country', 'city__provine__country'),
-            ('city__provine__id', 'city__province'),
             ('city__id', 'city'),
             ('city__name', 'city__name'),
+            ('city__provine__id', 'city__province'),
+            ('city__provine__name', 'city__provine__name'),
+            ('city__provine__country', 'city__provine__country'),
             ('name', 'name')
         )
     )
@@ -85,30 +84,13 @@ class RegionFilter(filters.FilterSet):
         model = models.Region
         fields = {
             'name': filters.CHAR_FILTER_TYPE,
-            'city__province': filters.NUMBER_FILTER_TYPE,
-            'city__province__country': filters.NUMBER_FILTER_TYPE,
-            'city__province__name': filters.CHAR_FILTER_TYPE,
             'city': filters.NUMBER_FILTER_TYPE,
-            'city__name': filters.CHAR_FILTER_TYPE
+            'city__name': filters.CHAR_FILTER_TYPE,
+            'city__province': filters.NUMBER_FILTER_TYPE,
+            'city__province__name': filters.CHAR_FILTER_TYPE,
+            'city__province__country': filters.NUMBER_FILTER_TYPE,
         }
         fields.update(filters.data_model_fields)
-
-
-class AddressFilter(filters.FilterSet):
-    ordering = filters.OrderingFilter(
-        fields=(
-            ('id', 'id'),
-            ('region__id', 'region'),
-            ('name', 'name')
-        )
-    )
-
-    class Meta:
-        model = models.Address
-        fields = {
-            'id': filters.NUMBER_FILTER_TYPE,
-            'name': filters.CHAR_FILTER_TYPE
-        }
 
 
 class ArgumentFilter(filters.FilterSet):
@@ -128,6 +110,7 @@ class ArgumentFilter(filters.FilterSet):
             'form': filters.CHOICE_FILTER_TYPE,
             'value': filters.CHAR_FILTER_TYPE
         }
+        fields.update(filters.history_model_fields)
 
 
 class ContentTypeFilter(filters.FilterSet):
@@ -142,7 +125,6 @@ class ContentTypeFilter(filters.FilterSet):
     class Meta:
         model = ContentType
         fields = {
-            'id': filters.NUMBER_FILTER_TYPE,
             'app_label': filters.CHAR_FILTER_TYPE,
             'model': filters.CHAR_FILTER_TYPE
         }
@@ -159,7 +141,6 @@ class GroupFilter(filters.FilterSet):
     class Meta:
         model = Group
         fields = {
-            'id': filters.NUMBER_FILTER_TYPE,
             'name': filters.CHAR_FILTER_TYPE
         }
 
@@ -167,15 +148,22 @@ class PermissionFilter(filters.FilterSet):
     ordering = filters.OrderingFilter(
         fields=(
             ('id', 'id'),
-            ('name', 'name')
+            ('name', 'name'),
+            ('codename','codename'),
+            ('content_type__id','content_type'),
+            ('content_type__model','content_type__model'),
+            ('content_type__app_label','content_type__app_label'),
         )
     )
 
     class Meta:
         model = Permission
         fields = {
-            'id': filters.NUMBER_FILTER_TYPE,
-            'name': filters.CHAR_FILTER_TYPE
+            'name': filters.CHAR_FILTER_TYPE,
+            'codename':filters.CHAR_FILTER_TYPE,
+            'content_type': filters.NUMBER_FILTER_TYPE,
+            'content_type__model':filters.CHAR_FILTER_TYPE,
+            'content_type__app_label':filters.CHAR_FILTER_TYPE,
         }
 
 
@@ -183,21 +171,22 @@ class MessageFilter(filters.FilterSet):
     ordering = filters.OrderingFilter(
         fields=(
             ('id', 'id'),
-            ('create_time', 'create_time'),
             ('title', 'title'),
-            ('content_type', 'content_type'),
             ('object_id', 'object_id'),
+            ('content_type__id', 'content_type'),
+            ('content_type__model', 'content_type__model'),
+            ('content_type__app_label', 'content_type__app_label'),
         )
     )
 
     class Meta:
         model = models.Message
         fields = {
-            'id': filters.NUMBER_FILTER_TYPE,
-            'create_time': filters.DATETIME_FILTER_TYPE,
             'title': filters.CHAR_FILTER_TYPE,
+            'object_id': filters.NUMBER_FILTER_TYPE,
             'content_type': filters.NUMBER_FILTER_TYPE,
-            'object_id': filters.NUMBER_FILTER_TYPE
+            'content_type__model':filters.CHAR_FILTER_TYPE,
+            'content_type__app_label':filters.CHAR_FILTER_TYPE,
         }
 
 
@@ -213,7 +202,6 @@ class UserFilter(filters.FilterSet):
     class Meta:
         model = User
         fields = {
-            'id': filters.NUMBER_FILTER_TYPE,
             'username': filters.CHAR_FILTER_TYPE,
             'first_name': filters.CHAR_FILTER_TYPE,
             'last_name': filters.CHAR_FILTER_TYPE,
@@ -226,12 +214,30 @@ class PartnerFilter(filters.FilterSet):
     class Meta:
         model = models.Partner
         fields = {
-            'id': filters.NUMBER_FILTER_TYPE,
             'name': filters.CHAR_FILTER_TYPE,
             'phone': filters.CHAR_FILTER_TYPE,
-            'address': filters.NUMBER_FILTER_TYPE,
-            'default_send_address': filters.NUMBER_FILTER_TYPE,
             'is_company': filters.BOOLEAN_FILTER_TYPE,
             'sale_able': filters.BOOLEAN_FILTER_TYPE,
             'purchase_able': filters.BOOLEAN_FILTER_TYPE,
+        }
+
+class ChangeFilter(filters.FilterSet):
+    ordering = filters.OrderingFilter(
+        fields=(
+            ('id', 'id'), ('creater', 'creater'),
+            ('object_id','object_id'),
+            ('content_type__id','content_type'),
+            ('content_type__model','content_type__model'),
+            ('content_type__app_label','content_type__app_label'),
+        )
+    )
+
+    class Meta:
+        model = models.Change
+        fields = {
+            'creater': filters.NUMBER_FILTER_TYPE,
+            'object_id': filters.NUMBER_FILTER_TYPE,
+            'content_type': filters.NUMBER_FILTER_TYPE,
+            'content_type__model': filters.CHAR_FILTER_TYPE,
+            'content_type__app_label': filters.CHAR_FILTER_TYPE,
         }

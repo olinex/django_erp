@@ -18,8 +18,8 @@ class RegionSerializer(DataModelSerializer):
     city = StatePrimaryKeyRelatedField('active',model=models.City)
     city__name = serializers.CharField(source='city.name',read_only=True)
     city__province = serializers.PrimaryKeyRelatedField(source='city.province',read_only=True)
-    city__province__country = serializers.CharField(source='city.province.country',read_only=True)
     city__province__name = serializers.CharField(source='city.province.name',read_only=True)
+    city__province__country = serializers.CharField(source='city.province.country',read_only=True)
     class Meta:
         model = models.Region
         fields = '__all__'

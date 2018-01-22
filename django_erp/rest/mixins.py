@@ -21,7 +21,7 @@ __all__ = [
 
 from .serializers import IdListSerializer
 from rest_framework import exceptions
-from rest_framework.decorators import list_route
+from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 from django.utils.translation import ugettext_lazy as _
 
@@ -40,7 +40,7 @@ class ConfirmModelMixin(object):
         ids = serializer.validated_data['ids']
         queryset = getattr(self, 'get_queryset')().filter(id__in=ids)
         for instance in queryset:
-            instance.action_confirm(raise_exception=True)
+            instance.action_confirm(user=request.user, raise_exception=True)
         return Response({'detail': _('confirm successfully')})
 
 
@@ -58,7 +58,7 @@ class LockModelMixin(object):
         ids = serializer.validated_data['ids']
         queryset = getattr(self, 'get_queryset')().filter(id__in=ids)
         for instance in queryset:
-            instance.action_lock(raise_exception=True)
+            instance.action_lock(user=request.user, raise_exception=True)
         return Response({'detail': _('confirm successfully')})
 
 
@@ -76,7 +76,7 @@ class ActiveModelMixin(object):
         ids = serializer.validated_data['ids']
         queryset = getattr(self,'get_queryset')().filter(id__in=ids)
         for instance in queryset:
-            instance.action_active(raise_exception=True)
+            instance.action_active(user=request.user, raise_exception=True)
         return Response({'detail': _('active successfully')})
 
 
@@ -94,7 +94,7 @@ class DeleteModelMixin(object):
             queryset = getattr(self, 'get_queryset')().filter(id__in=ids)
             if hasattr(self.model,'action_delete'):
                 for instance in queryset:
-                    instance.action_delete(raise_exception=True)
+                    instance.action_delete(user=request.user, raise_exception=True)
             else:
                 queryset.delete()
             return Response({'detail': _('delete successfully')})
@@ -115,7 +115,7 @@ class DoneModelMixin(object):
         ids = serializer.validated_data['ids']
         queryset = getattr(self, 'get_queryset')().filter(id__in=ids)
         for instance in queryset:
-            instance.action_do(raise_exception=True)
+            instance.action_do(user=request.user, raise_exception=True)
         return Response({'detail': _('do successfully')})
 
 
@@ -133,7 +133,7 @@ class CancelModelMixin(object):
         ids = serializer.validated_data['ids']
         queryset = getattr(self, 'get_queryset')().filter(id__in=ids)
         for instance in queryset:
-            instance.action_cancel(raise_exception=True)
+            instance.action_cancel(user=request.user, raise_exception=True)
         return Response({'detail': _('cancel successfully')})
 
 
@@ -151,7 +151,7 @@ class AuditModelMixin(object):
         ids = serializer.validated_data['ids']
         queryset = getattr(self, 'get_queryset')().filter(id__in=ids)
         for instance in queryset:
-            instance.action_audit(raise_exception=True)
+            instance.action_audit(user=request.user, raise_exception=True)
         return Response({'detail': _('audit successfully')})
 
 
@@ -169,7 +169,7 @@ class RejectModelMixin(object):
         ids = serializer.validated_data['ids']
         queryset = getattr(self, 'get_queryset')().filter(id__in=ids)
         for instance in queryset:
-            instance.action_reject(raise_exception=True)
+            instance.action_reject(user=request.user, raise_exception=True)
         return Response({'detail': _('reject successfully')})
 
 
@@ -187,5 +187,25 @@ class AllowedModelMixin(object):
         ids = serializer.validated_data['ids']
         queryset = getattr(self, 'get_queryset')().filter(id__in=ids)
         for instance in queryset:
-            instance.action_allow(raise_exception=True)
+            instance.action_allow(user=request.user, raise_exception=True)
+        return Response({'detail': _('allow successfully')})
+
+class CreateChangeModelMixin(object):
+    """
+    contain the method for allowed model
+    """
+
+    @detail_route(['patch'])
+    def allow(self, request, pk=None):
+        instance = getattr(self, 'get_object')()
+        serializer = getattr(self, 'get_serializer')(
+            data=request.data,
+            instance=instance
+        )
+        serializer.is_valid(raise_exception=True)
+        instance.change(
+            before=serializer.get_initial(),
+            after=serializer.validated_data,
+            creater=request.user
+        )
         return Response({'detail': _('allow successfully')})

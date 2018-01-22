@@ -16,11 +16,12 @@ __all__ = [
     'MailNoticeSerializer'
 ]
 
+from .. import models
 from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
-from .address import AddressSerializer
-from .group import GroupSerializer
+from django_erp.rest.serializers import GroupSerializer
+from django_erp.rest.fields import StatePrimaryKeyRelatedField
 
 User = get_user_model()
 
@@ -75,19 +76,27 @@ class UserSerializer(serializers.ModelSerializer):
     mail_notice = serializers.ReadOnlyField()
     online_notice = serializers.ReadOnlyField()
     is_active = serializers.ReadOnlyField()
-    address_detail = AddressSerializer(read_only=True)
     groups_detail = GroupSerializer(read_only=True)
     permissions = serializers.SerializerMethodField(read_only=True)
     new_messages_count = serializers.SerializerMethodField(read_only=True)
+
+    region = StatePrimaryKeyRelatedField('active',model=models.Region)
+    region__name = serializers.CharField(source='region.name',read_only=True)
+    region__city = serializers.PrimaryKeyRelatedField(source='region.city',read_only=True)
+    region__city__name = serializers.CharField(source='region.city.name',read_only=True)
+    region__city__province = serializers.PrimaryKeyRelatedField(source='region.city.province',read_only=True)
+    region__city__province__name = serializers.CharField(source='region.city.province.name',read_only=True)
 
     class Meta:
         model = User
         fields = (
             'id', 'username', 'first_name', 'last_name', 'avatar',
             'is_active', 'email', 'phone', 'mail_notice',
-            'online_notice', 'address', 'address_detail',
-            'permissions','groups', 'groups_detail', 'language',
-            'new_messages_count'
+            'online_notice', 'region', 'address',
+            'permissions', 'groups', 'groups_detail', 'language',
+            'new_messages_count',
+            'region__name', 'region__city','region__city__name',
+            'region__city__province', 'region__city__province__name'
         )
 
     def create(self, validated_data):
@@ -107,12 +116,12 @@ class UserSerializer(serializers.ModelSerializer):
     def get_new_messages_count(self, obj):
         return obj.new_messages_count
 
-class OnlineUserSerializer(serializers.ModelSerializer):
 
+class OnlineUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'id', 'first_name','last_name'
+            'id', 'first_name', 'last_name'
         )
 
 

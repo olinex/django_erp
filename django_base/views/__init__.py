@@ -6,11 +6,11 @@ from .argument import *
 from .province import *
 from .city import *
 from .region import *
-from .address import *
 from .partner import *
 from .user import *
 from .group import *
 from .permission import *
 from .message import *
+from .change import *
 from .email_account import *
 from .mixin import *

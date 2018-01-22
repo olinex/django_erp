@@ -8,12 +8,13 @@
 
 __all__ = ['ContentTypeViewSet']
 
-from .. import serializers, filters
+from .. import filters
 from django_erp.rest.viewsets import PermMethodViewSet
+from django_erp.rest.serializers import ContentTypeSerializer
 from django.contrib.contenttypes.models import ContentType
 
 class ContentTypeViewSet(PermMethodViewSet):
     model = ContentType
     allow_actions = ('list', 'retrieve')
-    serializer_class = serializers.ContentTypeSerializer
+    serializer_class = ContentTypeSerializer
     filter_class = filters.ContentTypeFilter

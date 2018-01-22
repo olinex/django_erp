@@ -31,9 +31,7 @@ class MessageViewSet(PermMethodViewSet):
             instance=request.user.new_messages,
             many=True
         )
-        return Response(
-            data=serializer.data
-        )
+        return Response(serializer.data)
 
     @detail_route(['patch'],serializer_class=NoneSerializer)
     def remove(self,requrest, pk=None):

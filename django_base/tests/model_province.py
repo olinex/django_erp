@@ -25,3 +25,7 @@ class ProvinceModelTestCase(TestCase, DataModelTestCase):
             country='China',
             name='test2'
         )
+        self.userSetup()
+
+    def tearDown(self):
+        self.userTearDown()

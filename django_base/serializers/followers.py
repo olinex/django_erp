@@ -6,6 +6,8 @@
 @time:      2017/11/19 上午12:01
 """
 
+__all__ = ['FollowSerializer']
+
 from rest_framework import serializers
 from django_erp.rest.fields import StatePrimaryKeyRelatedField
 

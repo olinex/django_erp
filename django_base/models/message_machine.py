@@ -13,6 +13,9 @@ from django_erp.common import Redis
 from django.db import transaction
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class MessageMachine(models.Model):
@@ -66,6 +69,7 @@ class MessageMachine(models.Model):
         """
         from ..models import Message
         from ..utils import get_argument
+        from django_erp.common import responses
         with transaction.atomic():
             message = Message.objects.create(
                 title=title,
@@ -76,11 +80,16 @@ class MessageMachine(models.Model):
             redis = Redis()
             if get_argument('add_follower_after_create_message'):
                 self.add_followers(creater)
-            for user_id in filter(lambda follower: follower != creater.id,self.followers):
+            for user in User.objects.filter(pk__in=filter(lambda f: f != creater.pk ,self.followers)):
                 redis.sadd(
-                    creater._message_cache_name(user_id),
+                    creater._message_cache_name(user.pk),
                     message.pk
                 )
+                response = responses.MessageSocketResponse(
+                    user=creater, title=title, text=text,
+                    count=user.new_messages_count
+                )
+                user.socket_user(response=response)
             return message
 
     messages = GenericRelation('django_base.Message')

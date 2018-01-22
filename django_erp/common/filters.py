@@ -73,13 +73,11 @@ class DateTimeFromToRangeFilter(filters.DateTimeFromToRangeFilter):
 
 
 history_model_fields = {
-    'id': NUMBER_FILTER_TYPE,
     'create_time': DATETIME_FILTER_TYPE,
     'last_modify_time': DATETIME_FILTER_TYPE,
 }
 
 base_model_fields = {
-    'id': NUMBER_FILTER_TYPE,
     'create_time': DATETIME_FILTER_TYPE,
     'last_modify_time': DATETIME_FILTER_TYPE,
     'is_draft': BOOLEAN_FILTER_TYPE,
@@ -91,7 +89,6 @@ sequence_model_fields = {
 }
 
 data_model_fields = {
-    'id': NUMBER_FILTER_TYPE,
     'create_time': DATETIME_FILTER_TYPE,
     'last_modify_time': DATETIME_FILTER_TYPE,
     'is_draft': BOOLEAN_FILTER_TYPE,
@@ -100,7 +97,6 @@ data_model_fields = {
 }
 
 order_model_fields = {
-    'id': NUMBER_FILTER_TYPE,
     'create_time': DATETIME_FILTER_TYPE,
     'last_modify_time': DATETIME_FILTER_TYPE,
     'is_draft': BOOLEAN_FILTER_TYPE,
@@ -110,7 +106,6 @@ order_model_fields = {
 }
 
 audit_order_model_fields = {
-    'id': NUMBER_FILTER_TYPE,
     'create_time': DATETIME_FILTER_TYPE,
     'last_modify_time': DATETIME_FILTER_TYPE,
     'is_draft': BOOLEAN_FILTER_TYPE,

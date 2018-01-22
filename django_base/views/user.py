@@ -29,7 +29,7 @@ class UserViewSet(PermMethodViewSet):
     filter_class = filters.UserFilter
 
     def get_queryset(self):
-        queryset = User.objects.select_related('address')
+        queryset = User.objects.select_related('region','region__city','region__city__province')
         if self.request.user.is_superuser:
             return queryset.all()
         return queryset.filter(pk=self.request.user.id)
@@ -108,11 +108,11 @@ class UserViewSet(PermMethodViewSet):
         )
 
     @list_route(['get'], serializer_class=serializers.OnlineUserSerializer)
-    def online_user(self, request):
+    def online_users(self, request):
         serializer = self.get_serializer(
             instance=request.user.get_oline_users().exclude(id=request.user.id),
             many=True
         )
         return Response(
-            {'result': serializer.data},
+            serializer.data
         )

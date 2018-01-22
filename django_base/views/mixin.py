@@ -28,9 +28,7 @@ class MessageModelMixin(object):
             instance=instance.messages,
             many=True
         )
-        return Response(
-            data=serializer.data
-        )
+        return Response(serializer.data)
 
     @detail_route(['post'], serializer_class=serializers.MessageSerializer)
     def create_message(self, request, pk=None):

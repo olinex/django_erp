@@ -9,9 +9,9 @@ from .user import *
 from .province import *
 from .city import *
 from .region import *
-from .address import *
 from .partner import *
 from .message import *
 from .argument import *
 from .email_account import *
 from .message_machine import *
+from .change import *

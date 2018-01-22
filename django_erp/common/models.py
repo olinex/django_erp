@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 
 __all__ = [
+    'ContentTypeModel',
     'CoordinateModel',
     'TreeModel',
     'HistoryModel',
@@ -19,6 +20,33 @@ from django.utils.translation import ugettext_lazy as _
 from django_perm.db import models
 from .state import StateMachine, Statement
 from .fileds import OrderStateCharField, AuditStateCharField
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+
+
+class ContentTypeModel(models.Model):
+    '''
+    contain the field for content type
+    '''
+    content_type = models.ForeignKey(
+        ContentType,
+        null=False,
+        blank=False,
+        verbose_name=_('content type'),
+        help_text=_('the type of content reflect to the model')
+    )
+
+    object_id = models.PositiveIntegerField(
+        _('item id'),
+        null=False,
+        blank=False,
+        help_text=_('the primary key for the project')
+    )
+
+    instance = GenericForeignKey('content_type', 'object_id')
+
+    class Meta:
+        abstract = True
 
 
 class CoordinateModel(models.Model):
@@ -170,12 +198,12 @@ class TreeModel(models.Model, StateMachine):
 
 
 def action_factory(*from_state, to_state, name):
-    def action(self, raise_exception=False):
+    def action(self, user, raise_exception=False):
         with transaction.atomic():
             self.check_states(*from_state, raise_exception=raise_exception)
-            getattr(self, 'before_{}'.format(name))()
+            getattr(self, 'before_{}'.format(name))(user)
             self.set_state(to_state)
-            getattr(self, 'after_{}'.format(name))()
+            getattr(self, 'after_{}'.format(name))(user)
 
     return action
 
@@ -232,42 +260,42 @@ class BaseModel(HistoryModel):
         active = Statement(inherits=confirmed, is_active=True)
         locked = Statement(inherits=confirmed, is_active=False)
 
-    def before_confirm(self):
+    def before_confirm(self, user):
         pass
 
-    def after_confirm(self):
+    def after_confirm(self, user):
         pass
 
     action_confirm = action_factory('draft', to_state='confirmed', name='confirm')
 
-    def before_lock(self):
+    def before_lock(self, user):
         pass
 
-    def after_lock(self):
+    def after_lock(self, user):
         pass
 
     action_lock = action_factory('active', to_state='locked', name='lock')
 
-    def before_active(self):
+    def before_active(self, user):
         pass
 
-    def after_active(self):
+    def after_active(self, user):
         pass
 
     action_active = action_factory('locked', to_state='active', name='active')
 
-    def before_delete(self):
+    def before_delete(self, user):
         pass
 
-    def after_delete(self):
+    def after_delete(self, user):
         pass
 
-    def action_delete(self, raise_exception=False):
+    def action_delete(self, user, raise_exception=False):
         with transaction.atomic():
             self.check_states('draft', raise_exception=raise_exception)
-            self.before_delete()
+            self.before_delete(user)
             self.delete()
-            self.after_delete()
+            self.after_delete(user)
 
 
 class SequenceModel(models.Model):
@@ -287,11 +315,12 @@ class SequenceModel(models.Model):
         ordering = ['sequence']
 
 
-class DataModel(BaseModel,SequenceModel):
+class DataModel(BaseModel, SequenceModel):
     """
     the abstract model for data can be delete when it is draft,
     and order by sequence defaultly
     """
+
     class Meta:
         abstract = True
         ordering = ['sequence']
@@ -317,18 +346,18 @@ class OrderModel(BaseModel):
         done = Statement(inherits=locked, state='done')
         cancelled = Statement(inherits=locked, state='cancelled')
 
-    def before_do(self):
+    def before_do(self, user):
         pass
 
-    def after_do(self):
+    def after_do(self, user):
         pass
 
     action_do = action_factory('acitve', to_state='done', name='do')
 
-    def before_cancel(self):
+    def before_cancel(self, user):
         pass
 
-    def after_cancel(self):
+    def after_cancel(self, user):
         pass
 
     action_cancel = action_factory('confirmed', to_state='cancelled', name='cancel')
@@ -358,26 +387,26 @@ class AuditOrderModel(OrderModel):
         done = Statement(inherits=locked, audit_state='allowed', state='done')
         cancelled = Statement(inherits=locked, state='cancelled')
 
-    def before_audit(self):
+    def before_audit(self, user):
         pass
 
-    def after_audit(self):
+    def after_audit(self, user):
         pass
 
     action_audit = action_factory('active', 'rejected', to_state='auditing', name='audit')
 
-    def before_reject(self):
+    def before_reject(self, user):
         pass
 
-    def after_reject(self):
+    def after_reject(self, user):
         pass
 
     action_reject = action_factory('auditing', to_state='rejected', name='reject')
 
-    def before_allow(self):
+    def before_allow(self, user):
         pass
 
-    def after_allow(self):
+    def after_allow(self, user):
         pass
 
     action_allow = action_factory('auditing', to_state='allowed', name='allow')

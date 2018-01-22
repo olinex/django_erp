@@ -18,7 +18,7 @@ class ArgumentModelTestCase(TestCase, MessageModelTestCase):
     fixtures = ['argument']
 
     def setUp(self):
-        self.userSetUp()
+        self.userSetup()
         self.data1 = [1, 2, 3, 4]
         self.data2 = {'a': 1, 'b': 2, 'c': 3, 'd': 4}
         self.instance1 = self.model.objects.create(

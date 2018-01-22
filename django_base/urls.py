@@ -11,7 +11,6 @@ from . import views
 
 router = routers.DefaultRouter()
 
-router.register(r'address', views.AddressViewSet, 'address')
 router.register(r'argument', views.ArgumentViewSet, 'argument')
 router.register(r'city', views.CityViewSet, 'city')
 router.register(r'content_type', views.ContentTypeViewSet, 'content_type')
@@ -23,5 +22,6 @@ router.register(r'partner', views.PartnerViewSet, 'partner')
 router.register(r'province', views.ProvinceViewSet, 'province')
 router.register(r'region', views.RegionViewSet, 'region')
 router.register(r'user', views.UserViewSet, 'user')
+router.register(r'change', views.ChangeViewSet, 'change')
 
 urlpatterns = router.urls

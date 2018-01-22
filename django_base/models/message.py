@@ -9,15 +9,14 @@
 __all__ = ['Message']
 
 from django_perm.db import models
+from django_erp.common.models import ContentTypeModel
 from django.contrib.auth import get_user_model
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
 
 User = get_user_model()
 
 
-class Message(models.Model):
+class Message(ContentTypeModel):
     """
     for all the model to log theirs action message
     """
@@ -53,23 +52,6 @@ class Message(models.Model):
         blank=False,
         help_text=_("the text of the action message")
     )
-
-    content_type = models.ForeignKey(
-        ContentType,
-        null=False,
-        blank=False,
-        verbose_name=_('content type'),
-        help_text=_('the type of content reflect to the model')
-    )
-
-    object_id = models.PositiveIntegerField(
-        _('item id'),
-        null=False,
-        blank=False,
-        help_text=_('the primary key for the project')
-    )
-
-    instance = GenericForeignKey('content_type', 'object_id')
 
     class Meta:
         ordering = ('-create_time',)

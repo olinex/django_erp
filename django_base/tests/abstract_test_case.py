@@ -6,39 +6,16 @@
 @time:      2017/11/15 下午2:29
 """
 
-__all__ = ['MessageModelTestCase','UserModelTestCase']
+__all__ = ['MessageModelTestCase']
 
-import random
-import string
 from django.test import tag
 from django_base.utils import get_argument
 from django_erp.common.tests import AbstractTestCase
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AnonymousUser
 
 User = get_user_model()
 
-
-class UserModelTestCase(AbstractTestCase):
-    """class for provide test user"""
-    def userSetUp(self):
-        self.password = ''.join(random.sample(string.ascii_letters, 10))
-        self.super_user = User.objects.create_superuser(
-            username='test_super_user',
-            email='demosuperuser@163.com',
-            password=self.password)
-        self.normal_user = User.objects.create_user(
-            username='test_normal_user',
-            email='demouser@163.com',
-            password=self.password)
-        self.anon_user = AnonymousUser()
-
-    def userTearDown(self):
-        self.super_user.clear_messages()
-        self.normal_user.clear_messages()
-
-
-class MessageModelTestCase(UserModelTestCase):
+class MessageModelTestCase(AbstractTestCase):
     """class for testing the message system"""
     instance1 = instance2 = None
 
