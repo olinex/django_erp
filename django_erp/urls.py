@@ -25,6 +25,7 @@ from django.contrib import admin
 from django.shortcuts import render
 from django.conf.urls import include as origin_include
 from django.utils.translation import ugettext_lazy as _
+from rest_framework.documentation import include_docs_urls
 
 
 def include(arg, namespace=None):
@@ -49,6 +50,7 @@ urlpatterns = [
 ]
 if settings.SETUP_TOOLS:
     urlpatterns.append(url(r'^__debug__/', include(debug_toolbar.urls, namespace='debug_toolbar')))
+    urlpatterns.append(url(r'^__document__/', include_docs_urls(title='document')))
 if settings.FILE_SERVICE:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

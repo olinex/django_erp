@@ -72,6 +72,7 @@ if SETUP_TOOLS:
     INSTALLED_APPS += [
         'django_extensions',
         'debug_toolbar',
+        'coreapi'
     ]
 
 if not DEBUG:
