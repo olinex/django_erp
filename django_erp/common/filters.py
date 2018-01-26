@@ -101,7 +101,6 @@ order_model_fields = {
     'last_modify_time': DATETIME_FILTER_TYPE,
     'is_draft': BOOLEAN_FILTER_TYPE,
     'is_active': BOOLEAN_FILTER_TYPE,
-    'sequence': NUMBER_FILTER_TYPE,
     'state': CHOICE_FILTER_TYPE
 }
 
@@ -110,7 +109,6 @@ audit_order_model_fields = {
     'last_modify_time': DATETIME_FILTER_TYPE,
     'is_draft': BOOLEAN_FILTER_TYPE,
     'is_active': BOOLEAN_FILTER_TYPE,
-    'sequence': NUMBER_FILTER_TYPE,
     'state': CHOICE_FILTER_TYPE,
     'audit_state': CHOICE_FILTER_TYPE
 }

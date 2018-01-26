@@ -6,7 +6,7 @@
 @time:      2017/8/24 下午2:30
 """
 
-__all__ = ['md5_hexdigest']
+__all__ = ['md5_hexdigest','key_genarater']
 
 import json
 from hashlib import md5
@@ -22,3 +22,8 @@ def md5_hexdigest(object):
     m = md5()
     m.update(json.dumps(object, cls=DjangoJSONEncoder,sort_keys=True).encode(('utf8')))
     return m.hexdigest()
+
+def key_generater(length):
+    import string
+    import random
+    return "".join(random.choice(string.printable) for i in range(length))

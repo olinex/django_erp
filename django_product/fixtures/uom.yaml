@@ -6,6 +6,8 @@
     round_method: ROUND_CEILING
     ratio: 1
     category: m
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -17,6 +19,8 @@
     round_method: ROUND_CEILING
     ratio: 0.01
     category: m
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -28,6 +32,8 @@
     round_method: ROUND_CEILING
     ratio: 0.001
     category: m
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -39,6 +45,8 @@
     round_method: ROUND_CEILING
     ratio: 1000
     category: m
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -50,6 +58,8 @@
     round_method: ROUND_CEILING
     ratio: 1
     category: kg
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -61,6 +71,8 @@
     round_method: ROUND_CEILING
     ratio: 0.001
     category: kg
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -72,6 +84,8 @@
     round_method: ROUND_CEILING
     ratio: 0.00001
     category: kg
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -83,6 +97,8 @@
     round_method: ROUND_CEILING
     ratio: 1
     category: s
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -94,6 +110,8 @@
     round_method: ROUND_CEILING
     ratio: 0.001
     category: s
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -105,6 +123,8 @@
     round_method: ROUND_CEILING
     ratio: 60
     category: s
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -116,6 +136,8 @@
     round_method: ROUND_CEILING
     ratio: 3600
     category: s
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -127,6 +149,8 @@
     round_method: ROUND_CEILING
     ratio: 86400
     category: s
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -138,6 +162,8 @@
     round_method: ROUND_CEILING
     ratio: 1
     category: A
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -149,6 +175,8 @@
     round_method: ROUND_CEILING
     ratio: 0.001
     category: A
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -160,6 +188,8 @@
     round_method: ROUND_CEILING
     ratio: 1
     category: K
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -171,6 +201,8 @@
     round_method: ROUND_CEILING
     ratio: 1
     category: J
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -182,6 +214,8 @@
     round_method: ROUND_CEILING
     ratio: 1
     category: m2
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -193,6 +227,8 @@
     round_method: ROUND_CEILING
     ratio: 0.0001
     category: m2
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -204,6 +240,8 @@
     round_method: ROUND_CEILING
     ratio: 1
     category: m3
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -215,6 +253,8 @@
     round_method: ROUND_CEILING
     ratio: 0.000001
     category: m3
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -226,6 +266,8 @@
     round_method: ROUND_CEILING
     ratio: 1
     category: unit
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -237,6 +279,8 @@
     round_method: ROUND_CEILING
     ratio: 6
     category: unit
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -248,6 +292,8 @@
     round_method: ROUND_CEILING
     ratio: 12
     category: unit
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -259,6 +305,8 @@
     round_method: ROUND_CEILING
     ratio: 1
     category: yuan
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -270,6 +318,8 @@
     round_method: ROUND_CEILING
     ratio: 0.1
     category: yuan
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -281,6 +331,8 @@
     round_method: ROUND_CEILING
     ratio: 0.01
     category: yuan
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 
@@ -292,6 +344,8 @@
     round_method: ROUND_CEILING
     ratio: 0.001
     category: yuan
+    is_draft: false
+    is_active: true
     create_time: "2017-01-01 00:00:01.000000+00:00"
     last_modify_time: "2017-01-01 00:00:01.000000+00:00"
 

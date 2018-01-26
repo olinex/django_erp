@@ -33,6 +33,7 @@ class ProvinceFilter(filters.FilterSet):
             ('id', 'id'),
             ('country', 'country'),
             ('name', 'name'),
+            ('sequence','sequence')
         )
     )
 
@@ -52,7 +53,8 @@ class CityFilter(filters.FilterSet):
             ('province__id', 'province'),
             ('province__name', 'province__name'),
             ('province__country', 'province__country'),
-            ('name', 'name')
+            ('name', 'name'),
+            ('sequence','sequence')
         )
     )
 
@@ -76,7 +78,8 @@ class RegionFilter(filters.FilterSet):
             ('city__provine__id', 'city__province'),
             ('city__provine__name', 'city__provine__name'),
             ('city__provine__country', 'city__provine__country'),
-            ('name', 'name')
+            ('name', 'name'),
+            ('sequence','sequence')
         )
     )
 
@@ -99,7 +102,8 @@ class ArgumentFilter(filters.FilterSet):
             ('id', 'id'),
             ('name', 'name'),
             ('form', 'form'),
-            ('value', 'value')
+            ('value', 'value'),
+            ('sequence','sequence')
         )
     )
 
@@ -220,6 +224,7 @@ class PartnerFilter(filters.FilterSet):
             'sale_able': filters.BOOLEAN_FILTER_TYPE,
             'purchase_able': filters.BOOLEAN_FILTER_TYPE,
         }
+        fields.update(filters.base_model_fields)
 
 class ChangeFilter(filters.FilterSet):
     ordering = filters.OrderingFilter(
@@ -241,3 +246,4 @@ class ChangeFilter(filters.FilterSet):
             'content_type__model': filters.CHAR_FILTER_TYPE,
             'content_type__app_label': filters.CHAR_FILTER_TYPE,
         }
+        fields.update(filters.order_model_fields)

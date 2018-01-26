@@ -16,3 +16,6 @@ class PartnerViewSet(BaseViewSet):
     model = models.Partner
     serializer_class = serializers.PartnerSerializer
     filter_class = filters.PartnerFilter
+
+    def get_queryset(self):
+        return self.model.objects.select_related('region', 'region__city', 'region__city__province')

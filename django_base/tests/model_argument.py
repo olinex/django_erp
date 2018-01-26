@@ -10,10 +10,9 @@ __all__ = ['ArgumentModelTestCase']
 
 from ..models import Argument
 from django.test import TestCase
-from .abstract_test_case import MessageModelTestCase
 
 
-class ArgumentModelTestCase(TestCase, MessageModelTestCase):
+class ArgumentModelTestCase(TestCase):
     model = Argument
     fixtures = ['argument']
 

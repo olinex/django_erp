@@ -60,7 +60,7 @@ class EmailAccount(models.Model):
 
     class Meta:
         verbose_name = _('email account')
-        verbose_name_plural = _('email account')
+        verbose_name_plural = _('email accounts')
 
     @property
     def connection(self):

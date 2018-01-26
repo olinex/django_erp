@@ -12,5 +12,6 @@ from .group import *
 from .permission import *
 from .message import *
 from .change import *
+from .redis import *
 from .email_account import *
 from .mixin import *

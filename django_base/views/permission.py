@@ -18,3 +18,6 @@ class PermissionViewSet(PermMethodViewSet):
     allow_actions = ('list', 'retrieve')
     serializer_class = PermissionsSerializer
     filter_class = filters.PermissionFilter
+
+    def get_queryset(self):
+        return self.model.objects.select_related('content_type')

@@ -44,7 +44,7 @@ class Change(ContentTypeModel,OrderModel):
 
     class Meta:
         verbose_name = _("change")
-        verbose_name_plural = _("change")
+        verbose_name_plural = _("changes")
 
     def before_valid(self):
         if not all(

@@ -44,7 +44,7 @@ class Region(DataModel):
 
     class Meta:
         verbose_name = _('region')
-        verbose_name_plural = _('region')
+        verbose_name_plural = _('regions')
         unique_together = ('city', 'name')
 
     def __str__(self):

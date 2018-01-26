@@ -17,3 +17,6 @@ class ChangeViewSet(OrderViewSet):
     allow_actions = ('list', 'retrieve')
     serializer_class = serializers.ChangeSerializer
     filter_class = filters.ChangeFilter
+
+    def get_queryset(self):
+        return self.model.objects.select_related('content_type')

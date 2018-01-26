@@ -41,8 +41,7 @@ def first_request(request):
 urlpatterns = [
     url(r'^$', first_request, name='first_request'),
     url(r'^base/', include('django_base.urls', namespace='django_base')),
-    # url(r'^account/', include('django_account.urls', namespace='django_account')),
-    # url(r'^product/', include('django_product.urls', namespace='django_product')),
+    url(r'^product/', include('django_product.urls', namespace='django_product')),
     # url(r'^stock/', include('django_stock.urls', namespace='django_stock')),
     # url(r'^test/', include('django_perm.urls', namespace='django_perm')),
     url(r'^admin/', admin.site.urls),

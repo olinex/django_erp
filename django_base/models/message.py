@@ -56,4 +56,4 @@ class Message(ContentTypeModel):
     class Meta:
         ordering = ('-create_time',)
         verbose_name = _('message')
-        verbose_name_plural = _('message')
+        verbose_name_plural = _('messages')

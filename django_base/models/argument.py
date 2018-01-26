@@ -18,7 +18,7 @@ from rest_framework import serializers
 from .message_machine import MessageMachine
 
 
-class Argument(HistoryModel, SequenceModel, MessageMachine):
+class Argument(HistoryModel, SequenceModel):
     class KeyManager(models.Manager):
         def get_by_natural_key(self, name):
             return self.get(name=name)
@@ -66,7 +66,7 @@ class Argument(HistoryModel, SequenceModel, MessageMachine):
     class Meta:
         ordering = ['sequence']
         verbose_name = _('argument')
-        verbose_name_plural = _('argument')
+        verbose_name_plural = _('arguments')
 
     def __str__(self):
         return self.name

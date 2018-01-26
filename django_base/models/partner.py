@@ -39,14 +39,14 @@ class Partner(BaseModel):
 
     region = models.ForeignKey(
         'Region',
-        null=False,
+        null=True,
         blank=False,
         help_text=_("partner's region")
     )
 
     address = models.CharField(
         _('address'),
-        null=False,
+        null=True,
         blank=False,
         max_length=190,
         help_text=_("partner's address detail")
@@ -73,7 +73,6 @@ class Partner(BaseModel):
     class Meta:
         verbose_name = _('partner')
         verbose_name_plural = _('partners')
-        unique_together = ('region', 'address')
 
     def __str__(self):
         return self.name

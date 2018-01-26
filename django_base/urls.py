@@ -23,5 +23,6 @@ router.register(r'province', views.ProvinceViewSet, 'province')
 router.register(r'region', views.RegionViewSet, 'region')
 router.register(r'user', views.UserViewSet, 'user')
 router.register(r'change', views.ChangeViewSet, 'change')
+router.register(r'redis', views.RedisViewSet, 'redis')
 
 urlpatterns = router.urls
